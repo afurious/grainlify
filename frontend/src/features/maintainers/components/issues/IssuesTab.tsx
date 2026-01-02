@@ -57,13 +57,21 @@ export function IssuesTab({ onNavigate, selectedProjects, onRefresh }: IssuesTab
   const [issuesError, setIssuesError] = useState<string | null>(null);
 
   // Helper function to format time ago (memoized)
-  const formatTimeAgo = useCallback((dateString: string | null): string => {
+  // Accepts both updated_at (nullable) and last_seen_at (required) as fallback
+  const formatTimeAgo = useCallback((updatedAt: string | null, lastSeenAt?: string): string => {
+    // Try updated_at first, then fall back to last_seen_at
+    const dateString = updatedAt || lastSeenAt;
     if (!dateString) return 'Unknown';
+    
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Unknown';
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return 'Unknown';
+      }
       return formatDistanceToNow(date, { addSuffix: true });
-    } catch {
+    } catch (err) {
+      console.warn('Error formatting date:', dateString, err);
       return 'Unknown';
     }
   }, []);
@@ -326,6 +334,9 @@ export function IssuesTab({ onNavigate, selectedProjects, onRefresh }: IssuesTab
                 })
                 .map((issue) => {
                   // Convert API issue to Issue type for compatibility
+                  // Use updated_at if available, otherwise fall back to last_seen_at
+                  const timeAgoFormatted = formatTimeAgo(issue.updated_at, issue.last_seen_at);
+                  
                   const issueForCard: Issue = {
                     id: issue.github_issue_id.toString(),
                     number: issue.number, // Store the issue number
@@ -333,7 +344,7 @@ export function IssuesTab({ onNavigate, selectedProjects, onRefresh }: IssuesTab
                     repository: issue.projectName,
                     repo: issue.projectName,
                     user: issue.author_login,
-                    timeAgo: formatTimeAgo(issue.updated_at),
+                    timeAgo: timeAgoFormatted,
                     tags: issue.labels?.map((l: any) => l.name || l) || [],
                     applicants: issue.comments_count || 0,
                     comments: issue.comments_count || 0,
@@ -355,7 +366,7 @@ export function IssuesTab({ onNavigate, selectedProjects, onRefresh }: IssuesTab
                         name: issue.author_login,
                         avatar: `https://github.com/${issue.author_login}.png?size=40`
                       }}
-                      timeAgo={formatTimeAgo(issue.updated_at)}
+                      timeAgo={timeAgoFormatted}
                       tags={issue.labels?.map((l: any) => l.name || l) || []}
                       isSelected={selectedIssue?.id === issue.github_issue_id.toString()}
                       onClick={() => setSelectedIssue(issueForCard)}
