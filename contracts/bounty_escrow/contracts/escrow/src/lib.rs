@@ -337,7 +337,7 @@ impl BountyEscrowContract {
             mode: mode.clone(),
             timestamp: env.ledger().timestamp(),
         };
-        escrow.refund_history.push_back(&env, refund_record);
+        escrow.refund_history.push_back(refund_record);
 
         // Update status
         if escrow.remaining_amount == 0 {
@@ -355,7 +355,7 @@ impl BountyEscrowContract {
                 amount: refund_amount,
                 refund_to: refund_recipient,
                 timestamp: env.ledger().timestamp(),
-                refund_mode: Some(mode.clone()),
+                refund_mode: mode.clone(),
                 remaining_amount: escrow.remaining_amount,
             },
         );
