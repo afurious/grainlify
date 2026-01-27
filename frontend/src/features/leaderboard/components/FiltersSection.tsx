@@ -89,28 +89,26 @@ export function FiltersSection({
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
     >
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-end flex-wrap gap-4">
         {/* Filter Dropdown Button */}
         <div className="relative z-[100]">
           <button
             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] backdrop-blur-[30px] bg-white/[0.15] border border-white/25 hover:bg-white/[0.2] hover:scale-105 transition-all duration-300"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] bg-gradient-to-br from-[#c9983a] to-[#a67c2e] text-white border border-white/10 hover:scale-105 transition-all duration-300 shadow-[0_4px_16px_rgba(201,152,58,0.35)]"
           >
             <span
-              className={`text-[13px] font-semibold transition-colors ${
-                theme === "dark" ? "text-[#f5f5f5]" : "text-[#2d2820]"
-              }`}
+              className="text-[13px] font-semibold text-white"
             >
               {getActiveFilterLabel()}
             </span>
             <ChevronDown
-              className={`w-4 h-4 transition-transform duration-300 ${
+              className={`w-4 h-4 transition-transform duration-300 text-white ${
                 showFilterDropdown ? "rotate-180" : ""
-              } ${theme === "dark" ? "text-[#d4d4d4]" : "text-[#7a6b5a]"}`}
+              }`}
             />
           </button>
           {showFilterDropdown && (
-            <div className="absolute left-0 mt-2 w-[220px] backdrop-blur-[40px] bg-white/[0.18] border-2 border-white/30 rounded-[12px] shadow-[0_8px_32px_rgba(0,0,0,0.15)] overflow-hidden z-[100] animate-dropdown-in">
+            <div className="absolute right-0 mt-2 w-[220px] backdrop-blur-[40px] bg-white/[0.18] border-2 border-white/30 rounded-[12px] shadow-[0_8px_32px_rgba(0,0,0,0.15)] overflow-hidden z-[100] animate-dropdown-in">
               {filterOptions.map((option) => (
                 <button
                   key={option.value}
@@ -135,19 +133,17 @@ export function FiltersSection({
         <div className="relative z-[100]">
           <button
             onClick={onToggleDropdown}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] backdrop-blur-[30px] bg-white/[0.15] border border-white/25 hover:bg-white/[0.2] hover:scale-105 transition-all duration-300"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] bg-gradient-to-br from-[#c9983a] to-[#a67c2e] text-white border border-white/10 hover:scale-105 transition-all duration-300 shadow-[0_4px_16px_rgba(201,152,58,0.35)]"
           >
             <span
-              className={`text-[13px] font-semibold transition-colors ${
-                theme === "dark" ? "text-[#f5f5f5]" : "text-[#2d2820]"
-              }`}
+              className="text-[13px] font-semibold text-white"
             >
               {selectedEcosystem.label}
             </span>
             <ChevronDown
-              className={`w-4 h-4 transition-transform duration-300 ${
+              className={`w-4 h-4 transition-transform duration-300 text-white ${
                 showDropdown ? "rotate-180" : ""
-              } ${theme === "dark" ? "text-[#d4d4d4]" : "text-[#7a6b5a]"}`}
+              }`}
             />
           </button>
           {showDropdown && (
