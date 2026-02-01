@@ -246,62 +246,54 @@ export function DiscoverPage({
     loadRecommendedProjects();
   }, [fetchProjects]);
 
-  // Fetch recommended issues from top projects
+  // Fetch recommended issues from top projects (useOptimisticData manages loading state)
   useEffect(() => {
     const loadRecommendedIssues = async () => {
       if (projects.length === 0) return;
 
-      setIsLoadingIssues(true);
-      const issues: Array<{
-        id: string;
-        title: string;
-        description: string;
-        language: string;
-        daysLeft: string;
-        primaryTag?: string;
-        projectId: string;
-      }> = [];
+      await fetchIssues(async () => {
+        const issues: IssueType[] = [];
 
-      // Try to get issues from projects, moving to next if a project has no issues
-      for (const project of projects) {
-        if (issues.length >= 6) break; // We only need 6 issues
+        for (const project of projects) {
+          if (issues.length >= 6) break;
 
-        try {
-          const issuesResponse = await getPublicProjectIssues(project.id);
-          if (issuesResponse?.issues && Array.isArray(issuesResponse.issues) && issuesResponse.issues.length > 0) {
-            // Take up to 2 issues from this project
-            const projectIssues = issuesResponse.issues.slice(0, 2);
-            for (const issue of projectIssues) {
-              if (issues.length >= 6) break;
+          try {
+            const issuesResponse = await getPublicProjectIssues(project.id);
+            if (issuesResponse?.issues && Array.isArray(issuesResponse.issues) && issuesResponse.issues.length > 0) {
+              const projectIssues = issuesResponse.issues.slice(0, 2);
+              for (const issue of projectIssues) {
+                if (issues.length >= 6) break;
 
-              // Get project language for the issue
-              const projectData = projects.find(p => p.id === project.id);
-              const language = projectData?.tags.find(t => ['TypeScript', 'JavaScript', 'Python', 'Rust', 'Go', 'CSS', 'HTML'].includes(t)) || projectData?.tags[0] || 'TypeScript';
+                const projectData = projects.find((p) => p.id === project.id);
+                const language =
+                  projectData?.tags.find((t) =>
+                    ["TypeScript", "JavaScript", "Python", "Rust", "Go", "CSS", "HTML"].includes(t)
+                  ) ||
+                  projectData?.tags[0] ||
+                  "TypeScript";
 
-              issues.push({
-                id: String(issue.github_issue_id),
-                title: issue.title || 'Untitled Issue',
-                description: cleanIssueDescription(issue.description),
-                language: language,
-                daysLeft: getDaysLeft(),
-                primaryTag: getPrimaryTag(issue.labels || []),
-                projectId: project.id,
-              });
+                issues.push({
+                  id: String(issue.github_issue_id),
+                  title: issue.title || "Untitled Issue",
+                  description: cleanIssueDescription(issue.description),
+                  language,
+                  daysLeft: getDaysLeft(),
+                  primaryTag: getPrimaryTag(issue.labels || []),
+                  projectId: project.id,
+                });
+              }
             }
+          } catch (err) {
+            console.warn(`Failed to fetch issues for project ${project.id}:`, err);
           }
-        } catch (err) {
-          // If fetching issues fails, continue to next project
-          console.warn(`Failed to fetch issues for project ${project.id}:`, err);
-          continue;
         }
-      }
 
-      setRecommendedIssues(issues);
-      setIsLoadingIssues(false);
+        return issues;
+      });
     };
 
     loadRecommendedIssues();
-  }, [projects, isLoadingProjects, fetchIssues]);
+  }, [projects, fetchIssues]);
 
   // If an issue is selected, show the detail page instead
   if (selectedIssue) {
