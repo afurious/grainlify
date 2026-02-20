@@ -1,4 +1,4 @@
-#![cfg(test)]
+#![no_std]
 
 use super::*;
 use soroban_sdk::{
@@ -1629,12 +1629,10 @@ fn test_multi_bounty_lock_and_release_independent_balance_maps() {
 
     // TestSetup already mints 1_000_000 to depositor
     let depositor_initial = setup.token.balance(&setup.depositor);
-    println!("Initial depositor balance: {}", depositor_initial);
     assert!(depositor_initial >= 4000, "Depositor needs at least 4000 tokens");
 
     // Verify contributor2 starts with 0 balance
     let contributor2_initial = setup.token.balance(&contributor2);
-    println!("Initial contributor2 balance: {}", contributor2_initial);
     assert_eq!(contributor2_initial, 0, "Contributor2 should start with 0 balance");
 
     // Lock two bounties
@@ -1648,8 +1646,6 @@ fn test_multi_bounty_lock_and_release_independent_balance_maps() {
     // Verify escrow state after locking
     let escrow1 = setup.escrow.get_escrow_info(&1);
     let escrow2 = setup.escrow.get_escrow_info(&2);
-    println!("After lock - Escrow1 amount: {}, remaining: {}", escrow1.amount, escrow1.remaining_amount);
-    println!("After lock - Escrow2 amount: {}, remaining: {}", escrow2.amount, escrow2.remaining_amount);
 
     // Verify escrow.amount is correct (this is what gets transferred on release)
     assert_eq!(escrow1.amount, 1500, "Escrow1 amount should be 1500");
@@ -1658,7 +1654,6 @@ fn test_multi_bounty_lock_and_release_independent_balance_maps() {
     assert_eq!(escrow2.remaining_amount, 2500);
 
     let contract_balance = setup.token.balance(&setup.escrow_address);
-    println!("After lock - Contract token balance: {}", contract_balance);
     assert_eq!(contract_balance, 4000, "Contract should hold 4000 tokens");
 
     // Release bounty 1 only
@@ -1669,11 +1664,6 @@ fn test_multi_bounty_lock_and_release_independent_balance_maps() {
     let contributor_balance = setup.token.balance(&setup.contributor);
     let contract_balance_after_1 = setup.token.balance(&setup.escrow_address);
 
-    println!("After release 1 - Escrow1 remaining: {}, status: {:?}", escrow1_after.remaining_amount, escrow1_after.status);
-    println!("After release 1 - Escrow2 remaining: {}, status: {:?}, amount: {}", escrow2_after.remaining_amount, escrow2_after.status, escrow2_after.amount);
-    println!("After release 1 - Contributor balance: {}", contributor_balance);
-    println!("After release 1 - Contract token balance: {}", contract_balance_after_1);
-
     assert_eq!(escrow1_after.remaining_amount, 0);
     assert_eq!(escrow1_after.status, EscrowStatus::Released);
     assert_eq!(escrow2_after.remaining_amount, 2500);
@@ -1682,9 +1672,6 @@ fn test_multi_bounty_lock_and_release_independent_balance_maps() {
     assert_eq!(contract_balance_after_1, 2500, "Contract should have 2500 remaining");
 
     // Release bounty 2 to different contributor
-    // Verify escrow2.amount before release (this is what will be transferred)
-    println!("Before release 2 - Escrow2 amount to be transferred: {}", escrow2_after.amount);
-
     setup.escrow.release_funds(&2, &contributor2);
 
     // Capture final state
@@ -1692,12 +1679,134 @@ fn test_multi_bounty_lock_and_release_independent_balance_maps() {
     let contributor2_balance = setup.token.balance(&contributor2);
     let escrow_final_balance = setup.token.balance(&setup.escrow_address);
 
-    println!("After release 2 - Escrow2 remaining: {}, status: {:?}", escrow2_final.remaining_amount, escrow2_final.status);
-    println!("After release 2 - Contributor2 balance: {}", contributor2_balance);
-    println!("After release 2 - Escrow contract balance: {}", escrow_final_balance);
-
     assert_eq!(escrow2_final.remaining_amount, 0, "Escrow2 remaining_amount should be 0 after release");
     assert_eq!(escrow2_final.status, EscrowStatus::Released, "Escrow2 should be Released");
     assert_eq!(contributor2_balance, 2500, "Contributor2 should have received 2500");
     assert_eq!(escrow_final_balance, 0, "Contract should have 0 balance after all releases");
+}
+
+// ============================================================================
+// ANTI-ABUSE TESTS FOR BOUNTY ESCROW
+// ============================================================================
+
+#[test]
+#[should_panic(expected = "Rate limit exceeded")]
+fn test_bounty_anti_abuse_rate_limit_exceeded() {
+    let setup = TestSetup::new();
+    let bounty_id = 999;
+    let amount = 1000;
+
+    let config = setup.escrow.get_config();
+    let max_ops = config.max_operations;
+
+    // Initial time setup
+    let start_time = 1_000_000;
+    setup.env.ledger().set_timestamp(start_time);
+
+    let deadline = start_time + 1000;
+
+    // We expect max_ops within the window_size
+
+    for i in 0..max_ops {
+        setup
+            .env
+            .ledger()
+            .set_timestamp(start_time + config.cooldown_period * (i as u64) + 1);
+
+        setup.escrow.lock_funds(
+            &setup.depositor,
+            &(bounty_id + i as u64),
+            &amount,
+            &deadline,
+        );
+    }
+
+    setup
+        .env
+        .ledger()
+        .set_timestamp(start_time + config.cooldown_period * (max_ops as u64) + 1);
+
+    setup.escrow.lock_funds(
+        &setup.depositor,
+        &(bounty_id + max_ops as u64),
+        &amount,
+        &deadline,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Operation in cooldown period")]
+fn test_bounty_anti_abuse_cooldown_violation() {
+    let setup = TestSetup::new();
+    let bounty_id = 2999;
+    let amount = 1000;
+
+    let config = setup.escrow.get_config();
+
+    // Initial time setup
+    let start_time = 1_000_000;
+    setup.env.ledger().set_timestamp(start_time);
+
+    let deadline = start_time + 1000;
+
+    setup
+        .escrow
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+
+    setup
+        .env
+        .ledger()
+        .set_timestamp(start_time + config.cooldown_period + 1);
+
+    setup
+        .escrow
+        .lock_funds(&setup.depositor, &(bounty_id + 1), &amount, &deadline);
+
+    setup
+        .escrow
+        .lock_funds(&setup.depositor, &(bounty_id + 2), &amount, &deadline);
+}
+
+#[test]
+fn test_bounty_anti_abuse_whitelist_bypass() {
+    let setup = TestSetup::new();
+    let bounty_id = 3999;
+    let amount = 10;
+
+    let config = setup.escrow.get_config();
+    let max_ops = config.max_operations;
+
+    // Initial time setup
+    let start_time = 1_000_000;
+    setup.env.ledger().set_timestamp(start_time);
+
+    let deadline = start_time + 1000;
+
+    setup
+        .escrow
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+
+    // Add depositor to whitelist
+    setup.escrow.set_whitelist(&setup.depositor, &true);
+
+    setup
+        .env
+        .ledger()
+        .set_timestamp(start_time + config.cooldown_period + 1);
+
+    // We should be able to do theoretically unlimited operations at the exact same timestamp
+    for i in 1..=(max_ops + 5) {
+        setup.escrow.lock_funds(
+            &setup.depositor,
+            &(bounty_id + i as u64),
+            &amount,
+            &deadline,
+        );
+    }
+
+    // Verify successful locking
+    let escrow = setup
+        .escrow
+        .get_escrow_info(&(bounty_id + max_ops as u64 + 5));
+    assert_eq!(escrow.amount, amount);
 }
