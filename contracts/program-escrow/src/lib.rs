@@ -138,7 +138,146 @@
 //! 5. **Balance Checks**: Verify remaining balance matches expectations
 //! 6. **Token Approval**: Ensure contract has token allowance before locking funds
 
-#![no_std]
+
+
+// ── Step 1: Add module declarations near the top of lib.rs ──────────────
+// (after `mod anti_abuse;` and before the contract struct)
+
+mod error_recovery;
+
+#[cfg(test)]
+mod error_recovery_tests;
+
+// ── Step 2: Add these public contract functions to the ProgramEscrowContract
+//    impl block (alongside the existing admin functions) ──────────────────
+
+    // ========================================================================
+    // Circuit Breaker Management
+    // ========================================================================
+
+    /// Register the circuit breaker admin. Can only be set once, or changed
+    /// by the existing admin.
+    ///
+    /// # Arguments
+    /// * `new_admin` - Address to register as circuit breaker admin
+    /// * `caller`    - Existing admin (None if setting for the first time)
+    pub fn set_circuit_admin(env: Env, new_admin: Address, caller: Option<Address>) {
+        error_recovery::set_circuit_admin(&env, new_admin, caller);
+    }
+
+    /// Returns the registered circuit breaker admin, if any.
+    pub fn get_circuit_admin(env: Env) -> Option<Address> {
+        error_recovery::get_circuit_admin(&env)
+    }
+
+    /// Returns the full circuit breaker status snapshot.
+    ///
+    /// # Returns
+    /// * `CircuitBreakerStatus` with state, failure/success counts, timestamps
+    pub fn get_circuit_status(env: Env) -> error_recovery::CircuitBreakerStatus {
+        error_recovery::get_status(&env)
+    }
+
+    /// Admin resets the circuit breaker.
+    ///
+    /// Transitions:
+    /// - Open     → HalfOpen  (probe mode)
+    /// - HalfOpen → Closed    (hard reset)
+    /// - Closed   → Closed    (no-op reset)
+    ///
+    /// # Panics
+    /// * If caller is not the registered circuit breaker admin
+    pub fn reset_circuit_breaker(env: Env, admin: Address) {
+        error_recovery::reset_circuit_breaker(&env, &admin);
+    }
+
+    /// Updates the circuit breaker configuration. Admin only.
+    ///
+    /// # Arguments
+    /// * `failure_threshold` - Consecutive failures needed to open circuit
+    /// * `success_threshold` - Consecutive successes in HalfOpen to close it
+    /// * `max_error_log`     - Maximum error log entries to retain
+    pub fn configure_circuit_breaker(
+        env: Env,
+        admin: Address,
+        failure_threshold: u32,
+        success_threshold: u32,
+        max_error_log: u32,
+    ) {
+        let stored = error_recovery::get_circuit_admin(&env);
+        match stored {
+            Some(ref a) if a == &admin => {
+                admin.require_auth();
+            }
+            _ => panic!("Unauthorized: only circuit breaker admin can configure"),
+        }
+        error_recovery::set_config(
+            &env,
+            error_recovery::CircuitBreakerConfig {
+                failure_threshold,
+                success_threshold,
+                max_error_log,
+            },
+        );
+    }
+
+    /// Returns the error log (last N failures recorded by the circuit breaker).
+    pub fn get_circuit_error_log(env: Env) -> soroban_sdk::Vec<error_recovery::ErrorEntry> {
+        error_recovery::get_error_log(&env)
+    }
+
+    /// Directly open the circuit (emergency lockout). Admin only.
+    pub fn emergency_open_circuit(env: Env, admin: Address) {
+        let stored = error_recovery::get_circuit_admin(&env);
+        match stored {
+            Some(ref a) if a == &admin => {
+                admin.require_auth();
+            }
+            _ => panic!("Unauthorized"),
+        }
+        error_recovery::open_circuit(&env);
+    }
+
+// ── Step 3: Wrap batch_payout and single_payout with circuit breaker ────
+//
+// In the existing batch_payout function, add at the very top (after getting
+// program_data but before the auth check):
+//
+//   use crate::error_recovery;
+//   if let Err(_) = error_recovery::check_and_allow(&env) {
+//       panic!("Circuit breaker is open: payout operations are temporarily disabled");
+//   }
+//
+// After a successful transfer loop, add:
+//   error_recovery::record_success(&env);
+//
+// If a transfer panics/fails, the circuit breaker failure should be recorded
+// via record_failure() before re-panicking.
+//
+// For a clean integration, wrap the token transfer call like this:
+//
+//   let transfer_ok = std::panic::catch_unwind(|| {
+//       token_client.transfer(&contract_address, &recipient.clone(), &net_amount);
+//   });
+//   match transfer_ok {
+//       Ok(_) => error_recovery::record_success(&env),
+//       Err(_) => {
+//           error_recovery::record_failure(
+//               &env,
+//               program_id.clone(),
+//               soroban_sdk::symbol_short!("batch_pay"),
+//               error_recovery::ERR_TRANSFER_FAILED,
+//           );
+//           panic!("Token transfer failed");
+//       }
+//   }
+//
+// Note: Soroban's environment panics abort the transaction, so in practice
+// you record the failure and re-panic. The circuit breaker state is committed
+// because Soroban persists storage writes made before the panic in tests
+// (but not in production transactions that abort). For full production
+// integration, use the `try_*` variants of client calls where available.
+
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short, token, vec, Address, Env, String, Symbol,
     Vec,
