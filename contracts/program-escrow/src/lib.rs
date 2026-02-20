@@ -1,7 +1,7 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, vec, Address, Env, String, Symbol, Vec,
-    token,
+    contract, contractimpl, contracttype, symbol_short, token, vec, Address, Env, String, Symbol,
+    Vec,
 };
 
 // Event types
@@ -38,12 +38,12 @@ pub struct ProgramEscrowContract;
 #[contractimpl]
 impl ProgramEscrowContract {
     /// Initialize a new program escrow
-    /// 
+    ///
     /// # Arguments
     /// * `program_id` - Unique identifier for the program/hackathon
     /// * `authorized_payout_key` - Address authorized to trigger payouts (backend)
     /// * `token_address` - Address of the token contract to use for transfers
-    /// 
+    ///
     /// # Returns
     /// The initialized ProgramData
     pub fn init_program(
@@ -80,10 +80,10 @@ impl ProgramEscrowContract {
     }
 
     /// Lock initial funds into the program escrow
-    /// 
+    ///
     /// # Arguments
     /// * `amount` - Amount of funds to lock (in native token units)
-    /// 
+    ///
     /// # Returns
     /// Updated ProgramData with locked funds
     pub fn lock_program_funds(env: Env, amount: i128) -> ProgramData {
@@ -118,18 +118,14 @@ impl ProgramEscrowContract {
     }
 
     /// Execute batch payouts to multiple recipients
-    /// 
+    ///
     /// # Arguments
     /// * `recipients` - Vector of recipient addresses
     /// * `amounts` - Vector of amounts (must match recipients length)
-    /// 
+    ///
     /// # Returns
     /// Updated ProgramData after payouts
-    pub fn batch_payout(
-        env: Env,
-        recipients: Vec<Address>,
-        amounts: Vec<i128>,
-    ) -> ProgramData {
+    pub fn batch_payout(env: Env, recipients: Vec<Address>, amounts: Vec<i128>) -> ProgramData {
         // Verify authorization
         let program_data: ProgramData = env
             .storage()
@@ -164,8 +160,10 @@ impl ProgramEscrowContract {
 
         // Validate sufficient balance
         if total_payout > program_data.remaining_balance {
-            panic!("Insufficient balance: requested {}, available {}", 
-                total_payout, program_data.remaining_balance);
+            panic!(
+                "Insufficient balance: requested {}, available {}",
+                total_payout, program_data.remaining_balance
+            );
         }
 
         // Execute transfers
@@ -176,7 +174,7 @@ impl ProgramEscrowContract {
 
         for (i, recipient) in recipients.iter().enumerate() {
             let amount = amounts.get(i).unwrap();
-            
+
             // Transfer funds from contract to recipient
             token_client.transfer(&contract_address, recipient, amount);
 
@@ -212,11 +210,11 @@ impl ProgramEscrowContract {
     }
 
     /// Execute a single payout to one recipient
-    /// 
+    ///
     /// # Arguments
     /// * `recipient` - Address of the recipient
     /// * `amount` - Amount to transfer
-    /// 
+    ///
     /// # Returns
     /// Updated ProgramData after payout
     pub fn single_payout(env: Env, recipient: Address, amount: i128) -> ProgramData {
@@ -239,8 +237,10 @@ impl ProgramEscrowContract {
 
         // Validate sufficient balance
         if amount > program_data.remaining_balance {
-            panic!("Insufficient balance: requested {}, available {}", 
-                amount, program_data.remaining_balance);
+            panic!(
+                "Insufficient balance: requested {}, available {}",
+                amount, program_data.remaining_balance
+            );
         }
 
         // Transfer funds from contract to recipient
@@ -282,7 +282,7 @@ impl ProgramEscrowContract {
     }
 
     /// Get program information
-    /// 
+    ///
     /// # Returns
     /// ProgramData containing all program information
     pub fn get_program_info(env: Env) -> ProgramData {
@@ -293,7 +293,7 @@ impl ProgramEscrowContract {
     }
 
     /// Get remaining balance
-    /// 
+    ///
     /// # Returns
     /// Current remaining balance
     pub fn get_remaining_balance(env: Env) -> i128 {

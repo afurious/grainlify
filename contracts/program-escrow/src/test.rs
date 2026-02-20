@@ -1,7 +1,11 @@
 #![cfg(test)]
 
 use super::*;
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, String, Vec, vec};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, Ledger},
+    token, vec, Address, Env, String, Vec,
+};
 
 // Helper function to setup a basic program
 fn setup_program(env: &Env) -> (ProgramEscrowContract, Address, Address, String) {
@@ -15,7 +19,10 @@ fn setup_program(env: &Env) -> (ProgramEscrowContract, Address, Address, String)
 }
 
 // Helper function to setup program with funds
-fn setup_program_with_funds(env: &Env, initial_amount: i128) -> (ProgramEscrowContract, Address, Address, String) {
+fn setup_program_with_funds(
+    env: &Env,
+    initial_amount: i128,
+) -> (ProgramEscrowContract, Address, Address, String) {
     let (contract, admin, token, program_id) = setup_program(env);
     contract.lock_program_funds(env, initial_amount);
     (contract, admin, token, program_id)
@@ -33,7 +40,8 @@ fn test_init_program_success() {
     let token = Address::generate(&env);
     let program_id = String::from_str(&env, "hackathon-2024-q1");
 
-    let program_data = contract.init_program(&env, program_id.clone(), admin.clone(), token.clone());
+    let program_data =
+        contract.init_program(&env, program_id.clone(), admin.clone(), token.clone());
 
     assert_eq!(program_data.program_id, program_id);
     assert_eq!(program_data.total_funds, 0);
@@ -753,7 +761,8 @@ fn test_complete_program_lifecycle() {
     let program_id = String::from_str(&env, "hackathon-2024-complete");
 
     // 1. Initialize program
-    let program_data = contract.init_program(&env, program_id.clone(), admin.clone(), token.clone());
+    let program_data =
+        contract.init_program(&env, program_id.clone(), admin.clone(), token.clone());
     assert_eq!(program_data.total_funds, 0);
     assert_eq!(program_data.remaining_balance, 0);
 
@@ -961,4 +970,216 @@ fn test_payout_record_integrity() {
 
     assert_eq!(records.get(3).unwrap().recipient, recipient1);
     assert_eq!(records.get(3).unwrap().amount, 15_000_000_000);
+}
+
+fn setup_token_backed_program(
+    env: &Env,
+    initial_amount: i128,
+) -> (
+    ProgramEscrowContractClient<'static>,
+    Address,
+    token::Client<'static>,
+    token::StellarAssetClient<'static>,
+) {
+    let contract_id = env.register_contract(None, ProgramEscrowContract);
+    let client = ProgramEscrowContractClient::new(env, &contract_id);
+    let admin = Address::generate(env);
+    let token_admin = Address::generate(env);
+
+    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone());
+    let token_address = token_id.address();
+    let token_client = token::Client::new(env, &token_address);
+    let token_admin_client = token::StellarAssetClient::new(env, &token_address);
+
+    let program_id = String::from_str(env, "token-backed-program");
+    client.init_program(&program_id, &admin, &token_address);
+
+    if initial_amount > 0 {
+        token_admin_client.mint(&contract_id, &initial_amount);
+        client.lock_program_funds(&initial_amount);
+    }
+
+    (client, admin, token_client, token_admin_client)
+}
+
+fn next_fuzz_seed(seed: &mut u64) -> u64 {
+    *seed = seed
+        .wrapping_mul(2862933555777941757)
+        .wrapping_add(3037000493);
+    *seed
+}
+
+#[test]
+fn test_integration_token_transfer_lifecycle() {
+    let env = Env::default();
+    let (client, admin, token_client, _token_admin_client) =
+        setup_token_backed_program(&env, 200_000);
+
+    let recipient1 = Address::generate(&env);
+    let recipient2 = Address::generate(&env);
+    let recipient3 = Address::generate(&env);
+
+    env.as_contract(&client.address, || {
+        env.set_invoker(&admin);
+        client.single_payout(&recipient1, &25_000);
+        let recipients = vec![&env, recipient2.clone(), recipient3.clone()];
+        let amounts = vec![&env, 35_000, 40_000];
+        client.batch_payout(&recipients, &amounts);
+    });
+
+    assert_eq!(token_client.balance(&recipient1), 25_000);
+    assert_eq!(token_client.balance(&recipient2), 35_000);
+    assert_eq!(token_client.balance(&recipient3), 40_000);
+    assert_eq!(client.get_remaining_balance(), 100_000);
+    assert_eq!(token_client.balance(&client.address), 100_000);
+    assert_eq!(client.get_program_info().payout_history.len(), 3);
+}
+
+#[test]
+#[should_panic(expected = "attempt to add with overflow")]
+fn test_edge_overflow_on_lock_program_funds() {
+    let env = Env::default();
+    let (client, _admin, _token_client, _token_admin_client) =
+        setup_token_backed_program(&env, i128::MAX);
+    client.lock_program_funds(&1);
+}
+
+#[test]
+#[should_panic(expected = "Amount must be greater than zero")]
+fn test_edge_zero_lock_rejected_token_backed() {
+    let env = Env::default();
+    let (client, _admin, _token_client, _token_admin_client) = setup_token_backed_program(&env, 0);
+    client.lock_program_funds(&0);
+}
+
+#[test]
+fn test_property_fuzz_single_payout_invariants() {
+    let env = Env::default();
+    let (client, admin, token_client, _token_admin_client) =
+        setup_token_backed_program(&env, 1_000_000);
+
+    let mut seed = 41_u64;
+    let mut expected_remaining = 1_000_000_i128;
+    let mut total_sent = 0_i128;
+
+    for _ in 0..120 {
+        let raw = (next_fuzz_seed(&mut seed) % 8_000 + 1) as i128;
+        let amount = core::cmp::min(raw, expected_remaining);
+        if amount == 0 {
+            break;
+        }
+        let recipient = Address::generate(&env);
+        env.as_contract(&client.address, || {
+            env.set_invoker(&admin);
+            client.single_payout(&recipient, &amount);
+        });
+        expected_remaining -= amount;
+        total_sent += amount;
+        assert_eq!(client.get_remaining_balance(), expected_remaining);
+        assert_eq!(token_client.balance(&recipient), amount);
+        if expected_remaining == 0 {
+            break;
+        }
+    }
+
+    assert_eq!(token_client.balance(&client.address), expected_remaining);
+    assert_eq!(total_sent + expected_remaining, 1_000_000);
+}
+
+#[test]
+fn test_fuzz_input_validation_batch_lengths_and_values() {
+    let env = Env::default();
+    let (client, admin, _token_client, _token_admin_client) =
+        setup_token_backed_program(&env, 500_000);
+    let mut seed = 99_u64;
+
+    // Valid fuzzed batches should preserve balance accounting.
+    let mut expected_remaining = 500_000_i128;
+    for _ in 0..20 {
+        let batch_size = ((next_fuzz_seed(&mut seed) % 5) + 1) as usize;
+        let mut recipients = vec![&env];
+        let mut amounts = vec![&env];
+        let mut batch_total = 0_i128;
+
+        for _ in 0..batch_size {
+            let amount = (next_fuzz_seed(&mut seed) % 2_000 + 1) as i128;
+            recipients.push_back(Address::generate(&env));
+            amounts.push_back(amount);
+            batch_total += amount;
+        }
+
+        if batch_total > expected_remaining {
+            break;
+        }
+
+        env.as_contract(&client.address, || {
+            env.set_invoker(&admin);
+            client.batch_payout(&recipients, &amounts);
+        });
+        expected_remaining -= batch_total;
+        assert_eq!(client.get_remaining_balance(), expected_remaining);
+    }
+}
+
+#[test]
+fn test_stress_high_load_single_payouts() {
+    let env = Env::default();
+    let (client, admin, token_client, _token_admin_client) =
+        setup_token_backed_program(&env, 2_000_000);
+
+    let mut payout_total = 0_i128;
+    for _ in 0..250 {
+        let recipient = Address::generate(&env);
+        env.as_contract(&client.address, || {
+            env.set_invoker(&admin);
+            client.single_payout(&recipient, &5_000);
+        });
+        payout_total += 5_000;
+    }
+
+    assert_eq!(client.get_program_info().payout_history.len(), 250);
+    assert_eq!(client.get_remaining_balance(), 2_000_000 - payout_total);
+    assert_eq!(
+        token_client.balance(&client.address),
+        2_000_000 - payout_total
+    );
+}
+
+#[test]
+fn test_gas_optimization_proxy_batch_emits_fewer_events_than_singles() {
+    let env_single = Env::default();
+    let (single_client, single_admin, _single_token_client, _single_token_admin_client) =
+        setup_token_backed_program(&env_single, 200_000);
+
+    let single_before = env_single.events().all().len();
+    for _ in 0..10 {
+        let recipient = Address::generate(&env_single);
+        env_single.as_contract(&single_client.address, || {
+            env_single.set_invoker(&single_admin);
+            single_client.single_payout(&recipient, &1_000);
+        });
+    }
+    let single_after = env_single.events().all().len();
+    let single_events = single_after - single_before;
+
+    let env_batch = Env::default();
+    let (batch_client, batch_admin, _batch_token_client, _batch_token_admin_client) =
+        setup_token_backed_program(&env_batch, 200_000);
+
+    let mut recipients = vec![&env_batch];
+    let mut amounts = vec![&env_batch];
+    for _ in 0..10 {
+        recipients.push_back(Address::generate(&env_batch));
+        amounts.push_back(1_000);
+    }
+
+    let batch_before = env_batch.events().all().len();
+    env_batch.as_contract(&batch_client.address, || {
+        env_batch.set_invoker(&batch_admin);
+        batch_client.batch_payout(&recipients, &amounts);
+    });
+    let batch_after = env_batch.events().all().len();
+    let batch_events = batch_after - batch_before;
+
+    assert!(batch_events < single_events);
 }
