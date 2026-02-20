@@ -4,7 +4,7 @@ mod test_bounty_escrow;
 
 use events::{
     emit_bounty_initialized, emit_funds_locked, emit_funds_refunded, emit_funds_released,
-    BountyEscrowInitialized, FundsLocked, FundsRefunded, FundsReleased,
+    BountyEscrowInitialized, FundsLocked, FundsRefunded, FundsReleased, EVENT_VERSION_V2,
 };
 use soroban_sdk::{contract, contracterror, contractimpl, contracttype, token, Address, Env};
 
@@ -61,6 +61,7 @@ impl BountyEscrowContract {
         emit_bounty_initialized(
             &env,
             BountyEscrowInitialized {
+                version: EVENT_VERSION_V2,
                 admin,
                 token,
                 timestamp: env.ledger().timestamp(),
@@ -110,6 +111,7 @@ impl BountyEscrowContract {
         emit_funds_locked(
             &env,
             FundsLocked {
+                version: EVENT_VERSION_V2,
                 bounty_id,
                 amount,
                 depositor: depositor.clone(),
@@ -162,6 +164,7 @@ impl BountyEscrowContract {
         emit_funds_released(
             &env,
             FundsReleased {
+                version: EVENT_VERSION_V2,
                 bounty_id,
                 amount: escrow.amount,
                 recipient: contributor.clone(),
@@ -217,6 +220,7 @@ impl BountyEscrowContract {
         emit_funds_refunded(
             &env,
             FundsRefunded {
+                version: EVENT_VERSION_V2,
                 bounty_id,
                 amount: escrow.amount,
                 refund_to: escrow.depositor,

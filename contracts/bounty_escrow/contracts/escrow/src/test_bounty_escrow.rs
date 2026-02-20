@@ -3,7 +3,7 @@ use crate::{BountyEscrowContract, BountyEscrowContractClient};
 use soroban_sdk::testutils::Events;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
-    token, Address, Env,
+    token, Address, Env, Map, Symbol, TryFromVal, Val,
 };
 
 fn create_test_env() -> (Env, BountyEscrowContractClient<'static>, Address) {
@@ -23,6 +23,29 @@ fn create_token_contract<'a>(
     let token_client = token::Client::new(e, &token);
     let token_admin_client = token::StellarAssetClient::new(e, &token);
     (token, token_client, token_admin_client)
+}
+
+fn assert_event_data_has_v2_tag(env: &Env, data: &Val) {
+    let data_map: Map<Symbol, Val> =
+        Map::try_from_val(env, data).unwrap_or_else(|_| panic!("event payload should be a map"));
+    let version_val = data_map
+        .get(Symbol::new(env, "version"))
+        .unwrap_or_else(|| panic!("event payload must contain version field"));
+    let version = u32::try_from_val(env, &version_val).expect("version should decode as u32");
+    assert_eq!(version, 2);
+}
+
+fn assert_current_call_has_versioned_contract_event(env: &Env, contract_id: &Address) {
+    let events = env.events().all();
+    let mut found = false;
+    for (contract, _topics, data) in events.iter() {
+        if contract != *contract_id {
+            continue;
+        }
+        assert_event_data_has_v2_tag(env, &data);
+        found = true;
+    }
+    assert!(found);
 }
 
 #[test]
@@ -45,6 +68,28 @@ fn test_init_event() {
 
     // Verify the event was emitted
     assert_eq!(events.len(), 1);
+}
+
+#[test]
+fn test_events_emit_v2_version_tags_for_all_bounty_emitters() {
+    let (env, client, contract_id) = create_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let depositor = Address::generate(&env);
+    let contributor = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let (token, _token_client, token_admin_client) = create_token_contract(&env, &token_admin);
+
+    client.init(&admin, &token);
+    assert_current_call_has_versioned_contract_event(&env, &contract_id);
+
+    token_admin_client.mint(&depositor, &10_000);
+    client.lock_funds(&depositor, &1, &10_000, &(env.ledger().timestamp() + 10));
+    assert_current_call_has_versioned_contract_event(&env, &contract_id);
+
+    client.release_funds(&1, &contributor);
+    assert_current_call_has_versioned_contract_event(&env, &contract_id);
 }
 
 #[test]

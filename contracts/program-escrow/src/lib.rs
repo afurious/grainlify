@@ -9,6 +9,7 @@ const PROGRAM_INITIALIZED: Symbol = symbol_short!("PrgInit");
 const FUNDS_LOCKED: Symbol = symbol_short!("FndsLock");
 const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
 const PAYOUT: Symbol = symbol_short!("Payout");
+const EVENT_VERSION_V2: u32 = 2;
 
 // Storage keys
 const PROGRAM_DATA: Symbol = symbol_short!("ProgData");
@@ -19,6 +20,45 @@ pub struct PayoutRecord {
     pub recipient: Address,
     pub amount: i128,
     pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramInitializedEvent {
+    pub version: u32,
+    pub program_id: String,
+    pub authorized_payout_key: Address,
+    pub token_address: Address,
+    pub total_funds: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FundsLockedEvent {
+    pub version: u32,
+    pub program_id: String,
+    pub amount: i128,
+    pub remaining_balance: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BatchPayoutEvent {
+    pub version: u32,
+    pub program_id: String,
+    pub recipient_count: u32,
+    pub total_amount: i128,
+    pub remaining_balance: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PayoutEvent {
+    pub version: u32,
+    pub program_id: String,
+    pub recipient: Address,
+    pub amount: i128,
+    pub remaining_balance: i128,
 }
 
 #[contracttype]
@@ -72,7 +112,13 @@ impl ProgramEscrowContract {
         // Emit ProgramInitialized event
         env.events().publish(
             (PROGRAM_INITIALIZED,),
-            (program_id, authorized_payout_key, token_address, 0i128),
+            ProgramInitializedEvent {
+                version: EVENT_VERSION_V2,
+                program_id,
+                authorized_payout_key,
+                token_address,
+                total_funds: 0i128,
+            },
         );
 
         program_data
@@ -106,11 +152,12 @@ impl ProgramEscrowContract {
         // Emit FundsLocked event
         env.events().publish(
             (FUNDS_LOCKED,),
-            (
-                program_data.program_id.clone(),
+            FundsLockedEvent {
+                version: EVENT_VERSION_V2,
+                program_id: program_data.program_id.clone(),
                 amount,
-                program_data.remaining_balance,
-            ),
+                remaining_balance: program_data.remaining_balance,
+            },
         );
 
         program_data
@@ -192,12 +239,13 @@ impl ProgramEscrowContract {
         // Emit BatchPayout event
         env.events().publish(
             (BATCH_PAYOUT,),
-            (
-                updated_data.program_id.clone(),
-                recipients.len() as u32,
-                total_payout,
-                updated_data.remaining_balance,
-            ),
+            BatchPayoutEvent {
+                version: EVENT_VERSION_V2,
+                program_id: updated_data.program_id.clone(),
+                recipient_count: recipients.len() as u32,
+                total_amount: total_payout,
+                remaining_balance: updated_data.remaining_balance,
+            },
         );
 
         updated_data
@@ -258,12 +306,13 @@ impl ProgramEscrowContract {
         // Emit Payout event
         env.events().publish(
             (PAYOUT,),
-            (
-                updated_data.program_id.clone(),
+            PayoutEvent {
+                version: EVENT_VERSION_V2,
+                program_id: updated_data.program_id.clone(),
                 recipient,
                 amount,
-                updated_data.remaining_balance,
-            ),
+                remaining_balance: updated_data.remaining_balance,
+            },
         );
 
         updated_data
