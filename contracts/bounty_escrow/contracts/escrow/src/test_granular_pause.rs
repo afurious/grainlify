@@ -377,7 +377,9 @@ fn test_lock_blocked_when_lock_and_release_paused() {
 
     client.set_paused(&Some(true), &Some(true), &None);
     let deadline = env.ledger().timestamp() + 1_000;
-    assert!(client.try_lock_funds(&depositor, &1, &100, &deadline).is_err());
+    assert!(client
+        .try_lock_funds(&depositor, &1, &100, &deadline)
+        .is_err());
 }
 
 #[test]
@@ -418,7 +420,9 @@ fn test_lock_blocked_when_lock_and_refund_paused() {
 
     client.set_paused(&Some(true), &None, &Some(true));
     let deadline = env.ledger().timestamp() + 1_000;
-    assert!(client.try_lock_funds(&depositor, &1, &100, &deadline).is_err());
+    assert!(client
+        .try_lock_funds(&depositor, &1, &100, &deadline)
+        .is_err());
 }
 
 #[test]
@@ -498,7 +502,9 @@ fn test_lock_blocked_when_all_paused() {
 
     client.set_paused(&Some(true), &Some(true), &Some(true));
     let deadline = env.ledger().timestamp() + 1_000;
-    assert!(client.try_lock_funds(&depositor, &1, &100, &deadline).is_err());
+    assert!(client
+        .try_lock_funds(&depositor, &1, &100, &deadline)
+        .is_err());
 }
 
 #[test]
@@ -536,7 +542,9 @@ fn test_lock_restored_after_unpause() {
 
     client.set_paused(&Some(true), &None, &None);
     let deadline = env.ledger().timestamp() + 1_000;
-    assert!(client.try_lock_funds(&depositor, &1, &100, &deadline).is_err());
+    assert!(client
+        .try_lock_funds(&depositor, &1, &100, &deadline)
+        .is_err());
 
     client.set_paused(&Some(false), &None, &None);
     client.lock_funds(&depositor, &1, &100, &deadline);
