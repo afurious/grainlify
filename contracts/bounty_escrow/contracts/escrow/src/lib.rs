@@ -1945,3 +1945,5 @@ impl BountyEscrowContract {
 mod test;
 #[cfg(test)]
 mod test_pause;
+#[cfg(test)]
+mod test_analytics_monitoring;
