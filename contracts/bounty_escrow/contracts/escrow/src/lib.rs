@@ -7,7 +7,7 @@ use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
     emit_funds_refunded, emit_funds_released, BatchFundsLocked, BatchFundsReleased,
     BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted, FundsLocked,
-    FundsRefunded, FundsReleased,
+    FundsRefunded, FundsReleased, EVENT_VERSION_V2,
 };
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, vec, Address, Env,
@@ -539,6 +539,7 @@ impl BountyEscrowContract {
         emit_bounty_initialized(
             &env,
             BountyEscrowInitialized {
+                version: EVENT_VERSION_V2,
                 admin,
                 token,
                 timestamp: env.ledger().timestamp(),
@@ -895,6 +896,7 @@ impl BountyEscrowContract {
         emit_funds_locked(
             &env,
             FundsLocked {
+                version: EVENT_VERSION_V2,
                 bounty_id,
                 amount,
                 depositor: depositor.clone(),
@@ -959,6 +961,7 @@ impl BountyEscrowContract {
         emit_funds_released(
             &env,
             FundsReleased {
+                version: EVENT_VERSION_V2,
                 bounty_id,
                 amount: escrow.amount,
                 recipient: contributor.clone(),
@@ -1203,6 +1206,10 @@ impl BountyEscrowContract {
 
         env.storage()
             .persistent()
+            .set(&DataKey::Escrow(bounty_id), &escrow);
+
+        env.storage()
+            .persistent()
             .set(&DataKey::RefundApproval(bounty_id), &approval);
 
         Ok(())
@@ -1331,6 +1338,7 @@ impl BountyEscrowContract {
         emit_funds_refunded(
             &env,
             FundsRefunded {
+                version: EVENT_VERSION_V2,
                 bounty_id,
                 amount: escrow.remaining_amount,
                 refund_to: escrow.depositor,
@@ -1819,6 +1827,7 @@ impl BountyEscrowContract {
             emit_funds_locked(
                 &env,
                 FundsLocked {
+                    version: EVENT_VERSION_V2,
                     bounty_id: item.bounty_id,
                     amount: item.amount,
                     depositor: item.depositor.clone(),
@@ -1945,6 +1954,7 @@ impl BountyEscrowContract {
             emit_funds_released(
                 &env,
                 FundsReleased {
+                    version: EVENT_VERSION_V2,
                     bounty_id: item.bounty_id,
                     amount: escrow.amount,
                     recipient: item.contributor.clone(),
@@ -1971,5 +1981,7 @@ impl BountyEscrowContract {
 
 #[cfg(test)]
 mod test;
+#[cfg(test)]
+mod test_auto_refund_permissions;
 #[cfg(test)]
 mod test_pause;
