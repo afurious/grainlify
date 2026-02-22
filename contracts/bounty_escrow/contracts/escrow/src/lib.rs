@@ -1,5 +1,6 @@
 #![no_std]
 mod events;
+mod invariants;
 
 mod test_bounty_escrow;
 
@@ -885,6 +886,7 @@ impl BountyEscrowContract {
             refund_history: vec![&env],
             remaining_amount: amount,
         };
+        invariants::assert_escrow(&env, &escrow);
 
         // Extend the TTL of the storage entry to ensure it lives long enough
         env.storage()
@@ -975,6 +977,8 @@ impl BountyEscrowContract {
         );
 
         escrow.status = EscrowStatus::Released;
+        escrow.remaining_amount = 0;
+        invariants::assert_escrow(&env, &escrow);
         env.storage()
             .persistent()
             .set(&DataKey::Escrow(bounty_id), &escrow);
@@ -1353,6 +1357,7 @@ impl BountyEscrowContract {
         );
 
         escrow.status = EscrowStatus::Refunded;
+        invariants::assert_escrow(&env, &escrow);
         env.storage()
             .persistent()
             .set(&DataKey::Escrow(bounty_id), &escrow);
@@ -2053,7 +2058,11 @@ mod test_auto_refund_permissions;
 mod test_dispute_resolution;
 mod test_expiration_and_dispute;
 #[cfg(test)]
+mod test_front_running_ordering;
+#[cfg(test)]
 mod test_granular_pause;
+#[cfg(test)]
+mod test_invariants;
 #[cfg(test)]
 mod test_pause;
 #[cfg(test)]
