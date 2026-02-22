@@ -1891,6 +1891,11 @@ impl BountyEscrowContract {
                             total_refunded += record.amount;
                         }
                     }
+                    EscrowStatus::PartiallyReleased => {
+                        total_locked += escrow.remaining_amount;
+                        // Calculate released amount as original amount minus remaining
+                        total_released += escrow.amount - escrow.remaining_amount;
+                    }
                 }
             }
         }
