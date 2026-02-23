@@ -388,7 +388,6 @@ fn test_aggregate_stats_reflects_correct_counts_after_lifecycle() {
     assert_eq!(stats.total_locked, 400); // bounty 4
 }
 
-
 /// Depositor query: pagination with offset > 0 correctly skips earlier records.
 #[test]
 fn test_query_by_depositor_pagination_offset_skips_correctly() {
@@ -498,9 +497,9 @@ fn test_aggregate_stats_amounts_invariant_sum_equals_total_locked() {
     let stats = s.escrow.get_aggregate_stats();
 
     // Individual bucket checks
-    assert_eq!(stats.total_released, 300);  // 100 + 200
-    assert_eq!(stats.total_refunded, 300);  // 300
-    assert_eq!(stats.total_locked, 400);    // 400
+    assert_eq!(stats.total_released, 300); // 100 + 200
+    assert_eq!(stats.total_refunded, 300); // 300
+    assert_eq!(stats.total_locked, 400); // 400
 
     // Invariant: buckets sum to the total amount ever locked
     let total = stats.total_locked + stats.total_released + stats.total_refunded;
