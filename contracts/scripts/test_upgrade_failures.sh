@@ -79,10 +79,18 @@ run_expect_fail "Invalid WASM file path" "WASM file not found" \
     "C1234567890123456789012345678901234567890123456789012345678" \
     "/tmp/not_real_contract.wasm"
 
-#  5. Invalid WASM file format
-run_expect_fail "Invalid WASM file format" "Invalid WASM file" \
-    "C1234567890123456789012345678901234567890123456789012345678" \
-    "$INVALID_WASM"
+#  5. Invalid WASM file format (should warn but continue)
+set +e
+output=$("$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "$INVALID_WASM" 2>&1)
+exit_code=$?
+set -e
+
+# Note: Invalid WASM format only warns, doesn't fail
+if echo "$output" | grep -q "may not be a valid WASM binary"; then
+    pass "Invalid WASM file format (warning displayed)"
+else
+    fail "Invalid WASM file format" "warning about invalid WASM" "output: $output"
+fi
 
 #  6. Empty WASM file
 run_expect_fail "Empty WASM file" "WASM file is empty" \

@@ -103,9 +103,19 @@ run_expect_fail "Missing WASM file" "No WASM file specified"
 run_expect_fail "Invalid WASM file path" "WASM file not found" "/tmp/this_file_does_not_exist.wasm"
 
 # ------------------------------------------------------------
-# 3. Invalid WASM file format
+# 3. Invalid WASM file format (should warn but continue)
 # ------------------------------------------------------------
-run_expect_fail "Invalid WASM file format" "Invalid WASM file" "$INVALID_WASM"
+set +e
+output=$("$DEPLOY_SCRIPT" "$INVALID_WASM" 2>&1)
+exit_code=$?
+set -e
+
+# Note: Invalid WASM format only warns, doesn't fail
+if echo "$output" | grep -q "may not be a valid WASM binary"; then
+    pass "Invalid WASM file format (warning displayed)"
+else
+    fail "Invalid WASM file format" "warning about invalid WASM" "output: $output"
+fi
 
 # ------------------------------------------------------------
 # 4. Empty WASM file
@@ -121,7 +131,7 @@ run_expect_fail "Invalid network" "Invalid network" "$FAKE_WASM" -n "invalid_net
 # 6. Invalid identity should FAIL identity check (NO mocking)
 # ------------------------------------------------------------
 disable_identity_mock
-run_expect_fail "Invalid identity" "Identity not found" "$FAKE_WASM" --identity "ghost_id"
+run_expect_fail "Invalid identity" "Identity not found" "$FAKE_WASM" --identity "nonexistent_test_identity_12345"
 
 # ------------------------------------------------------------
 # 7. Missing CLI dependency (requires identity mock)

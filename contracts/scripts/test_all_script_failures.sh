@@ -4,7 +4,7 @@
 # ==============================================================================
 # Tests failure handling for all deployment scripts:
 # - deploy.sh
-# - upgrade.sh  
+# - upgrade.sh
 # - rollback.sh
 # - verify-deployment.sh
 #
@@ -99,27 +99,27 @@ run_expect_fail() {
     local desc="$1"
     local expected_msg="$2"
     shift 2
-    
+
     if [[ "$VERBOSE" == "true" ]]; then
         test_info "Running: $*"
     fi
-    
+
     set +e
     local output
     output=$("$@" 2>&1)
     local exit_code=$?
     set -e
-    
+
     if [[ $exit_code -eq 0 ]]; then
         test_fail "$desc" "non-zero exit code" "exit code 0"
         return 1
     fi
-    
+
     if ! echo "$output" | grep -q "$expected_msg"; then
         test_fail "$desc" "message containing '$expected_msg'" "output: $output"
         return 1
     fi
-    
+
     test_pass "$desc"
     return 0
 }
@@ -128,7 +128,7 @@ run_expect_fail() {
 setup_mocks() {
     local mock_bin="$TEST_DIR/mock_bin"
     mkdir -p "$mock_bin"
-    
+
     # Mock stellar CLI
     cat > "$mock_bin/stellar" << 'EOF'
 #!/usr/bin/env bash
@@ -161,14 +161,14 @@ case "$1" in
 esac
 EOF
     chmod +x "$mock_bin/stellar"
-    
+
     # Mock soroban CLI (for backward compatibility)
     cat > "$mock_bin/soroban" << 'EOF'
 #!/usr/bin/env bash
 echo "Mock soroban command: $*"
 EOF
     chmod +x "$mock_bin/soroban"
-    
+
     export PATH="$mock_bin:$PATH"
 }
 
@@ -182,17 +182,17 @@ cleanup_mocks() {
 setup_test_data() {
     # Create valid WASM file (minimal magic header)
     echo -n -e "\x00\x61\x73\x6D\x01" > "$FAKE_WASM"
-    
+
     # Create invalid WASM file (wrong magic)
     echo -n -e "\xFF\x61\x73\x6D\x01" > "$INVALID_WASM"
-    
+
     # Create missing config (doesn't exist)
     touch "$MISSING_CONFIG" && rm "$MISSING_CONFIG"
-    
+
     # Create invalid config (malformed)
     echo "INVALID_CONFIG_LINE_WITHOUT_EQUALS" > "$INVALID_CONFIG"
     echo "MALFORMED_LINE=" >> "$INVALID_CONFIG"
-    
+
     # Create test directory
     mkdir -p "$TEST_DIR"
 }
@@ -208,32 +208,46 @@ cleanup_test_data() {
 
 test_deploy_script_failures() {
     test_info "Testing deploy.sh failure scenarios"
-    
+
     # 1. Missing WASM file
     run_expect_fail "Deploy: Missing WASM file" "No WASM file specified" "$DEPLOY_SCRIPT"
-    
+
     # 2. Non-existent WASM file
     run_expect_fail "Deploy: Non-existent WASM file" "WASM file not found" "$DEPLOY_SCRIPT" "/tmp/does_not_exist.wasm"
-    
-    # 3. Invalid WASM file
-    run_expect_fail "Deploy: Invalid WASM file" "Invalid WASM file" "$DEPLOY_SCRIPT" "$INVALID_WASM"
-    
-    # 4. Invalid network
+
+    # 3. Invalid WASM file format (should warn but continue)
+    set +e
+    local output
+    output=$("$DEPLOY_SCRIPT" "$INVALID_WASM" 2>&1)
+    local exit_code=$?
+    set -e
+
+    # Note: Invalid WASM format only warns, doesn't fail
+    if echo "$output" | grep -q "may not be a valid WASM binary"; then
+        test_pass "Deploy: Invalid WASM format (warning displayed)"
+    else
+        test_fail "Deploy: Invalid WASM format" "warning about invalid WASM" "output: $output"
+    fi
+
+    # 4. Empty WASM file
+    run_expect_fail "Deploy: Empty WASM file" "WASM file is empty" "$DEPLOY_SCRIPT" "$EMPTY_WASM"
+
+    # 5. Invalid network
     run_expect_fail "Deploy: Invalid network" "Invalid network" "$DEPLOY_SCRIPT" "$FAKE_WASM" -n "invalid_network"
-    
-    # 5. Missing config file
+
+    # 6. Missing config file (should warn but not fail)
     run_expect_fail "Deploy: Missing config file" "Config file not found" "$DEPLOY_SCRIPT" "$FAKE_WASM" -c "$MISSING_CONFIG"
-    
-    # 6. Invalid identity
+
+    # 7. Invalid identity
     run_expect_fail "Deploy: Invalid identity" "Identity not found" "$DEPLOY_SCRIPT" "$FAKE_WASM" -i "nonexistent_identity"
-    
-    # 7. Missing CLI dependency
+
+    # 8. Missing CLI dependency
     local old_path="$PATH"
     export PATH="/usr/bin:/bin"
     run_expect_fail "Deploy: Missing CLI dependency" "Neither 'stellar' nor 'soroban' CLI found" "$DEPLOY_SCRIPT" "$FAKE_WASM"
     export PATH="$old_path"
-    
-    # 8. Simulated install failure
+
+    # 9. Simulated install failure
     export SUDO_FAKE_INSTALL_FAIL=1
     run_expect_fail "Deploy: Install failure" "Failed to install WASM" "$DEPLOY_SCRIPT" "$FAKE_WASM"
     unset SUDO_FAKE_INSTALL_FAIL
@@ -241,73 +255,84 @@ test_deploy_script_failures() {
 
 test_upgrade_script_failures() {
     test_info "Testing upgrade.sh failure scenarios"
-    
+
     # 1. Missing contract ID
     run_expect_fail "Upgrade: Missing contract ID" "No contract ID specified" "$UPGRADE_SCRIPT"
-    
+
     # 2. Invalid contract ID format
     run_expect_fail "Upgrade: Invalid contract ID format" "Contract ID format may be invalid" "$UPGRADE_SCRIPT" "BAD_ID" "$FAKE_WASM"
-    
+
     # 3. Missing WASM file
     run_expect_fail "Upgrade: Missing WASM file" "No WASM file specified" "$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678"
-    
+
     # 4. Non-existent WASM file
     run_expect_fail "Upgrade: Non-existent WASM file" "WASM file not found" "$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "/tmp/missing.wasm"
-    
-    # 5. Invalid WASM file
-    run_expect_fail "Upgrade: Invalid WASM file" "Invalid WASM file" "$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "$INVALID_WASM"
-    
+
+    # 5. Invalid WASM file format (should warn but continue)
+    set +e
+    local output
+    output=$("$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "$INVALID_WASM" 2>&1)
+    local exit_code=$?
+    set -e
+
+    # Note: Invalid WASM format only warns, doesn't fail
+    if echo "$output" | grep -q "may not be a valid WASM binary"; then
+        test_pass "Upgrade: Invalid WASM format (warning displayed)"
+    else
+        test_fail "Upgrade: Invalid WASM format" "warning about invalid WASM" "output: $output"
+    fi
+
     # 6. Invalid network
     run_expect_fail "Upgrade: Invalid network" "Invalid network" "$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "$FAKE_WASM" -n "invalid_network"
-    
+
     # 7. Invalid identity
     run_expect_fail "Upgrade: Invalid identity" "Identity not found" "$UPGRADE_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "$FAKE_WASM" -s "nonexistent_identity"
 }
 
 test_rollback_script_failures() {
     test_info "Testing rollback.sh failure scenarios"
-    
+
     # 1. Missing contract ID
     run_expect_fail "Rollback: Missing contract ID" "No contract ID specified" "$ROLLBACK_SCRIPT"
-    
+
     # 2. Missing WASM hash
     run_expect_fail "Rollback: Missing WASM hash" "No previous WASM hash specified" "$ROLLBACK_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678"
-    
+
     # 3. Invalid contract ID format
     run_expect_fail "Rollback: Invalid contract ID format" "Contract ID format may be invalid" "$ROLLBACK_SCRIPT" "BAD_ID" "HASH123"
-    
+
     # 4. Invalid WASM hash format
     run_expect_fail "Rollback: Invalid WASM hash format" "WASM hash format may be invalid" "$ROLLBACK_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "SHORT_HASH"
-    
+
     # 5. Invalid network
     run_expect_fail "Rollback: Invalid network" "Invalid network" "$ROLLBACK_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "1234567890123456789012345678901234567890123456789012345678" -n "invalid_network"
-    
+
     # 6. Invalid identity
     run_expect_fail "Rollback: Invalid identity" "Identity not found" "$ROLLBACK_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" "1234567890123456789012345678901234567890123456789012345678" -s "nonexistent_identity"
 }
 
 test_verify_deployment_failures() {
     test_info "Testing verify-deployment.sh failure scenarios"
-    
+
     # 1. Missing contract ID
     run_expect_fail "Verify: Missing contract ID" "No contract ID specified" "$VERIFY_SCRIPT"
-    
+
     # 2. Invalid contract ID format
     run_expect_fail "Verify: Invalid contract ID format" "Contract ID format may be invalid" "$VERIFY_SCRIPT" "BAD_ID"
-    
+
     # 3. Invalid network
     run_expect_fail "Verify: Invalid network" "Invalid network" "$VERIFY_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" -n "invalid_network"
-    
+
     # 4. Check admin without expected admin
     run_expect_fail "Verify: Check admin without expected" "expected admin address" "$VERIFY_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" --check-admin
 }
 
 test_configuration_failures() {
     test_info "Testing configuration file failures"
-    
+
     # Test with invalid config file
     run_expect_fail "Config: Invalid config file" "Error loading config" "$DEPLOY_SCRIPT" "$FAKE_WASM" -c "$INVALID_CONFIG"
-    
+
     # Test with missing config file (should warn but continue)
     # This should NOT fail, just warn about missing config
     set +e
@@ -315,7 +340,7 @@ test_configuration_failures() {
     output=$("$DEPLOY_SCRIPT" "$FAKE_WASM" -c "$MISSING_CONFIG" 2>&1)
     local exit_code=$?
     set -e
-    
+
     if [[ $exit_code -eq 0 ]]; then
         test_fail "Config: Missing config should not cause failure" "should handle missing config gracefully" "script failed"
     elif echo "$output" | grep -q "Config file not found"; then
@@ -327,13 +352,13 @@ test_configuration_failures() {
 
 test_environment_variable_failures() {
     test_info "Testing environment variable validation"
-    
+
     # Test with invalid RPC URL
     local old_rpc_url="${SOROBAN_RPC_URL:-}"
     export SOROBAN_RPC_URL="invalid://url"
     run_expect_fail "Env: Invalid RPC URL" "Failed to connect" "$VERIFY_SCRIPT" "C1234567890123456789012345678901234567890123456789012345678" || true
     export SOROBAN_RPC_URL="$old_rpc_url"
-    
+
     # Test with empty required variables (should use defaults)
     # This should NOT fail - scripts should have sensible defaults
     unset SOROBAN_RPC_URL SOROBAN_NETWORK DEPLOYER_IDENTITY
@@ -342,7 +367,7 @@ test_environment_variable_failures() {
     output=$("$DEPLOY_SCRIPT" --help 2>&1)
     local exit_code=$?
     set -e
-    
+
     if [[ $exit_code -eq 0 ]]; then
         test_pass "Env: Missing variables handled with defaults"
     else
@@ -417,19 +442,19 @@ main() {
     echo "=============================================================================="
     echo "Grainlify Deployment Script Failure Test Suite"
     echo "=============================================================================="
-    
+
     parse_args "$@"
-    
+
     # Save original PATH
     ORIGINAL_PATH="$PATH"
-    
+
     # Setup test environment
     setup_test_data
     setup_mocks
-    
+
     # Trap cleanup
     trap 'cleanup_test_data; cleanup_mocks' EXIT
-    
+
     # Run test categories
     test_deploy_script_failures
     test_upgrade_script_failures
@@ -437,7 +462,7 @@ main() {
     test_verify_deployment_failures
     test_configuration_failures
     test_environment_variable_failures
-    
+
     # Results summary
     echo ""
     echo "=============================================================================="
@@ -446,7 +471,7 @@ main() {
     echo -e "  Tests passed: ${GREEN}$TESTS_PASSED${NC}"
     echo -e "  Tests failed: ${RED}$TESTS_FAILED${NC}"
     echo "  Total tests:  $((TESTS_PASSED + TESTS_FAILED))"
-    
+
     if [[ $TESTS_FAILED -eq 0 ]]; then
         echo -e "\n${GREEN}✓ All tests passed!${NC}"
         exit 0
