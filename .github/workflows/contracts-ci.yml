@@ -3,23 +3,23 @@ name: Smart Contracts CI/CD
 on:
   pull_request:
     paths:
-      - 'soroban/**'
-      - 'contracts/**'
-      - '.github/workflows/contracts-ci.yml'
+      - "soroban/**"
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
   push:
     branches:
       - main
       - develop
     paths:
-      - 'soroban/**'
-      - 'contracts/**'
-      - '.github/workflows/contracts-ci.yml'
+      - "soroban/**"
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
 
 jobs:
   contracts-ci:
     name: Format, Build, Test, and Stellar Build Check
     runs-on: macos-latest
-    
+
     defaults:
       run:
         working-directory: contracts/bounty_escrow
@@ -104,7 +104,11 @@ jobs:
         run: |
           chmod +x ../scripts/test_deploy_failures.sh
           chmod +x ../scripts/test_upgrade_failures.sh
+          chmod +x ../scripts/test_all_script_failures.sh
+
+          echo "Running individual script tests..."
           ../scripts/test_deploy_failures.sh
           ../scripts/test_upgrade_failures.sh
 
-   
+          echo "Running comprehensive script failure test suite..."
+          ../scripts/test_all_script_failures.sh
