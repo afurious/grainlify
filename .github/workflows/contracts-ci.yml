@@ -90,6 +90,8 @@ jobs:
           if [ ! -f "$wasm_file" ]; then
             echo "Error: WASM file not found"
             echo "Expected: $wasm_file"
+            echo "Available files in target directory:"
+            find . -name "*.wasm" -type f 2>/dev/null || echo "No WASM files found"
             exit 1
           fi
           echo "✓ Found WASM file"
@@ -99,6 +101,14 @@ jobs:
             exit 1
           fi
           echo "Contract built successfully for Stellar/Soroban deployment"
+
+      - name: Set up Stellar identity for tests
+        run: |
+          source $HOME/.cargo/env
+          # Create the grainlify-deployer identity needed by script tests
+          echo "Creating grainlify-deployer identity for tests..."
+          stellar keys generate grainlify-deployer || echo "Identity already exists"
+          stellar keys ls | grep grainlify-deployer || echo "Identity setup complete"
 
       - name: Run script tests
         run: |
