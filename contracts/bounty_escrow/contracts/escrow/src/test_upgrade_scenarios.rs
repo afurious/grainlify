@@ -1,9 +1,6 @@
 #![cfg(test)]
-use crate::{BountyEscrowContract, BountyEscrowContractClient, EscrowStatus};
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    token, Address, Env,
-};
+use crate::{ BountyEscrowContract, BountyEscrowContractClient, EscrowStatus };
+use soroban_sdk::{ testutils::{ Address as _, Ledger }, token, Address, Env };
 
 fn create_test_env() -> (Env, BountyEscrowContractClient<'static>, Address) {
     let env = Env::default();
@@ -14,7 +11,7 @@ fn create_test_env() -> (Env, BountyEscrowContractClient<'static>, Address) {
 
 fn create_token_contract<'a>(
     e: &'a Env,
-    admin: &Address,
+    admin: &Address
 ) -> (Address, token::Client<'a>, token::StellarAssetClient<'a>) {
     let token_id = e.register_stellar_asset_contract_v2(admin.clone());
     let token = token_id.address();
@@ -93,7 +90,7 @@ fn test_upgrade_pending_lock_then_refund() {
     client.lock_funds(&depositor, &2, &5_000, &deadline);
 
     // Advance time past deadline
-    env.ledger().with_mut(|l| l.timestamp += 200);
+    env.ledger().set_timestamp(env.ledger().timestamp() + 200);
 
     // Refund after upgrade
     client.refund(&2);
