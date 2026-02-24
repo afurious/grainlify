@@ -90,6 +90,8 @@
 mod events;
 mod test_bounty_escrow;
 
+
+
 use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
     emit_funds_refunded, emit_funds_released, BatchFundsLocked, BatchFundsReleased,
@@ -2091,3 +2093,6 @@ impl BountyEscrowContract {
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod test_batch_failure_modes;
