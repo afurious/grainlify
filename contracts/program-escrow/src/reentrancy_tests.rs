@@ -114,7 +114,13 @@ fn test_single_payout_normal_execution() {
     let token_admin = token::StellarAssetClient::new(&env, &token_client.address);
     token_admin.mint(&authorized_key, &amount);
 
-    client.init_program(&program_id, &authorized_key, &token_client.address);
+    client.init_program(
+        &program_id,
+        &authorized_key,
+        &token_client.address,
+        &authorized_key,
+        &None,
+    );
 
     // Transfer tokens to contract
     token_client.transfer(&authorized_key, &contract_id, &amount);
@@ -146,7 +152,13 @@ fn test_single_payout_blocks_reentrancy() {
     let token_admin = token::StellarAssetClient::new(&env, &token_client.address);
     token_admin.mint(&authorized_key, &amount);
 
-    client.init_program(&program_id, &authorized_key, &token_client.address);
+    client.init_program(
+        &program_id,
+        &authorized_key,
+        &token_client.address,
+        &authorized_key,
+        &None,
+    );
     token_client.transfer(&authorized_key, &contract_id, &amount);
     client.lock_program_funds(&amount);
 
@@ -180,7 +192,13 @@ fn test_batch_payout_normal_execution() {
     let token_admin = token::StellarAssetClient::new(&env, &token_client.address);
     token_admin.mint(&authorized_key, &total_amount);
 
-    client.init_program(&program_id, &authorized_key, &token_client.address);
+    client.init_program(
+        &program_id,
+        &authorized_key,
+        &token_client.address,
+        &authorized_key,
+        &None,
+    );
     token_client.transfer(&authorized_key, &contract_id, &total_amount);
     client.lock_program_funds(&total_amount);
 

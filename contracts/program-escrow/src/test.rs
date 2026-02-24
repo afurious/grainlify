@@ -27,7 +27,7 @@ fn setup_program(
     let token_admin_client = token::StellarAssetClient::new(env, &token_id);
 
     let program_id = String::from_str(env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None);
 
     if initial_amount > 0 {
         token_admin_client.mint(&client.address, &initial_amount);
@@ -64,7 +64,7 @@ fn test_init_program_and_event() {
     let token_id = env.register_stellar_asset_contract(token_admin);
     let program_id = String::from_str(&env, "hack-2026");
 
-    let data = client.init_program(&program_id, &admin, &token_id);
+    let data = client.init_program(&program_id, &admin, &token_id, &admin, &None);
     assert_eq!(data.total_funds, 0);
     assert_eq!(data.remaining_balance, 0);
 
@@ -384,6 +384,8 @@ fn test_full_lifecycle_multi_program_batch_payouts() {
         &String::from_str(&env, "hackathon-alpha"),
         &auth_key_a,
         &token_id,
+        &auth_key_a,
+        &None,
     );
     assert_eq!(prog_a.total_funds, 0);
     assert_eq!(prog_a.remaining_balance, 0);
@@ -397,6 +399,8 @@ fn test_full_lifecycle_multi_program_batch_payouts() {
         &String::from_str(&env, "hackathon-beta"),
         &auth_key_b,
         &token_id,
+        &auth_key_b,
+        &None,
     );
     assert_eq!(prog_b.total_funds, 0);
 
