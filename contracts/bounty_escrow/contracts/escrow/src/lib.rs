@@ -17,9 +17,9 @@ mod traits;
 use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized,
     emit_deprecation_state_changed, emit_funds_locked, emit_funds_refunded, emit_funds_released,
-    BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
-    ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsRefunded, FundsReleased,
-    EVENT_VERSION_V2,
+    emit_participant_filter_mode_changed, BatchFundsLocked, BatchFundsReleased,
+    BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted, DeprecationStateChanged,
+    FundsLocked, FundsRefunded, FundsReleased, ParticipantFilterModeChanged, EVENT_VERSION_V2,
 };
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, vec, Address, Env,
@@ -247,6 +247,7 @@ mod anti_abuse {
         Config,
         State(Address),
         Whitelist(Address),
+        Blocklist(Address),
         Admin,
     }
 
@@ -281,6 +282,24 @@ mod anti_abuse {
             env.storage()
                 .instance()
                 .remove(&AntiAbuseKey::Whitelist(address));
+        }
+    }
+
+    pub fn is_blocklisted(env: &Env, address: Address) -> bool {
+        env.storage()
+            .instance()
+            .has(&AntiAbuseKey::Blocklist(address))
+    }
+
+    pub fn set_blocklist(env: &Env, address: Address, blocked: bool) {
+        if blocked {
+            env.storage()
+                .instance()
+                .set(&AntiAbuseKey::Blocklist(address), &true);
+        } else {
+            env.storage()
+                .instance()
+                .remove(&AntiAbuseKey::Blocklist(address));
         }
     }
 
@@ -401,7 +420,11 @@ pub enum Error {
     CapabilityExceedsAuthority = 29,
     InvalidAssetId = 30,
     /// Returned when new locks/registrations are disabled (contract deprecated)
-    ContractDeprecated = 30,
+    ContractDeprecated = 31,
+    /// Returned when participant filtering is blocklist-only and the address is blocklisted
+    ParticipantBlocked = 32,
+    /// Returned when participant filtering is allowlist-only and the address is not allowlisted
+    ParticipantNotAllowed = 33,
 }
 
 #[contracttype]
@@ -433,6 +456,19 @@ pub struct Escrow {
     pub status: EscrowStatus,
     pub deadline: u64,
     pub refund_history: Vec<RefundRecord>,
+}
+
+/// Mutually exclusive participant filtering mode for lock_funds / batch_lock_funds.
+///
+/// * **Disabled**: No list check; any address may participate (allowlist still used only for anti-abuse bypass).
+/// * **BlocklistOnly**: Only blocklisted addresses are rejected; all others may participate.
+/// * **AllowlistOnly**: Only allowlisted (whitelisted) addresses may participate; all others are rejected.
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ParticipantFilterMode {
+    Disabled = 0,
+    BlocklistOnly = 1,
+    AllowlistOnly = 2,
 }
 
 /// Kill-switch state: when deprecated is true, new escrows are blocked; existing escrows can complete or migrate.
@@ -472,6 +508,8 @@ pub enum DataKey {
     Capability(u64), // capability_id -> Capability
     /// Kill switch: when set, new escrows are blocked; existing escrows can complete or migrate
     DeprecationState,
+    /// Participant filter mode: Disabled | BlocklistOnly | AllowlistOnly (default Disabled)
+    ParticipantFilterMode,
 }
 
 #[contracttype]
@@ -884,6 +922,34 @@ impl BountyEscrowContract {
                 deprecated: false,
                 migration_target: None,
             })
+    }
+
+    fn get_participant_filter_mode(env: &Env) -> ParticipantFilterMode {
+        env.storage()
+            .instance()
+            .get(&DataKey::ParticipantFilterMode)
+            .unwrap_or(ParticipantFilterMode::Disabled)
+    }
+
+    /// Enforces participant filtering: returns Err if the address is not allowed to participate
+    /// (lock_funds / batch_lock_funds) under the current filter mode.
+    fn check_participant_filter(env: &Env, address: Address) -> Result<(), Error> {
+        let mode = Self::get_participant_filter_mode(env);
+        match mode {
+            ParticipantFilterMode::Disabled => Ok(()),
+            ParticipantFilterMode::BlocklistOnly => {
+                if anti_abuse::is_blocklisted(env, address) {
+                    return Err(Error::ParticipantBlocked);
+                }
+                Ok(())
+            }
+            ParticipantFilterMode::AllowlistOnly => {
+                if !anti_abuse::is_whitelisted(env, address) {
+                    return Err(Error::ParticipantNotAllowed);
+                }
+                Ok(())
+            }
+        }
     }
 
     /// Set deprecation (kill switch) and optional migration target. Admin only.
@@ -1406,6 +1472,9 @@ impl BountyEscrowContract {
     ) -> Result<(), Error> {
         // GUARD: acquire reentrancy lock
         reentrancy_guard::acquire(&env);
+
+        // Participant filtering (blocklist-only / allowlist-only / disabled)
+        Self::check_participant_filter(&env, depositor.clone())?;
 
         // Apply rate limiting
         anti_abuse::check_rate_limit(&env, depositor.clone());
@@ -2917,6 +2986,7 @@ impl BountyEscrowContract {
     }
 
     /// Set whitelist status for an address (admin only). Named to avoid SDK client method conflict.
+    /// In AllowlistOnly mode this determines who may participate; in other modes it only affects anti-abuse bypass.
     pub fn set_whitelist_entry(
         env: Env,
         whitelisted_address: Address,
@@ -2929,6 +2999,52 @@ impl BountyEscrowContract {
             .ok_or(Error::NotInitialized)?;
         admin.require_auth();
         anti_abuse::set_whitelist(&env, whitelisted_address, whitelisted);
+        Ok(())
+    }
+
+    /// Set participant filter mode (admin only). Mutually exclusive: Disabled, BlocklistOnly, or AllowlistOnly.
+    /// Emits ParticipantFilterModeChanged. Transitioning modes does not clear list data; only the active mode is enforced.
+    pub fn set_filter_mode(env: Env, new_mode: ParticipantFilterMode) -> Result<(), Error> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        admin.require_auth();
+        let previous = Self::get_participant_filter_mode(&env);
+        env.storage()
+            .instance()
+            .set(&DataKey::ParticipantFilterMode, &new_mode);
+        emit_participant_filter_mode_changed(
+            &env,
+            ParticipantFilterModeChanged {
+                previous_mode: previous,
+                new_mode,
+                admin: admin.clone(),
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+        Ok(())
+    }
+
+    /// View: current participant filter mode (default Disabled).
+    pub fn get_filter_mode(env: Env) -> ParticipantFilterMode {
+        Self::get_participant_filter_mode(&env)
+    }
+
+    /// Set blocklist status for an address (admin only). Only enforced when mode is BlocklistOnly.
+    pub fn set_blocklist_entry(
+        env: Env,
+        address: Address,
+        blocked: bool,
+    ) -> Result<(), Error> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        admin.require_auth();
+        anti_abuse::set_blocklist(&env, address, blocked);
         Ok(())
     }
 
@@ -3106,6 +3222,9 @@ impl BountyEscrowContract {
 
         // Validate all items before processing (all-or-nothing approach)
         for item in items.iter() {
+            // Participant filtering (blocklist-only / allowlist-only / disabled)
+            Self::check_participant_filter(&env, item.depositor.clone())?;
+
             // Check if bounty already exists
             if env
                 .storage()
@@ -3439,6 +3558,8 @@ mod test_bounty_escrow;
 mod test_capability_tokens;
 #[cfg(test)]
 mod test_deprecation;
+#[cfg(test)]
+mod test_participant_filter_mode;
 #[cfg(test)]
 mod test_dispute_resolution;
 #[cfg(test)]
