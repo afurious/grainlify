@@ -158,6 +158,8 @@ Emitted when a batch payout is executed.
 - All amounts must be positive
 - Payout history is immutable and auditable
 - Token transfers use the Soroban token contract standard
+- `token_address` must be a contract address (not an account address)
+- Shared asset id rules are documented in `contracts/ASSET_ID_STRATEGY.md`
 
 ## Testing
 
