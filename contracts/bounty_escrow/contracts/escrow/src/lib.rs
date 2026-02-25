@@ -14,6 +14,8 @@ mod test_cross_contract_interface;
 mod test_rbac;
 #[cfg(test)]
 mod test_multi_token_fees;
+#[cfg(test)]
+mod error_precedence_tests;
 mod traits;
 
 use events::{
@@ -1338,24 +1340,28 @@ impl BountyEscrowContract {
         // Apply rate limiting
         anti_abuse::check_rate_limit(&env, depositor.clone());
 
+        // Priority 1: Pause state
         if Self::check_paused(&env, symbol_short!("lock")) {
             return Err(Error::FundsPaused);
+        }
+
+        // Priority 2: Initialization
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
         }
 
         let _start = env.ledger().timestamp();
         let _caller = depositor.clone();
 
-        // Verify depositor authorization
+        // Priority 3: Authorization
         depositor.require_auth();
 
-        if !env.storage().instance().has(&DataKey::Admin) {
-            return Err(Error::NotInitialized);
-        }
-
+        // Priority 5: State conflicts (bounty already exists)
         if env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyExists);
         }
 
+        // Priority 8: Business logic constraints (amount validation)
         // Enforce min/max amount policy if one has been configured (Issue #62).
         // When no policy is set this block is skipped entirely, preserving
         // backward-compatible behaviour for callers that never call set_amount_policy.
@@ -1438,11 +1444,26 @@ impl BountyEscrowContract {
     /// Protected by the shared reentrancy guard. Escrow state is updated
     /// to `Released` *before* the outbound token transfer (CEI pattern).
     pub fn release_funds(env: Env, bounty_id: u64, contributor: Address) -> Result<(), Error> {
+        // Priority 1: Pause state
         if Self::check_paused(&env, symbol_short!("release")) {
             return Err(Error::FundsPaused);
         }
 
-        // Block direct release while an active dispute (pending claim) exists.
+        // Priority 2: Initialization
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+
+        // Priority 3: Authorization
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        // Priority 4: Resource existence
+        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return Err(Error::BountyNotFound);
+        }
+
+        // Priority 5: State conflicts (pending claim blocks release)
         if env
             .storage()
             .persistent()
@@ -1463,23 +1484,13 @@ impl BountyEscrowContract {
         // GUARD: acquire reentrancy lock (replaces inline guard)
         reentrancy_guard::acquire(&env);
 
-        if !env.storage().instance().has(&DataKey::Admin) {
-            return Err(Error::NotInitialized);
-        }
-
-        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
-        admin.require_auth();
-
-        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
-            return Err(Error::BountyNotFound);
-        }
-
         let mut escrow: Escrow = env
             .storage()
             .persistent()
             .get(&DataKey::Escrow(bounty_id))
             .unwrap();
 
+        // Priority 6: Resource state
         if escrow.status != EscrowStatus::Locked {
             return Err(Error::FundsNotLocked);
         }
@@ -1528,12 +1539,12 @@ impl BountyEscrowContract {
         holder: Address,
         capability_id: u64,
     ) -> Result<(), Error> {
+        // Priority 1: Pause state
         if Self::check_paused(&env, symbol_short!("release")) {
             return Err(Error::FundsPaused);
         }
-        if payout_amount <= 0 {
-            return Err(Error::InvalidAmount);
-        }
+        
+        // Priority 4: Resource existence
         if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyNotFound);
         }
@@ -1543,13 +1554,13 @@ impl BountyEscrowContract {
             .persistent()
             .get(&DataKey::Escrow(bounty_id))
             .unwrap();
+        
+        // Priority 6: Resource state
         if escrow.status != EscrowStatus::Locked {
             return Err(Error::FundsNotLocked);
         }
-        if payout_amount > escrow.remaining_amount {
-            return Err(Error::InsufficientFunds);
-        }
-
+        
+        // Priority 7: Capability validation (includes all capability checks)
         Self::consume_capability(
             &env,
             &holder,
@@ -1558,6 +1569,16 @@ impl BountyEscrowContract {
             bounty_id,
             payout_amount,
         )?;
+        
+        // Priority 8: Business logic constraints
+        if payout_amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+        
+        // Priority 10: Resource availability
+        if payout_amount > escrow.remaining_amount {
+            return Err(Error::InsufficientFunds);
+        }
 
         let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
         let client = token::Client::new(&env, &token_addr);
