@@ -570,6 +570,29 @@ pub struct RefundApproval {
     pub approved_at: u64,
 }
 
+/// Result returned by dry-run simulation entrypoints.
+///
+/// These view functions run the full validation pipeline for lock / release /
+/// refund without mutating any state.  They allow UIs and integrators to
+/// preview what *would* happen and surface errors before submitting a real
+/// transaction.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SimulationResult {
+    /// `true` when the operation would succeed at the current ledger state.
+    pub success: bool,
+    /// When `success` is `false`, the error code that would be returned.
+    /// Zero when the operation would succeed.
+    pub error_code: u32,
+    /// The amount that would be transferred (lock amount, release amount, or
+    /// refund amount).
+    pub amount: i128,
+    /// Escrow status *after* the simulated operation.
+    pub resulting_status: EscrowStatus,
+    /// Remaining amount in the escrow *after* the simulated operation.
+    pub remaining_amount: i128,
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RefundRecord {
@@ -1092,6 +1115,7 @@ impl BountyEscrowContract {
         Ok(capability)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn issue_capability(
         env: Env,
         owner: Address,
@@ -2219,6 +2243,306 @@ impl BountyEscrowContract {
         Ok(client.balance(&env.current_contract_address()))
     }
 
+    // =========================================================================
+    // Dry-Run Simulation Entry Points  (Issue #567)
+    //
+    // These are **view-only** functions that replay the validation logic of
+    // lock / release / refund WITHOUT writing any state or performing token
+    // transfers.  They return a `SimulationResult` so callers can preview
+    // the outcome and surface user-facing errors before submitting a real tx.
+    // =========================================================================
+
+    /// Simulate a `lock_funds` call.
+    ///
+    /// Checks initialisation, duplicate bounty, pause state, and amount policy
+    /// exactly as the real function does, then returns what the resulting
+    /// escrow state would look like.  No auth is required.
+    pub fn simulate_lock(
+        env: Env,
+        depositor: Address,
+        bounty_id: u64,
+        amount: i128,
+        deadline: u64,
+    ) -> SimulationResult {
+        // --- Checks (mirrors lock_funds validation) ---
+
+        if Self::check_paused(&env, symbol_short!("lock")) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::FundsPaused as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::NotInitialized as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::BountyExists as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if amount <= 0 {
+            return SimulationResult {
+                success: false,
+                error_code: Error::InvalidAmount as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if deadline <= env.ledger().timestamp() {
+            return SimulationResult {
+                success: false,
+                error_code: Error::InvalidDeadline as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        // Enforce amount policy if set
+        if let Some((min_amount, max_amount)) = env
+            .storage()
+            .instance()
+            .get::<DataKey, (i128, i128)>(&DataKey::AmountPolicy)
+        {
+            if amount < min_amount {
+                return SimulationResult {
+                    success: false,
+                    error_code: Error::AmountBelowMinimum as u32,
+                    amount: 0,
+                    resulting_status: EscrowStatus::Locked,
+                    remaining_amount: 0,
+                };
+            }
+            if amount > max_amount {
+                return SimulationResult {
+                    success: false,
+                    error_code: Error::AmountAboveMaximum as u32,
+                    amount: 0,
+                    resulting_status: EscrowStatus::Locked,
+                    remaining_amount: 0,
+                };
+            }
+        }
+
+        // Check depositor has sufficient balance
+        let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let token_client = token::Client::new(&env, &token_addr);
+        let depositor_balance = token_client.balance(&depositor);
+        if depositor_balance < amount {
+            return SimulationResult {
+                success: false,
+                error_code: Error::InsufficientFunds as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        // --- Would succeed ---
+        SimulationResult {
+            success: true,
+            error_code: 0,
+            amount,
+            resulting_status: EscrowStatus::Locked,
+            remaining_amount: amount,
+        }
+    }
+
+    /// Simulate a `release_funds` call.
+    ///
+    /// Checks initialisation, existence, pause state, and escrow status
+    /// exactly as the real function does.  Returns the projected released
+    /// state.  No auth is required.
+    pub fn simulate_release(env: Env, bounty_id: u64, _contributor: Address) -> SimulationResult {
+        if Self::check_paused(&env, symbol_short!("release")) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::FundsPaused as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::NotInitialized as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::BountyNotFound as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        let escrow: Escrow = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Escrow(bounty_id))
+            .unwrap();
+
+        if escrow.status != EscrowStatus::Locked {
+            return SimulationResult {
+                success: false,
+                error_code: Error::FundsNotLocked as u32,
+                amount: 0,
+                resulting_status: escrow.status,
+                remaining_amount: escrow.remaining_amount,
+            };
+        }
+
+        // --- Would succeed ---
+        SimulationResult {
+            success: true,
+            error_code: 0,
+            amount: escrow.amount,
+            resulting_status: EscrowStatus::Released,
+            remaining_amount: 0,
+        }
+    }
+
+    /// Simulate a `refund` call.
+    ///
+    /// Checks pause state, existence, escrow status, pending claims,
+    /// deadline, and refund approval exactly as the real function does.
+    /// Returns the projected refund amount and resulting status.
+    /// No auth is required.
+    pub fn simulate_refund(env: Env, bounty_id: u64) -> SimulationResult {
+        if Self::check_paused(&env, symbol_short!("refund")) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::FundsPaused as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return SimulationResult {
+                success: false,
+                error_code: Error::BountyNotFound as u32,
+                amount: 0,
+                resulting_status: EscrowStatus::Locked,
+                remaining_amount: 0,
+            };
+        }
+
+        let escrow: Escrow = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Escrow(bounty_id))
+            .unwrap();
+
+        if escrow.status != EscrowStatus::Locked && escrow.status != EscrowStatus::PartiallyRefunded
+        {
+            return SimulationResult {
+                success: false,
+                error_code: Error::FundsNotLocked as u32,
+                amount: 0,
+                resulting_status: escrow.status,
+                remaining_amount: escrow.remaining_amount,
+            };
+        }
+
+        // Block if there is an active pending claim
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::PendingClaim(bounty_id))
+        {
+            let claim: ClaimRecord = env
+                .storage()
+                .persistent()
+                .get(&DataKey::PendingClaim(bounty_id))
+                .unwrap();
+            if !claim.claimed {
+                return SimulationResult {
+                    success: false,
+                    error_code: Error::ClaimPending as u32,
+                    amount: 0,
+                    resulting_status: escrow.status,
+                    remaining_amount: escrow.remaining_amount,
+                };
+            }
+        }
+
+        let now = env.ledger().timestamp();
+        let approval_key = DataKey::RefundApproval(bounty_id);
+        let approval: Option<RefundApproval> = env.storage().persistent().get(&approval_key);
+
+        if now < escrow.deadline && approval.is_none() {
+            return SimulationResult {
+                success: false,
+                error_code: Error::DeadlineNotPassed as u32,
+                amount: 0,
+                resulting_status: escrow.status,
+                remaining_amount: escrow.remaining_amount,
+            };
+        }
+
+        // Calculate refund parameters (same logic as real refund)
+        let (refund_amount, is_full) = if let Some(app) = approval {
+            let full = app.mode == RefundMode::Full || app.amount >= escrow.remaining_amount;
+            (app.amount, full)
+        } else {
+            (escrow.remaining_amount, true)
+        };
+
+        if refund_amount <= 0 || refund_amount > escrow.remaining_amount {
+            return SimulationResult {
+                success: false,
+                error_code: Error::InvalidAmount as u32,
+                amount: 0,
+                resulting_status: escrow.status,
+                remaining_amount: escrow.remaining_amount,
+            };
+        }
+
+        // --- Would succeed ---
+        let new_remaining = escrow.remaining_amount - refund_amount;
+        let new_status = if is_full || new_remaining == 0 {
+            EscrowStatus::Refunded
+        } else {
+            EscrowStatus::PartiallyRefunded
+        };
+
+        SimulationResult {
+            success: true,
+            error_code: 0,
+            amount: refund_amount,
+            resulting_status: new_status,
+            remaining_amount: new_remaining,
+        }
+    }
+
     /// Query escrows with filtering and pagination
     /// Pass 0 for min values and i128::MAX/u64::MAX for max values to disable those filters
     pub fn query_escrows_by_status(
@@ -3034,6 +3358,8 @@ mod test_bounty_escrow;
 mod test_capability_tokens;
 #[cfg(test)]
 mod test_dispute_resolution;
+#[cfg(test)]
+mod test_dry_run_simulation;
 #[cfg(test)]
 mod test_expiration_and_dispute;
 #[cfg(test)]
