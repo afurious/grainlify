@@ -1,6 +1,7 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, token, Address, Env, String, Vec,
+    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env,
+    String, Vec,
 };
 
 const MAX_BATCH_SIZE: u32 = 20;
@@ -18,6 +19,7 @@ pub enum Error {
     DuplicateProgramId = 7,
     InvalidAmount = 8,
     InvalidName = 9,
+    ContractDeprecated = 10,
 }
 
 #[contracttype]
@@ -46,11 +48,20 @@ pub struct ProgramRegistrationItem {
     pub total_funding: i128,
 }
 
+/// Kill-switch state: when deprecated is true, new program registrations are blocked.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationState {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+}
+
 #[contracttype]
 pub enum DataKey {
     Admin,
     Token,
     Program(u64),
+    DeprecationState,
 }
 
 #[contract]
@@ -68,7 +79,7 @@ impl ProgramEscrowContract {
         Ok(())
     }
 
-    /// Register a single program.
+    /// Register a single program. Fails with ContractDeprecated when the contract has been deprecated.
     pub fn register_program(
         env: Env,
         program_id: u64,
@@ -78,6 +89,9 @@ impl ProgramEscrowContract {
     ) -> Result<(), Error> {
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
+        }
+        if Self::get_deprecation_state(&env).deprecated {
+            return Err(Error::ContractDeprecated);
         }
         let contract_admin: Address =
             env.storage().instance().get(&DataKey::Admin).unwrap();
@@ -138,6 +152,9 @@ impl ProgramEscrowContract {
 
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
+        }
+        if Self::get_deprecation_state(&env).deprecated {
+            return Err(Error::ContractDeprecated);
         }
         let contract_admin: Address =
             env.storage().instance().get(&DataKey::Admin).unwrap();
@@ -218,6 +235,46 @@ impl ProgramEscrowContract {
             .persistent()
             .get(&DataKey::Program(program_id))
             .ok_or(Error::ProgramNotFound)
+    }
+
+    fn get_deprecation_state(env: &Env) -> DeprecationState {
+        env.storage()
+            .instance()
+            .get(&DataKey::DeprecationState)
+            .unwrap_or(DeprecationState {
+                deprecated: false,
+                migration_target: None,
+            })
+    }
+
+    /// Set deprecation (kill switch) and optional migration target. Admin only.
+    /// When deprecated is true, new register_program and batch_register_programs are blocked.
+    pub fn set_deprecated(
+        env: Env,
+        deprecated: bool,
+        migration_target: Option<Address>,
+    ) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        let state = DeprecationState {
+            deprecated,
+            migration_target: migration_target.clone(),
+        };
+        env.storage().instance().set(&DataKey::DeprecationState, &state);
+        env.events().publish(
+            (symbol_short!("deprec"),),
+            (state.deprecated, state.migration_target, admin, env.ledger().timestamp()),
+        );
+        Ok(())
+    }
+
+    /// View: returns whether the contract is deprecated and the optional migration target.
+    pub fn get_deprecation_status(env: Env) -> DeprecationState {
+        Self::get_deprecation_state(&env)
     }
 }
 
