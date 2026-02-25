@@ -3,7 +3,7 @@
 use crate::{BountyEscrowContract, BountyEscrowContractClient};
 use soroban_sdk::{
     testutils::{Address as _, Events, Ledger},
-    token, Address, Env, Symbol, TryIntoVal, IntoVal
+    token, Address, Env, IntoVal, Symbol, TryIntoVal,
 };
 
 fn create_token_contract<'a>(env: &Env, admin: &Address) -> token::Client<'a> {
@@ -12,20 +12,14 @@ fn create_token_contract<'a>(env: &Env, admin: &Address) -> token::Client<'a> {
     token::Client::new(env, &token_address)
 }
 
-fn setup_bounty_env<'a>(
-    env: &Env,
-) -> (
-    BountyEscrowContractClient<'a>,
-    Address,
-    token::Client<'a>,
-) {
+fn setup_bounty_env<'a>(env: &Env) -> (BountyEscrowContractClient<'a>, Address, token::Client<'a>) {
     let contract_id = env.register_contract(None, BountyEscrowContract);
     let client = BountyEscrowContractClient::new(env, &contract_id);
     let admin = Address::generate(env);
-    
+
     let token_admin = Address::generate(env);
     let token_client = create_token_contract(env, &token_admin);
-    
+
     env.mock_all_auths();
     client.init(&admin, &token_client.address);
     client.set_anti_abuse_admin(&admin);
@@ -52,7 +46,7 @@ fn test_maintenance_mode_toggles_and_blocks_lock() {
     let topics = emitted.1;
     let topic_0: Symbol = topics.get(0).unwrap().into_val(&env);
     assert_eq!(topic_0, Symbol::new(&env, "MaintSt"));
-    
+
     let data: (bool, Address, u64) = emitted.2.try_into_val(&env).unwrap();
     assert_eq!(data.0, true);
     assert_eq!(data.1, admin);
@@ -97,7 +91,7 @@ fn test_release_and_refund_allowed_in_maintenance_mode() {
     // Release should succeed (not panicking)
     let contributor = Address::generate(&env);
     contract.release_funds(&1u64, &contributor);
-    
+
     // Balance check
     assert_eq!(token.balance(&contributor), 1000);
 }

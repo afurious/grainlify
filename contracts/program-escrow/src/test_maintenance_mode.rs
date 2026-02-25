@@ -3,7 +3,7 @@
 use crate::{ProgramEscrowContract, ProgramEscrowContractClient};
 use soroban_sdk::{
     testutils::{Address as _, Events, Ledger},
-    token, Address, Env, String, Symbol, TryIntoVal, IntoVal
+    token, Address, Env, IntoVal, String, Symbol, TryIntoVal,
 };
 
 fn create_token_contract<'a>(env: &Env, admin: &Address) -> token::Client<'a> {
@@ -23,16 +23,22 @@ fn setup_program_with_admin<'a>(
     let contract_id = env.register_contract(None, ProgramEscrowContract);
     let client = ProgramEscrowContractClient::new(env, &contract_id);
     let admin = Address::generate(env);
-    
+
     client.mock_auths(&[]).initialize_contract(&admin);
     let payout_key = Address::generate(env);
-    
+
     let token_admin = Address::generate(env);
     let token_client = create_token_contract(env, &token_admin);
-    
+
     env.mock_all_auths();
     let program_id = String::from_str(env, "test-prog");
-    client.init_program(&program_id, &payout_key, &token_client.address, &admin, &None);
+    client.init_program(
+        &program_id,
+        &payout_key,
+        &token_client.address,
+        &admin,
+        &None,
+    );
     (client, admin, payout_key, token_client)
 }
 
@@ -59,7 +65,7 @@ fn test_maintenance_mode_toggles_and_blocks_lock() {
     let topics = emitted.1;
     let topic_0: Symbol = topics.get(0).unwrap().into_val(&env);
     assert_eq!(topic_0, Symbol::new(&env, "MaintSt"));
-    
+
     let data: (bool, Address, u64) = emitted.2.try_into_val(&env).unwrap();
     assert_eq!(data.0, true);
     assert_eq!(data.1, admin);
@@ -108,6 +114,6 @@ fn test_release_and_refund_allowed_in_maintenance_mode() {
     // Payout should succeed (not panicking)
     let recipient = Address::generate(&env);
     contract.single_payout(&recipient, &1000);
-    
+
     assert_eq!(token.balance(&recipient), 1000);
 }

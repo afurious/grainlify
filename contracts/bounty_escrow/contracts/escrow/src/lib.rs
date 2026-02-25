@@ -863,7 +863,10 @@ impl BountyEscrowContract {
 
     /// Check if the contract is in maintenance mode
     pub fn is_maintenance_mode(env: Env) -> bool {
-        env.storage().instance().get(&DataKey::MaintenanceMode).unwrap_or(false)
+        env.storage()
+            .instance()
+            .get(&DataKey::MaintenanceMode)
+            .unwrap_or(false)
     }
 
     /// Update maintenance mode (admin only)
@@ -873,8 +876,10 @@ impl BountyEscrowContract {
         }
         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
-        
-        env.storage().instance().set(&DataKey::MaintenanceMode, &enabled);
+
+        env.storage()
+            .instance()
+            .set(&DataKey::MaintenanceMode, &enabled);
         env.events().publish(
             (symbol_short!("MaintSt"),),
             (enabled, admin.clone(), env.ledger().timestamp()),
