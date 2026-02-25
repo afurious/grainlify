@@ -176,6 +176,9 @@ mod test_lifecycle;
 #[cfg(test)]
 mod test_full_lifecycle;
 
+#[cfg(test)]
+mod test_maintenance_mode;
+
 // ── Step 2: Add these public contract functions to the ProgramEscrowContract
 //    impl block (alongside the existing admin functions) ──────────────────
 
@@ -278,6 +281,7 @@ const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
 const PAYOUT: Symbol = symbol_short!("Payout");
 const EVENT_VERSION_V2: u32 = 2;
 const PAUSE_STATE_CHANGED: Symbol = symbol_short!("PauseSt");
+const MAINTENANCE_MODE_CHANGED: Symbol = symbol_short!("MaintSt");
 const PROGRAM_REGISTRY: Symbol = symbol_short!("ProgReg");
 const PROGRAM_REGISTERED: Symbol = symbol_short!("ProgRgd");
 const FEE_CONFIG: Symbol = symbol_short!("FeeCfg");
@@ -374,6 +378,7 @@ pub enum DataKey {
     ClaimWindow,                     // u64 seconds (global config)
     PauseFlags,                      // PauseFlags struct
     RateLimitConfig,                 // RateLimitConfig struct
+    MaintenanceMode,                 // bool flag
 }
 
 #[contracttype]
@@ -392,6 +397,14 @@ pub struct PauseStateChanged {
     pub operation: Symbol,
     pub paused: bool,
     pub admin: Address,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MaintenanceModeChanged {
+    pub enabled: bool,
+    pub admin: Address,
+    pub timestamp: u64,
 }
 
 #[contracttype]
@@ -844,6 +857,26 @@ impl ProgramEscrowContract {
         }
 
         env.storage().instance().set(&DataKey::PauseFlags, &flags);
+    }
+
+    /// Check if the contract is in maintenance mode
+    pub fn is_maintenance_mode(env: Env) -> bool {
+        env.storage().instance().get(&DataKey::MaintenanceMode).unwrap_or(false)
+    }
+
+    /// Update maintenance mode (admin only)
+    pub fn set_maintenance_mode(env: Env, enabled: bool) {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            panic!("Not initialized");
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        
+        env.storage().instance().set(&DataKey::MaintenanceMode, &enabled);
+        env.events().publish(
+            (MAINTENANCE_MODE_CHANGED,),
+            (enabled, admin.clone(), env.ledger().timestamp()),
+        );
     }
 
     /// Emergency withdraw all program funds (admin only, must have lock_paused = true)

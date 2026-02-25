@@ -10,6 +10,9 @@ mod test_cross_contract_interface;
 mod test_rbac;
 mod traits;
 
+#[cfg(test)]
+mod test_maintenance_mode;
+
 use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
     emit_funds_refunded, emit_funds_released, BatchFundsLocked, BatchFundsReleased,
@@ -445,6 +448,7 @@ pub enum DataKey {
     AmountPolicy, // Option<(i128, i128)> — (min_amount, max_amount) set by set_amount_policy
     CapabilityNonce, // monotonically increasing capability id
     Capability(u64), // capability_id -> Capability
+    MaintenanceMode, // bool flag
 }
 
 #[contracttype]
@@ -482,6 +486,14 @@ pub struct PauseStateChanged {
     pub paused: bool,
     pub admin: Address,
     pub reason: Option<soroban_sdk::String>,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MaintenanceModeChanged {
+    pub enabled: bool,
+    pub admin: Address,
     pub timestamp: u64,
 }
 
@@ -837,6 +849,9 @@ impl BountyEscrowContract {
     fn check_paused(env: &Env, operation: Symbol) -> bool {
         let flags = Self::get_pause_flags(env);
         if operation == symbol_short!("lock") {
+            if Self::is_maintenance_mode(env.clone()) {
+                return true;
+            }
             return flags.lock_paused;
         } else if operation == symbol_short!("release") {
             return flags.release_paused;
@@ -844,6 +859,27 @@ impl BountyEscrowContract {
             return flags.refund_paused;
         }
         false
+    }
+
+    /// Check if the contract is in maintenance mode
+    pub fn is_maintenance_mode(env: Env) -> bool {
+        env.storage().instance().get(&DataKey::MaintenanceMode).unwrap_or(false)
+    }
+
+    /// Update maintenance mode (admin only)
+    pub fn set_maintenance_mode(env: Env, enabled: bool) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        
+        env.storage().instance().set(&DataKey::MaintenanceMode, &enabled);
+        env.events().publish(
+            (symbol_short!("MaintSt"),),
+            (enabled, admin.clone(), env.ledger().timestamp()),
+        );
+        Ok(())
     }
 
     fn next_capability_id(env: &Env) -> u64 {
@@ -1289,30 +1325,34 @@ impl BountyEscrowContract {
         amount: i128,
         deadline: u64,
     ) -> Result<(), Error> {
+        soroban_sdk::log!(&env, "start lock_funds");
         // Apply rate limiting
         anti_abuse::check_rate_limit(&env, depositor.clone());
+        soroban_sdk::log!(&env, "rate limit ok");
 
         if Self::check_paused(&env, symbol_short!("lock")) {
             return Err(Error::FundsPaused);
         }
+        soroban_sdk::log!(&env, "check paused ok");
 
         let _start = env.ledger().timestamp();
         let _caller = depositor.clone();
 
         // Verify depositor authorization
         depositor.require_auth();
+        soroban_sdk::log!(&env, "auth ok");
 
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
         }
+        soroban_sdk::log!(&env, "admin ok");
 
         if env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyExists);
         }
+        soroban_sdk::log!(&env, "bounty exists ok");
 
         // Enforce min/max amount policy if one has been configured (Issue #62).
-        // When no policy is set this block is skipped entirely, preserving
-        // backward-compatible behaviour for callers that never call set_amount_policy.
         if let Some((min_amount, max_amount)) = env
             .storage()
             .instance()
@@ -1325,12 +1365,15 @@ impl BountyEscrowContract {
                 return Err(Error::AmountAboveMaximum);
             }
         }
+        soroban_sdk::log!(&env, "amount policy ok");
 
         let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
         let client = token::Client::new(&env, &token_addr);
+        soroban_sdk::log!(&env, "token client ok");
 
         // Transfer funds from depositor to contract
         client.transfer(&depositor, &env.current_contract_address(), &amount);
+        soroban_sdk::log!(&env, "transfer ok");
 
         let escrow = Escrow {
             depositor: depositor.clone(),
