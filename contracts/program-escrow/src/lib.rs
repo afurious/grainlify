@@ -150,6 +150,7 @@ const PROGRAM_INITIALIZED: Symbol = symbol_short!("ProgInit");
 const FUNDS_LOCKED: Symbol = symbol_short!("FundLock");
 const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
 const PAYOUT: Symbol = symbol_short!("Payout");
+const PROGRAM_RISK_FLAGS_UPDATED: Symbol = symbol_short!("pr_risk");
 const DEPENDENCY_CREATED: Symbol = symbol_short!("dep_add");
 const DEPENDENCY_CLEARED: Symbol = symbol_short!("dep_clr");
 const DEPENDENCY_STATUS_UPDATED: Symbol = symbol_short!("dep_sts");
@@ -162,6 +163,11 @@ const FEE_CONFIG: Symbol = symbol_short!("FeeCfg");
 // Example: 100 basis points = 1%, 1000 basis points = 10%
 const BASIS_POINTS: i128 = 10_000;
 const MAX_FEE_RATE: i128 = 1_000; // Maximum 10% fee
+
+pub const RISK_FLAG_HIGH_RISK: u32 = 1 << 0;
+pub const RISK_FLAG_UNDER_REVIEW: u32 = 1 << 1;
+pub const RISK_FLAG_RESTRICTED: u32 = 1 << 2;
+pub const RISK_FLAG_DEPRECATED: u32 = 1 << 3;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -290,6 +296,9 @@ mod test_lifecycle;
 
 #[cfg(test)]
 mod test_full_lifecycle;
+
+#[cfg(test)]
+mod test_risk_flags;
 
 // ── Step 2: Add these public contract functions to the ProgramEscrowContract
 //    impl block (alongside the existing admin functions) ──────────────────
@@ -467,6 +476,17 @@ pub struct PayoutEvent {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramRiskFlagsUpdated {
+    pub version: u32,
+    pub program_id: String,
+    pub previous_flags: u32,
+    pub new_flags: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgramData {
     pub program_id: String,
     pub total_funds: i128,
@@ -475,6 +495,7 @@ pub struct ProgramData {
     pub payout_history: Vec<PayoutRecord>,
     pub token_address: Address,  // Token contract address for transfers
     pub initial_liquidity: i128, // Initial liquidity provided by creator
+    pub risk_flags: u32,
 }
 
 /// Storage key type for individual programs
@@ -749,9 +770,11 @@ impl ProgramEscrowContract {
             payout_history: vec![&env],
             token_address: token_address.clone(),
             initial_liquidity: init_liquidity,
+            risk_flags: 0,
         };
 
         // Store program data
+        let program_key = DataKey::Program(program_id.clone());
         env.storage().instance().set(&program_key, &program_data);
         let empty_dependencies: Vec<String> = vec![&env];
         env.storage()
@@ -832,6 +855,7 @@ impl ProgramEscrowContract {
                 payout_history: vec![&env],
                 token_address: token_address.clone(),
                 initial_liquidity: 0,
+                risk_flags: 0,
             };
             let program_key = DataKey::Program(program_id.clone());
             env.storage().instance().set(&program_key, &program_data);
@@ -1145,6 +1169,102 @@ impl ProgramEscrowContract {
     /// Returns the current admin address, if set.
     pub fn get_admin(env: Env) -> Option<Address> {
         env.storage().instance().get(&DataKey::Admin)
+    }
+
+    fn require_admin(env: &Env) -> Address {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .unwrap_or_else(|| panic!("Not initialized"));
+        admin.require_auth();
+        admin
+    }
+
+    fn get_program_data_by_id(env: &Env, program_id: &String) -> ProgramData {
+        let program_key = DataKey::Program(program_id.clone());
+        if env.storage().instance().has(&program_key) {
+            return env
+                .storage()
+                .instance()
+                .get(&program_key)
+                .unwrap_or_else(|| panic!("Program not found"));
+        }
+
+        if env.storage().instance().has(&PROGRAM_DATA) {
+            let program_data: ProgramData = env
+                .storage()
+                .instance()
+                .get(&PROGRAM_DATA)
+                .unwrap_or_else(|| panic!("Program not initialized"));
+            if &program_data.program_id == program_id {
+                return program_data;
+            }
+        }
+
+        panic!("Program not found");
+    }
+
+    fn store_program_data(env: &Env, program_id: &String, program_data: &ProgramData) {
+        let program_key = DataKey::Program(program_id.clone());
+        env.storage().instance().set(&program_key, program_data);
+
+        if env.storage().instance().has(&PROGRAM_DATA) {
+            let existing: ProgramData = env
+                .storage()
+                .instance()
+                .get(&PROGRAM_DATA)
+                .unwrap_or_else(|| panic!("Program not initialized"));
+            if &existing.program_id == program_id {
+                env.storage().instance().set(&PROGRAM_DATA, program_data);
+            }
+        }
+    }
+
+    /// Set risk flags for a program (admin only).
+    pub fn set_program_risk_flags(env: Env, program_id: String, flags: u32) -> ProgramData {
+        let admin = Self::require_admin(&env);
+        let mut program_data = Self::get_program_data_by_id(&env, &program_id);
+        let previous_flags = program_data.risk_flags;
+        program_data.risk_flags = flags;
+        Self::store_program_data(&env, &program_id, &program_data);
+
+        env.events().publish(
+            (PROGRAM_RISK_FLAGS_UPDATED, program_id.clone()),
+            ProgramRiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                program_id,
+                previous_flags,
+                new_flags: program_data.risk_flags,
+                admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        program_data
+    }
+
+    /// Clear specific risk flags for a program (admin only).
+    pub fn clear_program_risk_flags(env: Env, program_id: String, flags: u32) -> ProgramData {
+        let admin = Self::require_admin(&env);
+        let mut program_data = Self::get_program_data_by_id(&env, &program_id);
+        let previous_flags = program_data.risk_flags;
+        program_data.risk_flags &= !flags;
+        Self::store_program_data(&env, &program_id, &program_data);
+
+        env.events().publish(
+            (PROGRAM_RISK_FLAGS_UPDATED, program_id.clone()),
+            ProgramRiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                program_id,
+                previous_flags,
+                new_flags: program_data.risk_flags,
+                admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        program_data
     }
 
     pub fn get_program_release_schedules(env: Env) -> Vec<ProgramReleaseSchedule> {

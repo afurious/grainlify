@@ -27,6 +27,7 @@ export interface ProgramData {
   authorized_payout_key: string;
   payout_history: PayoutRecord[];
   token_address: string;
+  risk_flags: number;
 }
 
 export interface PayoutRecord {
