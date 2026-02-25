@@ -445,6 +445,9 @@ pub enum DataKey {
     AmountPolicy, // Option<(i128, i128)> — (min_amount, max_amount) set by set_amount_policy
     CapabilityNonce, // monotonically increasing capability id
     Capability(u64), // capability_id -> Capability
+    /// Marks a bounty escrow as using non-transferable (soulbound) reward tokens.
+    /// When set, the token is expected to disallow further transfers after claim.
+    NonTransferableRewards(u64), // bounty_id -> bool
 }
 
 #[contracttype]
@@ -585,6 +588,9 @@ pub struct LockFundsItem {
     pub depositor: Address,
     pub amount: i128,
     pub deadline: u64,
+    /// When true, marks this escrow as using non-transferable (soulbound) reward tokens.
+    /// The token contract is expected to disallow further transfers after the recipient claims.
+    pub non_transferable_rewards: bool,
 }
 
 #[contracttype]
@@ -1282,12 +1288,17 @@ impl BountyEscrowContract {
     }
 
     /// Lock funds for a specific bounty.
+    /// Lock funds for a bounty. When `non_transferable_rewards` is true, the escrow is marked
+    /// as using soulbound/non-transferable tokens; the token contract must disallow further
+    /// transfers after the recipient claims. Claim and release still perform a single transfer
+    /// from the contract to the recipient; no further transfers are required.
     pub fn lock_funds(
         env: Env,
         depositor: Address,
         bounty_id: u64,
         amount: i128,
         deadline: u64,
+        non_transferable_rewards: Option<bool>,
     ) -> Result<(), Error> {
         // Apply rate limiting
         anti_abuse::check_rate_limit(&env, depositor.clone());
@@ -1347,6 +1358,12 @@ impl BountyEscrowContract {
             .persistent()
             .set(&DataKey::Escrow(bounty_id), &escrow);
 
+        if non_transferable_rewards == Some(true) {
+            env.storage()
+                .persistent()
+                .set(&DataKey::NonTransferableRewards(bounty_id), &true);
+        }
+
         // Update indexes
         let mut index: Vec<u64> = env
             .storage()
@@ -1370,6 +1387,7 @@ impl BountyEscrowContract {
         );
 
         // Emit value allows for off-chain indexing
+        let ntr = non_transferable_rewards.unwrap_or(false);
         emit_funds_locked(
             &env,
             FundsLocked {
@@ -1378,10 +1396,24 @@ impl BountyEscrowContract {
                 amount,
                 depositor: depositor.clone(),
                 deadline,
+                non_transferable_rewards: ntr,
             },
         );
 
         Ok(())
+    }
+
+    /// Returns whether the given bounty escrow is marked as using non-transferable (soulbound)
+    /// reward tokens. When true, the token is expected to disallow further transfers after claim.
+    pub fn get_non_transferable_rewards(env: Env, bounty_id: u64) -> Result<bool, Error> {
+        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return Err(Error::BountyNotFound);
+        }
+        Ok(env
+            .storage()
+            .persistent()
+            .get(&DataKey::NonTransferableRewards(bounty_id))
+            .unwrap_or(false))
     }
 
     /// Release funds to the contributor.
@@ -2689,6 +2721,13 @@ impl BountyEscrowContract {
                 .persistent()
                 .set(&DataKey::Escrow(item.bounty_id), &escrow);
 
+            if item.non_transferable_rewards {
+                env.storage().persistent().set(
+                    &DataKey::NonTransferableRewards(item.bounty_id),
+                    &true,
+                );
+            }
+
             // Emit individual event for each locked bounty
             emit_funds_locked(
                 &env,
@@ -2698,6 +2737,7 @@ impl BountyEscrowContract {
                     amount: item.amount,
                     depositor: item.depositor.clone(),
                     deadline: item.deadline,
+                    non_transferable_rewards: item.non_transferable_rewards,
                 },
             );
 
@@ -2886,7 +2926,7 @@ impl traits::EscrowInterface for BountyEscrowContract {
         amount: i128,
         deadline: u64,
     ) -> Result<(), crate::Error> {
-        BountyEscrowContract::lock_funds(env.clone(), depositor, bounty_id, amount, deadline)
+        BountyEscrowContract::lock_funds(env.clone(), depositor, bounty_id, amount, deadline, None)
     }
 
     /// Release funds to contributor through the trait interface
@@ -3154,6 +3194,7 @@ mod escrow_status_transition_tests {
                         &bounty_id,
                         &amount,
                         &deadline,
+                        &None,
                     );
                     assert!(
                         result.is_err(),
@@ -3265,7 +3306,7 @@ mod escrow_status_transition_tests {
         let deadline = setup.env.ledger().timestamp() + 1000;
         let result = setup
             .client
-            .try_lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+            .try_lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
         assert!(
             result.is_err(),
             "Expected locking an already released bounty to fail"

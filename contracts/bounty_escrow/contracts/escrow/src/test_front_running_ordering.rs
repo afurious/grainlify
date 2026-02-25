@@ -68,7 +68,7 @@ fn test_release_race_first_recipient_wins_order_ab() {
 
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup.escrow.release_funds(&bounty_id, &recipient_a);
     let second_release = setup.escrow.try_release_funds(&bounty_id, &recipient_b);
@@ -92,7 +92,7 @@ fn test_release_race_first_recipient_wins_order_ba() {
 
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup.escrow.release_funds(&bounty_id, &recipient_b);
     let second_release = setup.escrow.try_release_funds(&bounty_id, &recipient_a);
@@ -117,7 +117,7 @@ fn test_authorize_claim_race_last_authorization_wins() {
     setup.escrow.set_claim_window(&500);
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup.escrow.authorize_claim(&bounty_id, &claimant_a);
     setup.escrow.authorize_claim(&bounty_id, &claimant_b);
@@ -146,7 +146,7 @@ fn test_auto_refund_race_first_caller_wins() {
 
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup.env.ledger().set(LedgerInfo {
         timestamp: deadline + 1,
@@ -185,7 +185,7 @@ fn test_partial_release_race_prevents_double_spend() {
 
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup
         .escrow
@@ -213,10 +213,10 @@ fn test_batch_release_prevents_double_release() {
 
     setup
         .escrow
-        .lock_funds(&setup.depositor, &1, &10_000, &deadline);
+        .lock_funds(&setup.depositor, &1, &10_000, &deadline, &None);
     setup
         .escrow
-        .lock_funds(&setup.depositor, &2, &20_000, &deadline);
+        .lock_funds(&setup.depositor, &2, &20_000, &deadline, &None);
 
     let items = vec![
         &setup.env,
@@ -253,7 +253,7 @@ fn test_refund_vs_release_race_first_wins() {
 
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup.env.ledger().set(LedgerInfo {
         timestamp: deadline + 1,
@@ -291,7 +291,7 @@ fn test_claim_race_unauthorized_fails() {
     setup.escrow.set_claim_window(&500);
     setup
         .escrow
-        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+        .lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
 
     setup.escrow.authorize_claim(&bounty_id, &authorized);
 

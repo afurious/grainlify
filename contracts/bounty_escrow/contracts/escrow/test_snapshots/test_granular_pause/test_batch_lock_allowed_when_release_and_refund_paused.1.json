@@ -120,6 +120,14 @@
                           "val": {
                             "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                           }
+                        },
+                        {
+                          "key": {
+                            "symbol": "non_transferable_rewards"
+                          },
+                          "val": {
+                            "bool": false
+                          }
                         }
                       ]
                     }
@@ -1373,6 +1381,14 @@
                       "val": {
                         "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                       }
+                    },
+                    {
+                      "key": {
+                        "symbol": "non_transferable_rewards"
+                      },
+                      "val": {
+                        "bool": false
+                      }
                     }
                   ]
                 }
@@ -1525,6 +1541,14 @@
                   },
                   "val": {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {

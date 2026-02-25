@@ -40,7 +40,7 @@ fn test_upgrade_locked_bounty_remains_locked() {
     token_admin_client.mint(&depositor, &10_000);
 
     let deadline = env.ledger().timestamp() + 1000;
-    client.lock_funds(&depositor, &1, &5_000, &deadline);
+    client.lock_funds(&depositor, &1, &5_000, &deadline, &None);
 
     // Simulate upgrade by re-registering contract (state persists)
     let escrow = client.get_escrow_info(&1);
@@ -64,7 +64,7 @@ fn test_upgrade_complete_release_flow() {
     token_admin_client.mint(&depositor, &10_000);
 
     let deadline = env.ledger().timestamp() + 1000;
-    client.lock_funds(&depositor, &1, &5_000, &deadline);
+    client.lock_funds(&depositor, &1, &5_000, &deadline, &None);
 
     // Verify locked
     let escrow = client.get_escrow_info(&1);
@@ -91,7 +91,7 @@ fn test_upgrade_pending_lock_then_refund() {
     token_admin_client.mint(&depositor, &10_000);
 
     let deadline = env.ledger().timestamp() + 100;
-    client.lock_funds(&depositor, &2, &5_000, &deadline);
+    client.lock_funds(&depositor, &2, &5_000, &deadline, &None);
 
     // Advance time past deadline
     let current_time = env.ledger().timestamp();
@@ -128,7 +128,7 @@ fn test_upgrade_partial_release_then_complete() {
     token_admin_client.mint(&depositor, &10_000);
 
     let deadline = env.ledger().timestamp() + 1000;
-    client.lock_funds(&depositor, &3, &6_000, &deadline);
+    client.lock_funds(&depositor, &3, &6_000, &deadline, &None);
 
     client.partial_release(&3, &contributor, &2_000);
 

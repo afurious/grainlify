@@ -25,6 +25,8 @@ pub struct FundsLocked {
     pub amount: i128,
     pub depositor: Address,
     pub deadline: u64,
+    /// When true, this escrow uses non-transferable (soulbound) reward tokens.
+    pub non_transferable_rewards: bool,
 }
 
 pub fn emit_funds_locked(env: &Env, event: FundsLocked) {

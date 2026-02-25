@@ -117,7 +117,8 @@
                 },
                 {
                   "u64": 120
-                }
+                },
+                "void"
               ]
             }
           },
@@ -172,7 +173,8 @@
                 },
                 {
                   "u64": 240
-                }
+                },
+                "void"
               ]
             }
           },
@@ -2476,7 +2478,8 @@
                 },
                 {
                   "u64": 120
-                }
+                },
+                "void"
               ]
             }
           }
@@ -2630,6 +2633,14 @@
                 },
                 {
                   "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
+                  }
+                },
+                {
+                  "key": {
                     "symbol": "version"
                   },
                   "val": {
@@ -2698,7 +2709,8 @@
                 },
                 {
                   "u64": 240
-                }
+                },
+                "void"
               ]
             }
           }
@@ -2848,6 +2860,14 @@
                   },
                   "val": {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {
