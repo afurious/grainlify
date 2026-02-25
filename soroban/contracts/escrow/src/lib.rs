@@ -6,6 +6,8 @@ use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env,
 };
 
+mod reentrancy_guard;
+
 #[contracterror]
 #[derive(Clone, Debug, PartialEq)]
 #[repr(u32)]
@@ -53,6 +55,7 @@ pub enum DataKey {
     Token,
     Escrow(u64),
     DeprecationState,
+    ReentrancyGuard,
 }
 
 #[contract]
@@ -72,6 +75,10 @@ impl EscrowContract {
 
     /// Lock funds: depositor must be authorized; tokens transferred from depositor to contract.
     /// Fails with ContractDeprecated when the contract has been deprecated (kill switch).
+    ///
+    /// # Reentrancy
+    /// Protected by reentrancy guard. Escrow state is written before the
+    /// inbound token transfer (CEI pattern).
     pub fn lock_funds(
         env: Env,
         depositor: Address,
@@ -82,6 +89,9 @@ impl EscrowContract {
         if Self::get_deprecation_state(&env).deprecated {
             return Err(Error::ContractDeprecated);
         }
+        // GUARD: acquire reentrancy lock
+        reentrancy_guard::acquire(&env);
+
         depositor.require_auth();
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
@@ -93,6 +103,19 @@ impl EscrowContract {
             return Err(Error::BountyExists);
         }
 
+        // EFFECTS: write escrow state before external call
+        let escrow = Escrow {
+            depositor: depositor.clone(),
+            amount,
+            remaining_amount: amount,
+            status: EscrowStatus::Locked,
+            deadline,
+        };
+        env.storage()
+            .persistent()
+            .set(&DataKey::Escrow(bounty_id), &escrow);
+
+        // INTERACTION: external token transfer is last
         let token = env
             .storage()
             .instance()
@@ -102,21 +125,20 @@ impl EscrowContract {
         let token_client = token::Client::new(&env, &token);
         token_client.transfer(&depositor, &contract, &amount);
 
-        let escrow = Escrow {
-            depositor,
-            amount,
-            remaining_amount: amount,
-            status: EscrowStatus::Locked,
-            deadline,
-        };
-        env.storage()
-            .persistent()
-            .set(&DataKey::Escrow(bounty_id), &escrow);
+        // GUARD: release reentrancy lock
+        reentrancy_guard::release(&env);
         Ok(())
     }
 
     /// Release funds to contributor. Admin must be authorized. Fails if already released or refunded.
+    ///
+    /// # Reentrancy
+    /// Protected by reentrancy guard. Escrow state is updated to
+    /// `Released` *before* the outbound token transfer (CEI pattern).
     pub fn release_funds(env: Env, bounty_id: u64, contributor: Address) -> Result<(), Error> {
+        // GUARD: acquire reentrancy lock
+        reentrancy_guard::acquire(&env);
+
         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
         if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
@@ -135,6 +157,15 @@ impl EscrowContract {
             return Err(Error::InsufficientBalance);
         }
 
+        // EFFECTS: update state before external call (CEI)
+        let release_amount = escrow.remaining_amount;
+        escrow.remaining_amount = 0;
+        escrow.status = EscrowStatus::Released;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Escrow(bounty_id), &escrow);
+
+        // INTERACTION: external token transfer is last
         let token = env
             .storage()
             .instance()
@@ -142,18 +173,22 @@ impl EscrowContract {
             .unwrap();
         let contract = env.current_contract_address();
         let token_client = token::Client::new(&env, &token);
-        token_client.transfer(&contract, &contributor, &escrow.remaining_amount);
+        token_client.transfer(&contract, &contributor, &release_amount);
 
-        escrow.remaining_amount = 0;
-        escrow.status = EscrowStatus::Released;
-        env.storage()
-            .persistent()
-            .set(&DataKey::Escrow(bounty_id), &escrow);
+        // GUARD: release reentrancy lock
+        reentrancy_guard::release(&env);
         Ok(())
     }
 
-    /// Refund remaining funds to depositor. Allowed after deadline. Fails if already released or refunded.
+    /// Refund remaining funds to depositor. Allowed after deadline.
+    ///
+    /// # Reentrancy
+    /// Protected by reentrancy guard. Escrow state is updated to
+    /// `Refunded` *before* the outbound token transfer (CEI pattern).
     pub fn refund(env: Env, bounty_id: u64) -> Result<(), Error> {
+        // GUARD: acquire reentrancy lock
+        reentrancy_guard::acquire(&env);
+
         if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyNotFound);
         }
@@ -174,6 +209,16 @@ impl EscrowContract {
             return Err(Error::InsufficientBalance);
         }
 
+        // EFFECTS: update state before external call (CEI)
+        let amount = escrow.remaining_amount;
+        let depositor = escrow.depositor.clone();
+        escrow.remaining_amount = 0;
+        escrow.status = EscrowStatus::Refunded;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Escrow(bounty_id), &escrow);
+
+        // INTERACTION: external token transfer is last
         let token = env
             .storage()
             .instance()
@@ -181,14 +226,10 @@ impl EscrowContract {
             .unwrap();
         let contract = env.current_contract_address();
         let token_client = token::Client::new(&env, &token);
-        let amount = escrow.remaining_amount;
-        token_client.transfer(&contract, &escrow.depositor, &amount);
+        token_client.transfer(&contract, &depositor, &amount);
 
-        escrow.remaining_amount = 0;
-        escrow.status = EscrowStatus::Refunded;
-        env.storage()
-            .persistent()
-            .set(&DataKey::Escrow(bounty_id), &escrow);
+        // GUARD: release reentrancy lock
+        reentrancy_guard::release(&env);
         Ok(())
     }
 
