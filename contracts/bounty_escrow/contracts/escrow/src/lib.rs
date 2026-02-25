@@ -2,6 +2,7 @@
 #[allow(dead_code)]
 mod events;
 mod invariants;
+mod upgrade_safety;
 #[cfg(test)]
 mod test_metadata;
 
@@ -393,6 +394,8 @@ pub enum Error {
     CapabilityAmountExceeded = 27,
     CapabilityUsesExhausted = 28,
     CapabilityExceedsAuthority = 29,
+    /// Returned when upgrade safety checks fail
+    UpgradeSafetyCheckFailed = 30,
 }
 
 #[contracttype]
@@ -2874,6 +2877,59 @@ impl BountyEscrowContract {
             .persistent()
             .get(&DataKey::Metadata(bounty_id))
             .ok_or(Error::BountyNotFound)
+    }
+
+    /// Perform upgrade safety check (dry-run)
+    /// 
+    /// This function runs all safety checks without modifying state.
+    /// Use this before a real upgrade to verify the contract state is compatible.
+    /// 
+    /// Returns a report with check results. Upgrade is safe if `is_safe` is true.
+    pub fn simulate_upgrade(env: Env) -> upgrade_safety::UpgradeSafetyReport {
+        upgrade_safety::simulate_upgrade(&env)
+    }
+
+    /// Execute contract upgrade with safety checks
+    /// 
+    /// This function should be called as part of the upgrade process.
+    /// It validates all pre-upgrade invariants before allowing the upgrade to proceed.
+    /// 
+    /// # Arguments
+    /// * `new_wasm_hash` - The hash of the new contract WASM (not used in v1, reserved for future)
+    /// 
+    /// # Returns
+    /// * `Ok(())` - If upgrade safety checks pass
+    /// * `Err(Error::UpgradeSafetyCheckFailed)` - If any safety check fails
+    pub fn upgrade(env: Env, new_wasm_hash: u32) -> Result<(), Error> {
+        // Validate upgrade prerequisites
+        upgrade_safety::validate_upgrade(&env)?;
+        
+        // In Soroban, the actual upgrade is performed by the Soroban runtime
+        // when the contract is re-deployed with the same contract ID but new WASM.
+        // This function serves as a pre-upgrade validation hook.
+        // The new_wasm_hash parameter is reserved for future use to validate
+        // the WASM being upgraded to.
+        
+        Ok(())
+    }
+
+    /// Enable or disable upgrade safety checks
+    /// 
+    /// Should only be called by admin. Disabling safety checks is not recommended.
+    pub fn set_upgrade_safety(env: Env, enabled: bool) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+        
+        upgrade_safety::set_safety_checks_enabled(&env, enabled);
+        Ok(())
+    }
+
+    /// Get status of upgrade safety checks
+    pub fn get_upgrade_safety_status(env: Env) -> bool {
+        upgrade_safety::is_safety_checks_enabled(&env)
     }
 }
 
