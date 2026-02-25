@@ -124,9 +124,9 @@
 //! ## Event System
 //!
 //! The contract emits events for all major operations:
-//! - `ProgramInit`: Program initialization
-//! - `FundsLocked`: Prize funds locked
-//! - `BatchPayout`: Multiple prizes distributed
+//! - `PrgInit`: Program initialization
+//! - `FndsLock`: Prize funds locked
+//! - `BatchPay`: Multiple prizes distributed
 //! - `Payout`: Single prize distributed
 //!
 //! ## Best Practices
@@ -144,15 +144,10 @@ use soroban_sdk::{
     Vec,
 };
 
-// Event types
-const PROGRAM_INITIALIZED: Symbol = symbol_short!("ProgInit");
-const FUNDS_LOCKED: Symbol = symbol_short!("FundLock");
-const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
-const PAYOUT: Symbol = symbol_short!("Payout");
-
-// Event types
-const PROGRAM_INITIALIZED: Symbol = symbol_short!("ProgInit");
-const FUNDS_LOCKED: Symbol = symbol_short!("FundLock");
+// Event types — canonical topic symbols aligned with backend analytics schemas.
+// See contracts/EVENT_SCHEMA.md for the authoritative mapping.
+const PROGRAM_INITIALIZED: Symbol = symbol_short!("PrgInit");
+const FUNDS_LOCKED: Symbol = symbol_short!("FndsLock");
 const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
 const PAYOUT: Symbol = symbol_short!("Payout");
 const DEPENDENCY_CREATED: Symbol = symbol_short!("dep_add");
