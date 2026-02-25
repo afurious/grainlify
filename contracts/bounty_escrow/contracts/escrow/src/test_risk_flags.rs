@@ -40,6 +40,6 @@ fn test_escrow_risk_flags_set_clear_and_persist() {
         &soroban_sdk::String::from_str(&env, "bug_fix"),
     );
 
-    let fetched = client.get_metadata(&bounty_id).unwrap();
+    let fetched = client.get_metadata(&bounty_id);
     assert_eq!(fetched.risk_flags, RISK_FLAG_HIGH_RISK);
 }
