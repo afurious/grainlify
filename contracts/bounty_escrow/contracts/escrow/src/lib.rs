@@ -21,16 +21,12 @@ mod test_rbac;
 mod traits;
 
 use events::{
-    emit_batch_funds_locked, emit_batch_funds_locked, emit_batch_funds_released,
-    emit_batch_funds_released, emit_bounty_initialized, emit_bounty_initialized,
-    emit_deprecation_state_changed, emit_funds_locked, emit_funds_locked, emit_funds_refunded,
-    emit_funds_refunded, emit_funds_released, emit_funds_released,
+    emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized,
+    emit_deprecation_state_changed, emit_funds_locked, emit_funds_refunded, emit_funds_released,
     emit_participant_filter_mode_changed, emit_ticket_claimed, emit_ticket_issued,
-    BatchFundsLocked, BatchFundsLocked, BatchFundsReleased, BatchFundsReleased,
-    BountyEscrowInitialized, BountyEscrowInitialized, ClaimCancelled, ClaimCancelled, ClaimCreated,
-    ClaimCreated, ClaimExecuted, ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsLocked,
-    FundsRefunded, FundsRefunded, FundsReleased, FundsReleased, ParticipantFilterModeChanged,
-    TicketClaimed, TicketIssued, EVENT_VERSION_V2, EVENT_VERSION_V2,
+    BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
+    ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsRefunded, FundsReleased,
+    ParticipantFilterModeChanged, TicketClaimed, TicketIssued, EVENT_VERSION_V2,
 };
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, vec, Address, Env,
@@ -373,7 +369,7 @@ mod anti_abuse {
         {
             // New window: start at 1 (safe)
             state.window_start_timestamp = now;
-            state.operation_count = 0.checked_add(1).unwrap();
+            state.operation_count = 0u32.checked_add(1).unwrap();
         } else {
             // Same window
             if state.operation_count >= config.max_operations {
@@ -447,11 +443,11 @@ pub enum Error {
     CapabilityExceedsAuthority = 32,
     InvalidAssetId = 33,
     /// Returned when new locks/registrations are disabled (contract deprecated)
-    ContractDeprecated = 31,
+    ContractDeprecated = 34,
     /// Returned when participant filtering is blocklist-only and the address is blocklisted
-    ParticipantBlocked = 32,
+    ParticipantBlocked = 35,
     /// Returned when participant filtering is allowlist-only and the address is not allowlisted
-    ParticipantNotAllowed = 33,
+    ParticipantNotAllowed = 36,
 }
 
 #[contracttype]
