@@ -48,7 +48,10 @@ mod test {
         env.storage().persistent().set(&err_key, &5u64);
 
         // Verify that verification detects the drift
-        assert!(!monitoring::verify_invariants(&env), "Invariants should fail when error_count > operation_count");
+        assert!(
+            !monitoring::verify_invariants(&env),
+            "Invariants should fail when error_count > operation_count"
+        );
     }
 
     #[test]
@@ -64,6 +67,9 @@ mod test {
         env.storage().persistent().set(&usr_key, &10u64);
 
         // Verify that verification detects the drift
-        assert!(!monitoring::verify_invariants(&env), "Invariants should fail when unique_users > operation_count");
+        assert!(
+            !monitoring::verify_invariants(&env),
+            "Invariants should fail when unique_users > operation_count"
+        );
     }
 }
