@@ -25,7 +25,14 @@ fn create_env() -> Env {
     env
 }
 
-fn setup(env: &Env) -> (BountyEscrowContractClient<'_>, Address, Address, token::Client<'_>) {
+fn setup(
+    env: &Env,
+) -> (
+    BountyEscrowContractClient<'_>,
+    Address,
+    Address,
+    token::Client<'_>,
+) {
     let admin = Address::generate(env);
     let depositor = Address::generate(env);
     let other = Address::generate(env);
@@ -121,11 +128,16 @@ fn test_mode_transition_disabled_to_blocklist_only() {
 
     assert_eq!(client.get_filter_mode(), ParticipantFilterMode::Disabled);
     client.set_filter_mode(&ParticipantFilterMode::BlocklistOnly);
-    assert_eq!(client.get_filter_mode(), ParticipantFilterMode::BlocklistOnly);
+    assert_eq!(
+        client.get_filter_mode(),
+        ParticipantFilterMode::BlocklistOnly
+    );
 
     client.set_blocklist_entry(&depositor, &true);
     let deadline = env.ledger().timestamp() + 86_400;
-    assert!(client.try_lock_funds(&depositor, &1, &100, &deadline).is_err());
+    assert!(client
+        .try_lock_funds(&depositor, &1, &100, &deadline)
+        .is_err());
     client.lock_funds(&other, &2, &100, &deadline);
 }
 
@@ -217,7 +229,13 @@ fn test_set_filter_mode_emits_event_and_persists() {
 
     assert_eq!(client.get_filter_mode(), ParticipantFilterMode::Disabled);
     client.set_filter_mode(&ParticipantFilterMode::BlocklistOnly);
-    assert_eq!(client.get_filter_mode(), ParticipantFilterMode::BlocklistOnly);
+    assert_eq!(
+        client.get_filter_mode(),
+        ParticipantFilterMode::BlocklistOnly
+    );
     client.set_filter_mode(&ParticipantFilterMode::AllowlistOnly);
-    assert_eq!(client.get_filter_mode(), ParticipantFilterMode::AllowlistOnly);
+    assert_eq!(
+        client.get_filter_mode(),
+        ParticipantFilterMode::AllowlistOnly
+    );
 }
