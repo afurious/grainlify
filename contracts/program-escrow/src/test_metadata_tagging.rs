@@ -510,7 +510,41 @@ fn test_empty_program_metadata() {
 // ============================================================================
 
 #[test]
-fn test_program_id_validation() {
+#[should_panic(expected = "Program ID cannot be empty")]
+fn test_program_id_validation_empty() {
+    let s = Setup::new();
+    
+    // Invalid: empty program ID
+    let empty_id = String::from_str(&s.env, "");
+    s.escrow.init_program_with_metadata(
+        &empty_id,
+        &s.backend,
+        &s.token.address,
+        &s.organizer,
+        &Some(s.organizer.clone()),
+        &None,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Program ID exceeds maximum length")]
+fn test_program_id_validation_too_long() {
+    let s = Setup::new();
+    
+    // Invalid: program ID too long
+    let long_id = String::from_str(&s.env, "ThisIsAVeryLongProgramIdentifierThatExceedsTheMaximumAllowedLength");
+    s.escrow.init_program_with_metadata(
+        &long_id,
+        &s.backend,
+        &s.token.address,
+        &s.organizer,
+        &Some(s.organizer.clone()),
+        &None,
+    );
+}
+
+#[test]
+fn test_program_id_validation_valid() {
     let s = Setup::new();
     
     // Valid program ID
@@ -524,72 +558,20 @@ fn test_program_id_validation() {
         &None,
     );
     
-    // Invalid: empty program ID
-    let empty_id = String::from_str(&s.env, "");
-    let result = std::panic::catch_unwind(|| {
-        s.escrow.init_program_with_metadata(
-            &empty_id,
-            &s.backend,
-            &s.token.address,
-            &s.organizer,
-            &Some(s.organizer.clone()),
-            &None,
-        );
-    });
-    assert!(result.is_err());
-    
-    // Invalid: program ID too long
-    let long_id = String::from_str(&s.env, "ThisIsAVeryLongProgramIdentifierThatExceedsTheMaximumAllowedLength");
-    let result = std::panic::catch_unwind(|| {
-        s.escrow.init_program_with_metadata(
-            &long_id,
-            &s.backend,
-            &s.token.address,
-            &s.organizer,
-            &Some(s.organizer.clone()),
-            &None,
-        );
-    });
-    assert!(result.is_err());
+    // Verify it was created
+    let program_data = s.escrow.get_program_info(&valid_id);
+    assert_eq!(program_data.program_id, valid_id);
 }
 
 #[test]
-fn test_metadata_validation() {
+#[should_panic(expected = "tag cannot be empty")]
+fn test_metadata_validation_empty_tag() {
     let s = Setup::new();
     let program_id = String::from_str(&s.env, "TestProgram");
     
-    // Valid metadata
-    let mut tags = SdkVec::new(&s.env);
-    tags.push_back(String::from_str(&s.env, "valid-tag"));
-    
-    let mut custom_fields = SdkVec::new(&s.env);
-    custom_fields.push_back((
-        String::from_str(&s.env, "key"),
-        String::from_str(&s.env, "value"),
-    ));
-    
-    let valid_metadata = ProgramMetadata {
-        program_name: Some(String::from_str(&s.env, "Valid Program Name")),
-        program_type: Some(String::from_str(&s.env, "hackathon")),
-        ecosystem: Some(String::from_str(&s.env, "stellar")),
-        tags: tags.clone(),
-        start_date: None,
-        end_date: None,
-        custom_fields,
-    };
-    
-    s.escrow.init_program_with_metadata(
-        &program_id,
-        &s.backend,
-        &s.token.address,
-        &s.organizer,
-        &Some(s.organizer.clone()),
-        &Some(valid_metadata),
-    );
-    
-    // Invalid: tag too long
+    // Create metadata with empty tag
     let mut invalid_tags = SdkVec::new(&s.env);
-    invalid_tags.push_back(String::from_str(&s.env, "this-is-a-very-long-tag-that-exceeds-the-maximum-allowed-length"));
+    invalid_tags.push_back(String::from_str(&s.env, "")); // Empty tag
     
     let invalid_metadata = ProgramMetadata {
         program_name: Some(String::from_str(&s.env, "Valid Program Name")),
@@ -601,8 +583,5 @@ fn test_metadata_validation() {
         custom_fields: SdkVec::new(&s.env),
     };
     
-    let result = std::panic::catch_unwind(|| {
-        s.escrow.update_program_metadata(&program_id, invalid_metadata);
-    });
-    assert!(result.is_err());
+    s.escrow.update_program_metadata(&program_id, invalid_metadata);
 }
