@@ -5,11 +5,7 @@
 use super::*;
 use soroban_sdk::{
     testutils::{Address as _, Events, Ledger as _},
-    token,
-    vec,
-    Address,
-    Env,
-    Vec,
+    token, vec, Address, Env, Vec,
 };
 
 fn create_token_contract<'a>(

@@ -869,7 +869,9 @@ impl BountyEscrowContract {
             deprecated,
             migration_target: migration_target.clone(),
         };
-        env.storage().instance().set(&DataKey::DeprecationState, &state);
+        env.storage()
+            .instance()
+            .set(&DataKey::DeprecationState, &state);
         emit_deprecation_state_changed(
             &env,
             DeprecationStateChanged {
@@ -3018,6 +3020,8 @@ mod test_bounty_escrow;
 #[cfg(test)]
 mod test_capability_tokens;
 #[cfg(test)]
+mod test_deprecation;
+#[cfg(test)]
 mod test_dispute_resolution;
 #[cfg(test)]
 mod test_expiration_and_dispute;
@@ -3034,8 +3038,6 @@ mod test_metadata_tagging;
 mod test_partial_payout_rounding;
 #[cfg(test)]
 mod test_pause;
-#[cfg(test)]
-mod test_deprecation;
 #[cfg(test)]
 mod escrow_status_transition_tests {
     use super::*;
