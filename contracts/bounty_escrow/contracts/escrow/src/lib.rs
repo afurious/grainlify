@@ -115,7 +115,7 @@ pub(crate) mod monitoring {
         if !success {
             let err_key = Symbol::new(env, ERROR_COUNT);
             let err_count: u64 = env.storage().persistent().get(&err_key).unwrap_or(0);
-            env.storage().persistent().set(&err_key, &err_count.checked_add(1).unwrap());;
+            env.storage().persistent().set(&err_key, &err_count.checked_add(1).unwrap());
         }
 
         env.events().publish(
@@ -341,9 +341,7 @@ mod anti_abuse {
 {
     // New window: start at 1 (safe)
     state.window_start_timestamp = now;
-    state.operation_count = 0
-        .checked_add(1)
-        .unwrap();
+    state.operation_count = 0u32.checked_add(1).unwrap();
 } else {
     // Same window
     if state.operation_count >= config.max_operations {
@@ -4495,4 +4493,5 @@ mod test_query_filters;
 mod test_status_transitions;
 #[cfg(test)]
 mod test_e2e_upgrade_with_pause;
-
+#[cfg(test)]
+mod test_sandbox;
