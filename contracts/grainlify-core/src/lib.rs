@@ -167,6 +167,7 @@ use soroban_sdk::{
 
 // ==================== MONITORING MODULE ====================
 mod monitoring {
+    use super::DataKey;
     use soroban_sdk::{contracttype, symbol_short, Address, Env, String, Symbol};
 
     // Storage keys
@@ -232,6 +233,22 @@ mod monitoring {
         pub total_time: u64,
         pub avg_time: u64,
         pub last_called: u64,
+    }
+
+    // Data: Invariant report for external auditors/monitors
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub struct InvariantReport {
+        pub healthy: bool,
+        pub config_sane: bool,
+        pub metrics_sane: bool,
+        pub admin_set: bool,
+        pub version_set: bool,
+        pub version: u32,
+        pub operation_count: u64,
+        pub unique_users: u64,
+        pub error_count: u64,
+        pub violation_count: u32,
     }
 
     // Track operation
@@ -350,6 +367,87 @@ mod monitoring {
             avg_time: avg,
             last_called: last,
         }
+    }
+
+    // Verify core monitoring/config invariants.
+    // This is view-only and safe for frequent calls by off-chain monitors.
+    pub fn check_invariants(env: &Env) -> InvariantReport {
+        let op_key = Symbol::new(env, OPERATION_COUNT);
+        let usr_key = Symbol::new(env, USER_COUNT);
+        let err_key = Symbol::new(env, ERROR_COUNT);
+
+        let operation_count: u64 = env.storage().persistent().get(&op_key).unwrap_or(0);
+        let unique_users: u64 = env.storage().persistent().get(&usr_key).unwrap_or(0);
+        let error_count: u64 = env.storage().persistent().get(&err_key).unwrap_or(0);
+
+        let metrics_sane = error_count <= operation_count
+            && unique_users <= operation_count
+            && (operation_count > 0 || (unique_users == 0 && error_count == 0));
+
+        let admin_set = env.storage().instance().has(&DataKey::Admin);
+        let version_opt: Option<u32> = env.storage().instance().get(&DataKey::Version);
+        let version_set = version_opt.is_some();
+        let version = version_opt.unwrap_or(0);
+        let version_sane = version > 0;
+
+        let previous_version_opt: Option<u32> =
+            env.storage().instance().get(&DataKey::PreviousVersion);
+        let previous_version_sane = match (previous_version_opt, version_opt) {
+            (Some(prev), Some(curr)) => prev <= curr,
+            (Some(_), None) => false,
+            (None, _) => true,
+        };
+
+        let chain_id: Option<String> = env.storage().instance().get(&DataKey::ChainId);
+        let network_id: Option<String> = env.storage().instance().get(&DataKey::NetworkId);
+        let network_pair_sane = match (chain_id, network_id) {
+            (Some(chain), Some(network)) => chain.len() > 0 && network.len() > 0,
+            (None, None) => true,
+            _ => false,
+        };
+
+        let config_sane =
+            admin_set && version_set && version_sane && previous_version_sane && network_pair_sane;
+
+        let mut violation_count: u32 = 0;
+        if !admin_set {
+            violation_count += 1;
+        }
+        if !version_set || !version_sane {
+            violation_count += 1;
+        }
+        if !previous_version_sane {
+            violation_count += 1;
+        }
+        if !network_pair_sane {
+            violation_count += 1;
+        }
+        if error_count > operation_count {
+            violation_count += 1;
+        }
+        if unique_users > operation_count {
+            violation_count += 1;
+        }
+        if operation_count == 0 && (unique_users > 0 || error_count > 0) {
+            violation_count += 1;
+        }
+
+        InvariantReport {
+            healthy: config_sane && metrics_sane,
+            config_sane,
+            metrics_sane,
+            admin_set,
+            version_set,
+            version,
+            operation_count,
+            unique_users,
+            error_count,
+            violation_count,
+        }
+    }
+
+    pub fn verify_invariants(env: &Env) -> bool {
+        check_invariants(env).healthy
     }
 }
 // ==================== END MONITORING MODULE ====================
@@ -1122,6 +1220,16 @@ impl GrainlifyContract {
         monitoring::get_performance_stats(&env, function_name)
     }
 
+    /// Return a detailed invariant report for auditors and monitoring tools.
+    pub fn check_invariants(env: Env) -> monitoring::InvariantReport {
+        monitoring::check_invariants(&env)
+    }
+
+    /// Lightweight invariant verdict for frequent monitoring calls.
+    pub fn verify_invariants(env: Env) -> bool {
+        monitoring::verify_invariants(&env)
+    }
+
     // ========================================================================
     // State Migration System
     // ========================================================================
@@ -1358,6 +1466,7 @@ mod test {
 
     // Include end-to-end upgrade and migration tests
     pub mod e2e_upgrade_migration_tests;
+    pub mod invariant_entrypoints_tests;
     pub mod upgrade_rollback_tests;
 
     // WASM for testing

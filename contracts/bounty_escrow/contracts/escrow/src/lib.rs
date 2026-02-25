@@ -514,6 +514,21 @@ pub struct AggregateStats {
     pub count_refunded: u32,
 }
 
+/// Detailed invariant verdict for off-chain auditors and monitoring tools.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InvariantCheckResult {
+    pub healthy: bool,
+    pub initialized: bool,
+    pub config_sane: bool,
+    pub sum_remaining: i128,
+    pub token_balance: i128,
+    pub per_escrow_failures: u32,
+    pub orphaned_index_entries: u32,
+    pub refund_inconsistencies: u32,
+    pub violation_count: u32,
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PauseStateChanged {
@@ -791,6 +806,55 @@ impl BountyEscrowContract {
                 fee_recipient: env.storage().instance().get(&DataKey::Admin).unwrap(),
                 fee_enabled: false,
             })
+    }
+
+    /// Lightweight configuration sanity checks used by `check_invariants`.
+    fn check_config_sanity(env: &Env) -> bool {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return false;
+        }
+        if !env.storage().instance().has(&DataKey::Token) {
+            return false;
+        }
+
+        if let Some((min_amount, max_amount)) = env
+            .storage()
+            .instance()
+            .get::<DataKey, (i128, i128)>(&DataKey::AmountPolicy)
+        {
+            if min_amount < 0 || max_amount < min_amount {
+                return false;
+            }
+        }
+
+        if let Some(cfg) = env
+            .storage()
+            .instance()
+            .get::<DataKey, FeeConfig>(&DataKey::FeeConfig)
+        {
+            if cfg.lock_fee_rate < 0
+                || cfg.lock_fee_rate > MAX_FEE_RATE
+                || cfg.release_fee_rate < 0
+                || cfg.release_fee_rate > MAX_FEE_RATE
+            {
+                return false;
+            }
+        }
+
+        if let Some(multisig) = env
+            .storage()
+            .instance()
+            .get::<DataKey, MultisigConfig>(&DataKey::MultisigConfig)
+        {
+            if multisig.required_signatures == 0 {
+                return false;
+            }
+            if multisig.required_signatures > multisig.signers.len() {
+                return false;
+            }
+        }
+
+        true
     }
 
     /// Update fee configuration (admin only)
@@ -3176,21 +3240,47 @@ impl BountyEscrowContract {
         }
     }
 
-    /// Verify ALL multi-token balance invariants across every escrow (Issue #591).
+    /// Returns a detailed invariant report for auditors and monitoring tools.
     ///
-    /// This is a view function — no state is mutated.  It checks:
-    /// - INV-1: Per-escrow sanity (amount, remaining, status consistency)
-    /// - INV-2: Sum of remaining_amount == actual token balance
-    /// - INV-4: Refund history consistency
-    /// - INV-5: Index completeness (no orphaned entries)
-    ///
-    /// Returns `true` when ALL invariants hold.
-    pub fn verify_all_invariants(env: Env) -> bool {
-        if !env.storage().instance().has(&DataKey::Admin) {
-            return false; // Not initialised
+    /// This is view-only and safe for frequent polling.
+    pub fn check_invariants(env: Env) -> InvariantCheckResult {
+        let initialized = env.storage().instance().has(&DataKey::Admin)
+            && env.storage().instance().has(&DataKey::Token);
+        if !initialized {
+            return InvariantCheckResult {
+                healthy: false,
+                initialized: false,
+                config_sane: false,
+                sum_remaining: 0,
+                token_balance: 0,
+                per_escrow_failures: 0,
+                orphaned_index_entries: 0,
+                refund_inconsistencies: 0,
+                violation_count: 1,
+            };
         }
+
         let report = multitoken_invariants::check_all_invariants(&env);
-        report.healthy
+        let config_sane = Self::check_config_sanity(&env);
+
+        InvariantCheckResult {
+            healthy: report.healthy && config_sane,
+            initialized: true,
+            config_sane,
+            sum_remaining: report.sum_remaining,
+            token_balance: report.token_balance,
+            per_escrow_failures: report.per_escrow_failures,
+            orphaned_index_entries: report.orphaned_index_entries,
+            refund_inconsistencies: report.refund_inconsistencies,
+            violation_count: report.violations.len(),
+        }
+    }
+
+    /// Verify ALL multi-token and config invariants across every escrow.
+    ///
+    /// Returns `true` only when all checks pass.
+    pub fn verify_all_invariants(env: Env) -> bool {
+        Self::check_invariants(env).healthy
     }
 
     /// Gets refund eligibility information for a bounty.
