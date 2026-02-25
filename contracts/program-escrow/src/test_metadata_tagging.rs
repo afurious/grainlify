@@ -504,3 +504,105 @@ fn test_empty_program_metadata() {
     assert_eq!(retrieved.tags.len(), 0);
     assert_eq!(retrieved.custom_fields.len(), 0);
 }
+
+// ============================================================================
+// Test 5: Input Validation
+// ============================================================================
+
+#[test]
+fn test_program_id_validation() {
+    let s = Setup::new();
+    
+    // Valid program ID
+    let valid_id = String::from_str(&s.env, "ValidProgram123");
+    s.escrow.init_program_with_metadata(
+        &valid_id,
+        &s.backend,
+        &s.token.address,
+        &s.organizer,
+        &Some(s.organizer.clone()),
+        &None,
+    );
+    
+    // Invalid: empty program ID
+    let empty_id = String::from_str(&s.env, "");
+    let result = std::panic::catch_unwind(|| {
+        s.escrow.init_program_with_metadata(
+            &empty_id,
+            &s.backend,
+            &s.token.address,
+            &s.organizer,
+            &Some(s.organizer.clone()),
+            &None,
+        );
+    });
+    assert!(result.is_err());
+    
+    // Invalid: program ID too long
+    let long_id = String::from_str(&s.env, "ThisIsAVeryLongProgramIdentifierThatExceedsTheMaximumAllowedLength");
+    let result = std::panic::catch_unwind(|| {
+        s.escrow.init_program_with_metadata(
+            &long_id,
+            &s.backend,
+            &s.token.address,
+            &s.organizer,
+            &Some(s.organizer.clone()),
+            &None,
+        );
+    });
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_metadata_validation() {
+    let s = Setup::new();
+    let program_id = String::from_str(&s.env, "TestProgram");
+    
+    // Valid metadata
+    let mut tags = SdkVec::new(&s.env);
+    tags.push_back(String::from_str(&s.env, "valid-tag"));
+    
+    let mut custom_fields = SdkVec::new(&s.env);
+    custom_fields.push_back((
+        String::from_str(&s.env, "key"),
+        String::from_str(&s.env, "value"),
+    ));
+    
+    let valid_metadata = ProgramMetadata {
+        program_name: Some(String::from_str(&s.env, "Valid Program Name")),
+        program_type: Some(String::from_str(&s.env, "hackathon")),
+        ecosystem: Some(String::from_str(&s.env, "stellar")),
+        tags: tags.clone(),
+        start_date: None,
+        end_date: None,
+        custom_fields,
+    };
+    
+    s.escrow.init_program_with_metadata(
+        &program_id,
+        &s.backend,
+        &s.token.address,
+        &s.organizer,
+        &Some(s.organizer.clone()),
+        &Some(valid_metadata),
+    );
+    
+    // Invalid: tag too long
+    let mut invalid_tags = SdkVec::new(&s.env);
+    invalid_tags.push_back(String::from_str(&s.env, "this-is-a-very-long-tag-that-exceeds-the-maximum-allowed-length"));
+    
+    let invalid_metadata = ProgramMetadata {
+        program_name: Some(String::from_str(&s.env, "Valid Program Name")),
+        program_type: Some(String::from_str(&s.env, "hackathon")),
+        ecosystem: Some(String::from_str(&s.env, "stellar")),
+        tags: invalid_tags,
+        start_date: None,
+        end_date: None,
+        custom_fields: SdkVec::new(&s.env),
+    };
+    
+    let result = std::panic::catch_unwind(|| {
+        s.escrow.update_program_metadata(&program_id, invalid_metadata);
+    });
+    assert!(result.is_err());
+}
