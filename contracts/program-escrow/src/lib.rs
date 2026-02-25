@@ -1208,16 +1208,9 @@ impl ProgramEscrowContract {
         env.storage().instance().set(&program_key, &program_data);
     }
 
-    /// Calculate fee amount based on rate (in basis points)
+    /// Calculate fee using floor rounding. Delegates to `token_math::calculate_fee`.
     fn calculate_fee(amount: i128, fee_rate: i128) -> i128 {
-        if fee_rate == 0 {
-            return 0;
-        }
-        // Fee = (amount * fee_rate) / BASIS_POINTS
-        amount
-            .checked_mul(fee_rate)
-            .and_then(|x| x.checked_div(BASIS_POINTS))
-            .unwrap_or(0)
+        token_math::calculate_fee(amount, fee_rate)
     }
 
     /// Get fee configuration (internal helper)
@@ -1264,6 +1257,174 @@ impl ProgramEscrowContract {
     pub fn program_exists(env: Env, program_id: String) -> bool {
         let program_key = DataKey::Program(program_id);
         env.storage().instance().has(&program_key)
+    }
+
+    fn assert_dependencies_satisfied(env: &Env, program_id: &String) {
+        let dependencies = get_program_dependencies_internal(env, program_id);
+        for dependency_id in dependencies.iter() {
+            match dependency_status_internal(env, &dependency_id) {
+                DependencyStatus::Completed => {}
+                DependencyStatus::Pending => panic!("Dependency not satisfied"),
+                DependencyStatus::Failed => panic!("Dependency failed"),
+            }
+        }
+    }
+
+    /// Defines explicit dependencies for a program.
+    ///
+    /// Dependencies can point to:
+    /// - another registered program id; or
+    /// - an externally managed dependency id with a pre-registered status.
+    ///
+    /// Cycle checks are applied for program-to-program edges.
+    pub fn set_program_dependencies(
+        env: Env,
+        program_id: String,
+        dependency_ids: Vec<String>,
+    ) -> Vec<String> {
+        let program_key = DataKey::Program(program_id.clone());
+        let program_data: ProgramData = env
+            .storage()
+            .instance()
+            .get(&program_key)
+            .unwrap_or_else(|| panic!("Program not found"));
+
+        program_data.authorized_payout_key.require_auth();
+
+        let old_dependencies = get_program_dependencies_internal(&env, &program_id);
+        let mut validated_dependencies = vec![&env];
+
+        for dependency_id in dependency_ids.iter() {
+            if dependency_id.len() == 0 {
+                panic!("Dependency id cannot be empty");
+            }
+            if dependency_id == program_id {
+                panic!("Program cannot depend on itself");
+            }
+            if vec_contains(&validated_dependencies, &dependency_id) {
+                panic!("Duplicate dependency");
+            }
+
+            let is_program_dependency = env
+                .storage()
+                .instance()
+                .has(&DataKey::Program(dependency_id.clone()));
+            let is_registered_external = env
+                .storage()
+                .instance()
+                .has(&DataKey::DependencyStatus(dependency_id.clone()));
+            if !is_program_dependency && !is_registered_external {
+                panic!("Dependency not registered");
+            }
+
+            if is_program_dependency {
+                let mut visited = Vec::new(&env);
+                if path_exists_to_target(&env, &dependency_id, &program_id, &mut visited) {
+                    panic!("Dependency cycle detected");
+                }
+            }
+
+            validated_dependencies.push_back(dependency_id.clone());
+        }
+
+        env.storage().instance().set(
+            &DataKey::ProgramDependencies(program_id.clone()),
+            &validated_dependencies,
+        );
+
+        for dependency_id in validated_dependencies.iter() {
+            if !vec_contains(&old_dependencies, &dependency_id) {
+                env.events().publish(
+                    (DEPENDENCY_CREATED,),
+                    (program_id.clone(), dependency_id.clone()),
+                );
+            }
+        }
+        for dependency_id in old_dependencies.iter() {
+            if !vec_contains(&validated_dependencies, &dependency_id) {
+                env.events().publish(
+                    (DEPENDENCY_CLEARED,),
+                    (program_id.clone(), dependency_id.clone()),
+                );
+            }
+        }
+
+        validated_dependencies
+    }
+
+    /// Clears all dependencies for a program.
+    pub fn clear_program_dependencies(env: Env, program_id: String) {
+        let program_key = DataKey::Program(program_id.clone());
+        let program_data: ProgramData = env
+            .storage()
+            .instance()
+            .get(&program_key)
+            .unwrap_or_else(|| panic!("Program not found"));
+
+        program_data.authorized_payout_key.require_auth();
+
+        let old_dependencies = get_program_dependencies_internal(&env, &program_id);
+        let empty_dependencies: Vec<String> = vec![&env];
+        env.storage()
+            .instance()
+            .set(&DataKey::ProgramDependencies(program_id.clone()), &empty_dependencies);
+
+        for dependency_id in old_dependencies.iter() {
+            env.events().publish(
+                (DEPENDENCY_CLEARED,),
+                (program_id.clone(), dependency_id.clone()),
+            );
+        }
+    }
+
+    /// Reads all dependencies configured for a program.
+    pub fn get_program_dependencies(env: Env, program_id: String) -> Vec<String> {
+        if !env
+            .storage()
+            .instance()
+            .has(&DataKey::Program(program_id.clone()))
+        {
+            panic!("Program not found");
+        }
+        get_program_dependencies_internal(&env, &program_id)
+    }
+
+    /// Updates dependency status.
+    ///
+    /// For registered programs, only that program's authorized payout key can update status.
+    /// For external dependency ids, anti-abuse admin authorization is required.
+    pub fn set_dependency_status(env: Env, dependency_id: String, status: DependencyStatus) {
+        if dependency_id.len() == 0 {
+            panic!("Dependency id cannot be empty");
+        }
+
+        if env
+            .storage()
+            .instance()
+            .has(&DataKey::Program(dependency_id.clone()))
+        {
+            let program_data: ProgramData = env
+                .storage()
+                .instance()
+                .get(&DataKey::Program(dependency_id.clone()))
+                .unwrap();
+            program_data.authorized_payout_key.require_auth();
+        } else {
+            let admin = anti_abuse::get_admin(&env)
+                .unwrap_or_else(|| panic!("Admin not set for external dependency status update"));
+            admin.require_auth();
+        }
+
+        env.storage()
+            .instance()
+            .set(&DataKey::DependencyStatus(dependency_id.clone()), &status.clone());
+        env.events()
+            .publish((DEPENDENCY_STATUS_UPDATED,), (dependency_id, status));
+    }
+
+    /// Reads dependency status; defaults to pending if no explicit status exists.
+    pub fn get_dependency_status(env: Env, dependency_id: String) -> DependencyStatus {
+        dependency_status_internal(&env, &dependency_id)
     }
 
     // ========================================================================

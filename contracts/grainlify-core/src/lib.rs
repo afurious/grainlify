@@ -356,6 +356,7 @@ mod monitoring {
 // Contract Definition
 // ============================================================================
 
+#[cfg(feature = "contract")]
 #[contract]
 pub struct GrainlifyContract;
 
@@ -420,6 +421,7 @@ enum DataKey {
 ///
 /// # Usage
 /// Set during initialization and can be updated via `set_version()`.
+#[cfg(feature = "contract")]
 const VERSION: u32 = 2;
 const CONFIG_SNAPSHOT_LIMIT: u32 = 20;
 
