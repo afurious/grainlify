@@ -21,16 +21,16 @@ mod test_rbac;
 mod traits;
 
 use events::{
-    emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
-    emit_funds_refunded, emit_funds_released, emit_ticket_claimed, emit_ticket_issued,
-    BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
-    ClaimExecuted, FundsLocked, FundsRefunded, FundsReleased, TicketClaimed, TicketIssued,
-    EVENT_VERSION_V2,
-    emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized,
-    emit_deprecation_state_changed, emit_funds_locked, emit_funds_refunded, emit_funds_released,
-    emit_participant_filter_mode_changed, BatchFundsLocked, BatchFundsReleased,
-    BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted, DeprecationStateChanged,
-    FundsLocked, FundsRefunded, FundsReleased, ParticipantFilterModeChanged, EVENT_VERSION_V2,
+    emit_batch_funds_locked, emit_batch_funds_locked, emit_batch_funds_released,
+    emit_batch_funds_released, emit_bounty_initialized, emit_bounty_initialized,
+    emit_deprecation_state_changed, emit_funds_locked, emit_funds_locked, emit_funds_refunded,
+    emit_funds_refunded, emit_funds_released, emit_funds_released,
+    emit_participant_filter_mode_changed, emit_ticket_claimed, emit_ticket_issued,
+    BatchFundsLocked, BatchFundsLocked, BatchFundsReleased, BatchFundsReleased,
+    BountyEscrowInitialized, BountyEscrowInitialized, ClaimCancelled, ClaimCancelled, ClaimCreated,
+    ClaimCreated, ClaimExecuted, ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsLocked,
+    FundsRefunded, FundsRefunded, FundsReleased, FundsReleased, ParticipantFilterModeChanged,
+    TicketClaimed, TicketIssued, EVENT_VERSION_V2, EVENT_VERSION_V2,
 };
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, vec, Address, Env,
@@ -115,12 +115,16 @@ pub(crate) mod monitoring {
     pub fn track_operation(env: &Env, operation: Symbol, caller: Address, success: bool) {
         let key = Symbol::new(env, OPERATION_COUNT);
         let count: u64 = env.storage().persistent().get(&key).unwrap_or(0);
-        env.storage().persistent().set(&key, &count.checked_add(1).unwrap());
+        env.storage()
+            .persistent()
+            .set(&key, &count.checked_add(1).unwrap());
 
         if !success {
             let err_key = Symbol::new(env, ERROR_COUNT);
             let err_count: u64 = env.storage().persistent().get(&err_key).unwrap_or(0);
-            env.storage().persistent().set(&err_key, &err_count.checked_add(1).unwrap());;
+            env.storage()
+                .persistent()
+                .set(&err_key, &err_count.checked_add(1).unwrap());
         }
 
         env.events().publish(
@@ -144,8 +148,12 @@ pub(crate) mod monitoring {
         let count: u64 = env.storage().persistent().get(&count_key).unwrap_or(0);
         let total: u64 = env.storage().persistent().get(&time_key).unwrap_or(0);
 
-        env.storage().persistent().set(&count_key, &count.checked_add(1).unwrap());
-        env.storage().persistent().set(&time_key, &total.checked_add(duration).unwrap());
+        env.storage()
+            .persistent()
+            .set(&count_key, &count.checked_add(1).unwrap());
+        env.storage()
+            .persistent()
+            .set(&time_key, &total.checked_add(duration).unwrap());
 
         env.events().publish(
             (symbol_short!("metric"), symbol_short!("perf")),
@@ -358,29 +366,25 @@ mod anti_abuse {
         }
 
         // 2. Window check
-       if now
-    >= state
-        .window_start_timestamp
-        .saturating_add(config.window_size)
-{
-    // New window: start at 1 (safe)
-    state.window_start_timestamp = now;
-    state.operation_count = 0
-        .checked_add(1)
-        .unwrap();
-} else {
-    // Same window
-    if state.operation_count >= config.max_operations {
-        env.events().publish(
-            (symbol_short!("abuse"), symbol_short!("limit")),
-            (address.clone(), now),
-        );
-        panic!("Rate limit exceeded");
-    }
-    state.operation_count = state.operation_count
-        .checked_add(1)
-        .unwrap();
-}
+        if now
+            >= state
+                .window_start_timestamp
+                .saturating_add(config.window_size)
+        {
+            // New window: start at 1 (safe)
+            state.window_start_timestamp = now;
+            state.operation_count = 0.checked_add(1).unwrap();
+        } else {
+            // Same window
+            if state.operation_count >= config.max_operations {
+                env.events().publish(
+                    (symbol_short!("abuse"), symbol_short!("limit")),
+                    (address.clone(), now),
+                );
+                panic!("Rate limit exceeded");
+            }
+            state.operation_count = state.operation_count.checked_add(1).unwrap();
+        }
 
         state.last_operation_timestamp = now;
         env.storage().persistent().set(&key, &state);
@@ -2360,10 +2364,7 @@ impl BountyEscrowContract {
         );
 
         // Decrement remaining; this is always an exact integer subtraction — no rounding
-        escrow.remaining_amount = escrow
-    .remaining_amount
-    .checked_sub(payout_amount)
-    .unwrap();
+        escrow.remaining_amount = escrow.remaining_amount.checked_sub(payout_amount).unwrap();
 
         // Automatically transition to Released once fully paid out
         if escrow.remaining_amount == 0 {
@@ -2481,10 +2482,7 @@ impl BountyEscrowContract {
         // EFFECTS: update state before external call (CEI)
         invariants::assert_escrow(&env, &escrow);
         // Update escrow state: subtract the amount exactly refunded
-        escrow.remaining_amount = escrow
-            .remaining_amount
-            .checked_sub(refund_amount)
-            .unwrap();
+        escrow.remaining_amount = escrow.remaining_amount.checked_sub(refund_amount).unwrap();
         if is_full || escrow.remaining_amount == 0 {
             escrow.status = EscrowStatus::Refunded;
         } else {
@@ -2989,7 +2987,8 @@ impl BountyEscrowContract {
             {
                 if escrow.status == status {
                     if skipped < offset {
-                        skipped = skipped.checked_add(1).unwrap();                        continue;
+                        skipped = skipped.checked_add(1).unwrap();
+                        continue;
                     }
                     results.push_back(EscrowWithId { bounty_id, escrow });
                     count = count.checked_add(1).unwrap();
@@ -3135,34 +3134,18 @@ impl BountyEscrowContract {
             {
                 match escrow.status {
                     EscrowStatus::Locked => {
-                       stats.total_locked = stats
-            .total_locked
-            .checked_add(escrow.amount)
-            .unwrap();
-        stats.count_locked = stats
-            .count_locked
-            .checked_add(1)
-            .unwrap();
+                        stats.total_locked = stats.total_locked.checked_add(escrow.amount).unwrap();
+                        stats.count_locked = stats.count_locked.checked_add(1).unwrap();
                     }
                     EscrowStatus::Released => {
-                        stats.total_released = stats
-            .total_released
-            .checked_add(escrow.amount)
-            .unwrap();
-        stats.count_released = stats
-            .count_released
-            .checked_add(1)
-            .unwrap();
+                        stats.total_released =
+                            stats.total_released.checked_add(escrow.amount).unwrap();
+                        stats.count_released = stats.count_released.checked_add(1).unwrap();
                     }
                     EscrowStatus::Refunded | EscrowStatus::PartiallyRefunded => {
-                        stats.total_refunded = stats
-            .total_refunded
-            .checked_add(escrow.amount)
-            .unwrap();
-        stats.count_refunded = stats
-            .count_refunded
-            .checked_add(1)
-            .unwrap();
+                        stats.total_refunded =
+                            stats.total_refunded.checked_add(escrow.amount).unwrap();
+                        stats.count_refunded = stats.count_refunded.checked_add(1).unwrap();
                     }
                 }
             }
@@ -3319,11 +3302,7 @@ impl BountyEscrowContract {
     }
 
     /// Set blocklist status for an address (admin only). Only enforced when mode is BlocklistOnly.
-    pub fn set_blocklist_entry(
-        env: Env,
-        address: Address,
-        blocked: bool,
-    ) -> Result<(), Error> {
+    pub fn set_blocklist_entry(env: Env, address: Address, blocked: bool) -> Result<(), Error> {
         let admin: Address = env
             .storage()
             .instance()
@@ -3637,9 +3616,10 @@ impl BountyEscrowContract {
             &env,
             BatchFundsLocked {
                 count: locked_count,
-                total_amount: items.iter().try_fold(0i128, |acc, i| {
-    acc.checked_add(i.amount)
-}).unwrap(),
+                total_amount: items
+                    .iter()
+                    .try_fold(0i128, |acc, i| acc.checked_add(i.amount))
+                    .unwrap(),
                 timestamp,
             },
         );
@@ -4237,8 +4217,6 @@ mod test_compatibility;
 #[cfg(test)]
 mod test_deprecation;
 #[cfg(test)]
-mod test_participant_filter_mode;
-#[cfg(test)]
 mod test_dispute_resolution;
 #[cfg(test)]
 mod test_dry_run_simulation;
@@ -4257,6 +4235,8 @@ mod test_metadata_tagging;
 mod test_multitoken_invariants;
 #[cfg(test)]
 mod test_partial_payout_rounding;
+#[cfg(test)]
+mod test_participant_filter_mode;
 #[cfg(test)]
 mod test_pause;
 #[cfg(test)]
@@ -4448,23 +4428,12 @@ mod escrow_status_transition_tests {
                 setup
                     .env
                     .ledger()
-                    .set_timestamp(
-                    setup.env
-                        .ledger()
-                        .timestamp()
-                        .checked_add(2000)
-                        .unwrap(),
-                );
+                    .set_timestamp(setup.env.ledger().timestamp().checked_add(2000).unwrap());
             }
 
             match case.action {
                 TransitionAction::Lock => {
-                    let deadline = setup
-                        .env
-                        .ledger()
-                        .timestamp()
-                        .checked_add(1000)
-                        .unwrap();
+                    let deadline = setup.env.ledger().timestamp().checked_add(1000).unwrap();
                     let result = setup.client.try_lock_funds(
                         &setup.depositor,
                         &bounty_id,
@@ -4561,13 +4530,7 @@ mod escrow_status_transition_tests {
         setup
             .env
             .ledger()
-            .set_timestamp(
-                setup.env
-                    .ledger()
-                    .timestamp()
-                    .checked_add(2000)
-                    .unwrap(),
-            );
+            .set_timestamp(setup.env.ledger().timestamp().checked_add(2000).unwrap());
         setup.client.refund(&bounty_id);
         let stored_escrow = setup.client.get_escrow_info(&bounty_id);
         assert_eq!(
@@ -4697,9 +4660,8 @@ mod escrow_status_transition_tests {
 #[cfg(test)]
 mod test_deadline_variants;
 #[cfg(test)]
+mod test_e2e_upgrade_with_pause;
+#[cfg(test)]
 mod test_query_filters;
 #[cfg(test)]
 mod test_status_transitions;
-#[cfg(test)]
-mod test_e2e_upgrade_with_pause;
-

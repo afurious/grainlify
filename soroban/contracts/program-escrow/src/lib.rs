@@ -1,7 +1,7 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env,
-    String, Vec,
+    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String,
+    Vec,
 };
 
 const MAX_BATCH_SIZE: u32 = 20;
@@ -262,10 +262,17 @@ impl ProgramEscrowContract {
             deprecated,
             migration_target: migration_target.clone(),
         };
-        env.storage().instance().set(&DataKey::DeprecationState, &state);
+        env.storage()
+            .instance()
+            .set(&DataKey::DeprecationState, &state);
         env.events().publish(
             (symbol_short!("deprec"),),
-            (state.deprecated, state.migration_target, admin, env.ledger().timestamp()),
+            (
+                state.deprecated,
+                state.migration_target,
+                admin,
+                env.ledger().timestamp(),
+            ),
         );
         Ok(())
     }
