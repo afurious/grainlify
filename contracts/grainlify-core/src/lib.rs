@@ -354,15 +354,26 @@ mod monitoring {
 
     // NEW: verify_invariants for state consistency
     pub fn verify_invariants(env: &Env) -> bool {
-        let analytics = get_analytics(env);
-        // Invariant: total errors cannot exceed total operations
-        if analytics.error_count > analytics.operation_count {
+        let op_count: u64 = env
+            .storage()
+            .persistent()
+            .get(&Symbol::new(env, OPERATION_COUNT))
+            .unwrap_or(0);
+        let err_count: u64 = env
+            .storage()
+            .persistent()
+            .get(&Symbol::new(env, ERROR_COUNT))
+            .unwrap_or(0);
+        let usr_count: u64 = env
+            .storage()
+            .persistent()
+            .get(&Symbol::new(env, USER_COUNT))
+            .unwrap_or(0);
+
+        if err_count > op_count || usr_count > op_count {
             return false;
         }
-        // Invariant: total operations should be >= unique users
-        if analytics.operation_count < analytics.unique_users {
-            return false;
-        }
+
         true
     }
 }
