@@ -905,6 +905,7 @@ pub struct ProgramData {
 /// Storage key type for individual programs
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramScheduleCreated {
 pub enum DataKey {
     Program(String),              // program_id -> ProgramData
     ReleaseSchedule(String, u64), // program_id, schedule_id -> ProgramReleaseSchedule
@@ -1127,6 +1128,17 @@ impl ProgramEscrowContract {
         };
         env.storage().instance().set(&FEE_CONFIG, &fee_config);
 
+        // Initialize fee config with zero fees (disabled by default)
+        let fee_config = FeeConfig {
+            lock_fee_rate: 0,
+            payout_fee_rate: 0,
+            fee_recipient: authorized_payout_key.clone(),
+            fee_enabled: false,
+        };
+        env.storage().instance().set(&FEE_CONFIG, &fee_config);
+
+        // Store program data
+        env.storage().instance().set(&program_key, &program_data);
         // Store program data
         env.storage().instance().set(&program_key, &program_data);
 

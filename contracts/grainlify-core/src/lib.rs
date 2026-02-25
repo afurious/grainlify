@@ -161,6 +161,18 @@ use multisig::{MultiSig, MultiSigConfig};
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, Symbol, Vec, String,
 };
+pub mod asset;
+mod governance;
+mod multisig;
+pub mod nonce;
+
+pub use governance::{
+    Error as GovError, GovernanceConfig, Proposal, ProposalStatus, Vote, VoteType, VotingScheme,
+};
+use multisig::{MultiSig, MultiSigConfig};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, String, Symbol, Vec,
+};
 
 // ==================== MONITORING MODULE ====================
 mod monitoring {
@@ -369,6 +381,8 @@ pub struct GrainlifyContract;
 /// # Keys
 /// * `Admin` - Stores the administrator address (set once at initialization)
 /// * `Version` - Stores the current contract version number
+/// * `ChainId` - Stores the chain identifier for cross-network protection
+/// * `NetworkId` - Stores the network identifier for environment-specific behavior
 ///
 /// # Storage Type
 /// Instance storage - Persists across contract upgrades
@@ -1274,6 +1288,13 @@ fn migrate_v2_to_v3(_env: &Env) {
 mod test {
     use super::*;
     use soroban_sdk::{testutils::Address as _, Env};
+
+    // Include end-to-end upgrade and migration tests
+    pub mod e2e_upgrade_migration_tests;
+    pub mod upgrade_rollback_tests;
+
+    // WASM for testing
+    pub const WASM: &[u8] = include_bytes!("../target/wasm32-unknown-unknown/release/grainlify_core.wasm");
 
     #[test]
     fn multisig_init_works() {
