@@ -2,7 +2,7 @@
 //! Minimal Soroban escrow demo: lock, release, and refund.
 //! Parity with main contracts/bounty_escrow where applicable; see soroban/PARITY.md.
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, token, Address, Env};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, token, Address, Env, BytesN};
 
 mod identity;
 pub use identity::*;
@@ -157,6 +157,148 @@ impl EscrowContract {
         Ok(())
     }
 
+    /// Submit an identity claim for verification and storage
+    pub fn submit_identity_claim(
+        env: Env,
+        claim: IdentityClaim,
+        signature: BytesN<64>,
+        issuer_pubkey: BytesN<32>,
+    ) -> Result<(), Error> {
+        // Require authentication from the address in the claim
+        claim.address.require_auth();
+
+        // Check if contract is initialized
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+
+        // Validate claim format
+        identity::validate_claim(&claim)?;
+
+        // Check if claim has expired
+        if identity::is_claim_expired(&env, claim.expiry) {
+            env.events().publish(
+                (soroban_sdk::symbol_short!("claim"), claim.address.clone()),
+                soroban_sdk::symbol_short!("expired"),
+            );
+            return Err(Error::ClaimExpired);
+        }
+
+        // Check if issuer is authorized
+        let is_authorized: bool = env
+            .storage()
+            .persistent()
+            .get(&DataKey::AuthorizedIssuer(claim.issuer.clone()))
+            .unwrap_or(false);
+
+        if !is_authorized {
+            env.events().publish(
+                (soroban_sdk::symbol_short!("claim"), claim.address.clone()),
+                soroban_sdk::symbol_short!("unauth"),
+            );
+            return Err(Error::UnauthorizedIssuer);
+        }
+
+        // Verify claim signature
+        identity::verify_claim_signature(&env, &claim, &signature, &issuer_pubkey)?;
+
+        // Store identity data for the address
+        let now = env.ledger().timestamp();
+        let identity_data = AddressIdentity {
+            tier: claim.tier.clone(),
+            risk_score: claim.risk_score,
+            expiry: claim.expiry,
+            last_updated: now,
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::AddressIdentity(claim.address.clone()), &identity_data);
+
+        // Emit event for successful claim submission
+        env.events().publish(
+            (soroban_sdk::symbol_short!("claim"), claim.address.clone()),
+            (claim.tier, claim.risk_score, claim.expiry),
+        );
+
+        Ok(())
+    }
+
+    /// Query identity data for an address
+    pub fn get_address_identity(env: Env, address: Address) -> AddressIdentity {
+        let identity: Option<AddressIdentity> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::AddressIdentity(address));
+
+        match identity {
+            Some(id) => {
+                // Check if claim has expired
+                if identity::is_claim_expired(&env, id.expiry) {
+                    // Return default unverified tier
+                    AddressIdentity::default()
+                } else {
+                    id
+                }
+            }
+            None => AddressIdentity::default(),
+        }
+    }
+
+    /// Query effective transaction limit for an address
+    pub fn get_effective_limit(env: Env, address: Address) -> i128 {
+        let identity = Self::get_address_identity(env.clone(), address);
+        
+        let tier_limits: TierLimits = env
+            .storage()
+            .persistent()
+            .get(&DataKey::TierLimits)
+            .unwrap_or_default();
+
+        let risk_thresholds: RiskThresholds = env
+            .storage()
+            .persistent()
+            .get(&DataKey::RiskThresholds)
+            .unwrap_or_default();
+
+        identity::calculate_effective_limit(&env, &identity, &tier_limits, &risk_thresholds)
+    }
+
+    /// Check if an address has a valid (non-expired) claim
+    pub fn is_claim_valid(env: Env, address: Address) -> bool {
+        let identity: Option<AddressIdentity> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::AddressIdentity(address));
+
+        match identity {
+            Some(id) => !identity::is_claim_expired(&env, id.expiry),
+            None => false,
+        }
+    }
+
+    /// Internal: Enforce transaction limit for an address
+    fn enforce_transaction_limit(env: &Env, address: &Address, amount: i128) -> Result<(), Error> {
+        let effective_limit = Self::get_effective_limit(env.clone(), address.clone());
+
+        if amount > effective_limit {
+            // Emit event for limit enforcement failure
+            env.events().publish(
+                (soroban_sdk::symbol_short!("limit"), address.clone()),
+                (soroban_sdk::symbol_short!("exceed"), amount, effective_limit),
+            );
+            return Err(Error::TransactionExceedsLimit);
+        }
+
+        // Emit event for successful limit check
+        env.events().publish(
+            (soroban_sdk::symbol_short!("limit"), address.clone()),
+            (soroban_sdk::symbol_short!("pass"), amount, effective_limit),
+        );
+
+        Ok(())
+    }
+
     /// Lock funds: depositor must be authorized; tokens transferred from depositor to contract.
     pub fn lock_funds(
         env: Env,
@@ -175,6 +317,9 @@ impl EscrowContract {
         if env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyExists);
         }
+
+        // Enforce transaction limit based on identity tier
+        Self::enforce_transaction_limit(&env, &depositor, amount)?;
 
         let token = env
             .storage()
@@ -217,6 +362,9 @@ impl EscrowContract {
         if escrow.remaining_amount <= 0 {
             return Err(Error::InsufficientBalance);
         }
+
+        // Enforce transaction limit for contributor
+        Self::enforce_transaction_limit(&env, &contributor, escrow.remaining_amount)?;
 
         let token = env
             .storage()

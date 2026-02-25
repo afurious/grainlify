@@ -77,7 +77,7 @@
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Implement claim submission and verification
-  - [ ] 6.1 Create submit_identity_claim function
+  - [x] 6.1 Create submit_identity_claim function
     - Verify claim signature against authorized issuer
     - Check claim expiry timestamp
     - Validate claim format and fields
@@ -104,7 +104,7 @@
     - **Property 14: New claims replace previous claims**
     - **Validates: Requirements 3.5**
 
-  - [ ] 6.7 Implement claim expiry validation
+  - [x] 6.7 Implement claim expiry validation
     - Create is_claim_expired helper function
     - Check current timestamp against expiry
     - _Requirements: 2.4, 3.3_
@@ -113,7 +113,7 @@
     - **Property 8: Claim expiry must be in the future**
     - **Validates: Requirements 2.4**
 
-  - [ ] 6.9 Emit events for claim submission results
+  - [x] 6.9 Emit events for claim submission results
     - Create event for valid claim submission
     - Create event for claim rejection
     - Include address, tier, risk score, and reason in events
@@ -138,7 +138,7 @@
     - _Requirements: 5.1-5.5_
 
 - [ ] 8. Implement limit calculation and enforcement
-  - [ ] 8.1 Create calculate_effective_limit function
+  - [x] 8.1 Create calculate_effective_limit function
     - Retrieve address identity data
     - Get tier-based limit from configuration
     - Calculate risk-adjusted limit if applicable
@@ -165,7 +165,7 @@
     - **Property 21: Updated risk scores immediately affect limits**
     - **Validates: Requirements 5.5**
 
-  - [ ] 8.7 Create enforce_transaction_limit function
+  - [x] 8.7 Create enforce_transaction_limit function
     - Check transaction amount against effective limit
     - Return error if amount exceeds limit
     - Include limit and attempted amount in error
@@ -175,7 +175,7 @@
     - **Property 16: Over-limit transactions are rejected**
     - **Validates: Requirements 4.5**
 
-  - [ ] 8.9 Emit events for limit enforcement
+  - [x] 8.9 Emit events for limit enforcement
     - Create event for limit check results
     - Include address, amount, limit, and result in event
     - _Requirements: 8.4_
@@ -188,12 +188,12 @@
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. Integrate limit enforcement into escrow operations
-  - [ ] 10.1 Add limit checks to lock_funds function
+  - [x] 10.1 Add limit checks to lock_funds function
     - Call enforce_transaction_limit before locking funds
     - Reject transactions that exceed limits
     - _Requirements: 4.1-4.5_
 
-  - [ ] 10.2 Add limit checks to release_funds function
+  - [x] 10.2 Add limit checks to release_funds function
     - Call enforce_transaction_limit before releasing funds
     - Reject releases that exceed limits
     - _Requirements: 4.1-4.5_
@@ -205,7 +205,7 @@
     - _Requirements: 4.1-4.5_
 
 - [ ] 11. Implement query functions
-  - [ ] 11.1 Create get_address_identity function
+  - [x] 11.1 Create get_address_identity function
     - Retrieve identity data for address
     - Return default unverified tier if no claim exists
     - Check expiry and return unverified if expired
@@ -215,7 +215,7 @@
     - **Property 22: Query returns stored identity data**
     - **Validates: Requirements 7.1**
 
-  - [ ] 11.3 Create get_effective_limit function
+  - [x] 11.3 Create get_effective_limit function
     - Call calculate_effective_limit for address
     - Return the calculated limit
     - _Requirements: 7.4_
@@ -224,7 +224,7 @@
     - **Property 23: Effective limit query matches calculation**
     - **Validates: Requirements 7.4**
 
-  - [ ] 11.5 Create is_claim_valid query function
+  - [x] 11.5 Create is_claim_valid query function
     - Check if address has non-expired claim
     - Return validity status
     - _Requirements: 7.5_
@@ -233,7 +233,7 @@
     - **Property 24: Claim validity check reflects expiry status**
     - **Validates: Requirements 7.5**
 
-  - [ ] 11.7 Emit event when expired claim is detected
+  - [x] 11.7 Emit event when expired claim is detected
     - Create event for claim expiry detection
     - Emit during transaction attempts with expired claims
     - _Requirements: 8.3_
