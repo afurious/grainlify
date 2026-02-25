@@ -33,6 +33,7 @@ type applyToIssueRequest struct {
 
 func (h *IssueApplicationsHandler) Apply() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Priority 1: Service Availability - check system dependencies first
 		if h.db == nil || h.db.Pool == nil {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "db_not_configured"})
 		}
@@ -40,6 +41,7 @@ func (h *IssueApplicationsHandler) Apply() fiber.Handler {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "token_encryption_not_configured"})
 		}
 
+		// Priority 2: Input Format Validation - validate request parameters are parseable
 		projectID, err := uuid.Parse(c.Params("id"))
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_project_id"})
@@ -49,12 +51,14 @@ func (h *IssueApplicationsHandler) Apply() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_issue_number"})
 		}
 
+		// Priority 3: Authentication - verify user is authenticated
 		userIDStr, _ := c.Locals(auth.LocalUserID).(string)
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid_user"})
 		}
 
+		// Priority 4: Request Body Validation - validate payload content
 		var req applyToIssueRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_body"})
@@ -67,11 +71,13 @@ func (h *IssueApplicationsHandler) Apply() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "message_too_long"})
 		}
 
+		// Priority 5: External Account Linking - verify GitHub account is linked
 		linked, err := github.GetLinkedAccount(c.Context(), h.db.Pool, userID, h.cfg.TokenEncKeyB64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "github_not_linked"})
 		}
 
+		// Priority 6: Resource Existence - verify issue exists
 		// Load repo + issue state, issue URL, and github_issue_id for dashboard deep link.
 		var fullName, issueURL string
 		var state string
@@ -89,6 +95,7 @@ LIMIT 1
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "issue_not_found"})
 		}
 
+		// Priority 9: Business Logic Constraints - validate business rules
 		if strings.ToLower(strings.TrimSpace(state)) != "open" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "issue_not_open"})
 		}
@@ -168,6 +175,7 @@ type botCommentRequest struct {
 // Requires project maintainer (owner) or admin. Project must have GitHub App installed.
 func (h *IssueApplicationsHandler) PostBotComment() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Priority 1: Service Availability
 		if h.db == nil || h.db.Pool == nil {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "db_not_configured"})
 		}
@@ -175,6 +183,7 @@ func (h *IssueApplicationsHandler) PostBotComment() fiber.Handler {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "github_app_not_configured"})
 		}
 
+		// Priority 2: Input Format Validation
 		projectID, err := uuid.Parse(c.Params("id"))
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_project_id"})
@@ -184,6 +193,7 @@ func (h *IssueApplicationsHandler) PostBotComment() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_issue_number"})
 		}
 
+		// Priority 3: Authentication
 		userIDStr, _ := c.Locals(auth.LocalUserID).(string)
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
@@ -191,6 +201,7 @@ func (h *IssueApplicationsHandler) PostBotComment() fiber.Handler {
 		}
 		role, _ := c.Locals(auth.LocalRole).(string)
 
+		// Priority 4: Request Body Validation
 		var req botCommentRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_body"})
@@ -203,6 +214,7 @@ func (h *IssueApplicationsHandler) PostBotComment() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "body_too_long"})
 		}
 
+		// Priority 6: Resource Existence
 		var owner uuid.UUID
 		var fullName, installationID string
 		err = h.db.Pool.QueryRow(c.Context(), `
@@ -213,12 +225,18 @@ WHERE id = $1 AND status = 'verified' AND deleted_at IS NULL
 		if errors.Is(err, pgx.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "project_not_found"})
 		}
+		
+		// Priority 7: Database/Internal Errors
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "project_lookup_failed"})
 		}
+		
+		// Priority 8: Authorization
 		if owner != userID && role != "admin" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 		}
+		
+		// Priority 9: Business Logic Constraints
 		if installationID == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "project_has_no_github_app_installation"})
 		}
@@ -280,6 +298,7 @@ type withdrawRequest struct {
 // Withdraw removes the applicant's application by deleting their GitHub comment. Only the comment author can withdraw.
 func (h *IssueApplicationsHandler) Withdraw() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Priority 1: Service Availability
 		if h.db == nil || h.db.Pool == nil {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "db_not_configured"})
 		}
@@ -287,6 +306,7 @@ func (h *IssueApplicationsHandler) Withdraw() fiber.Handler {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "token_encryption_not_configured"})
 		}
 
+		// Priority 2: Input Format Validation
 		projectID, err := uuid.Parse(c.Params("id"))
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_project_id"})
@@ -296,12 +316,14 @@ func (h *IssueApplicationsHandler) Withdraw() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_issue_number"})
 		}
 
+		// Priority 3: Authentication
 		userIDStr, _ := c.Locals(auth.LocalUserID).(string)
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid_user"})
 		}
 
+		// Priority 4: Request Body Validation
 		var req withdrawRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_body"})
@@ -310,11 +332,13 @@ func (h *IssueApplicationsHandler) Withdraw() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "comment_id_required"})
 		}
 
+		// Priority 5: External Account Linking
 		linked, err := github.GetLinkedAccount(c.Context(), h.db.Pool, userID, h.cfg.TokenEncKeyB64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "github_not_linked"})
 		}
 
+		// Priority 6: Resource Existence
 		var fullName string
 		var commentsJSON []byte
 		if err := h.db.Pool.QueryRow(c.Context(), `
@@ -326,6 +350,7 @@ WHERE p.id = $1 AND p.status = 'verified' AND p.deleted_at IS NULL AND gi.number
 			if errors.Is(err, pgx.ErrNoRows) {
 				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "issue_not_found"})
 			}
+			// Priority 7: Database/Internal Errors
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "project_lookup_failed"})
 		}
 
@@ -338,11 +363,14 @@ WHERE p.id = $1 AND p.status = 'verified' AND p.deleted_at IS NULL AND gi.number
 			} `json:"user"`
 		}
 		if err := json.Unmarshal(commentsJSON, &comments); err != nil {
+			// Priority 7: Database/Internal Errors
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "comments_parse_failed"})
 		}
+		
 		var commentOwned bool
 		for _, com := range comments {
 			if com.ID == req.CommentID {
+				// Priority 8: Authorization
 				if !strings.EqualFold(strings.TrimSpace(com.User.Login), strings.TrimSpace(linked.Login)) {
 					return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "you_can_only_withdraw_your_own_application"})
 				}
@@ -350,6 +378,7 @@ WHERE p.id = $1 AND p.status = 'verified' AND p.deleted_at IS NULL AND gi.number
 				break
 			}
 		}
+		// Priority 6: Resource Existence (comment not found)
 		if !commentOwned {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "comment_not_found"})
 		}
@@ -394,6 +423,7 @@ type assignRequest struct {
 // Assign adds the applicant as assignee on GitHub and posts a congratulations bot comment. Maintainer only.
 func (h *IssueApplicationsHandler) Assign() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Priority 1: Service Availability
 		if h.db == nil || h.db.Pool == nil {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "db_not_configured"})
 		}
@@ -401,6 +431,7 @@ func (h *IssueApplicationsHandler) Assign() fiber.Handler {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "github_app_not_configured"})
 		}
 
+		// Priority 2: Input Format Validation
 		projectID, err := uuid.Parse(c.Params("id"))
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_project_id"})
@@ -410,6 +441,7 @@ func (h *IssueApplicationsHandler) Assign() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_issue_number"})
 		}
 
+		// Priority 3: Authentication
 		userIDStr, _ := c.Locals(auth.LocalUserID).(string)
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
@@ -417,6 +449,7 @@ func (h *IssueApplicationsHandler) Assign() fiber.Handler {
 		}
 		role, _ := c.Locals(auth.LocalRole).(string)
 
+		// Priority 4: Request Body Validation
 		var req assignRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_body"})
@@ -426,6 +459,7 @@ func (h *IssueApplicationsHandler) Assign() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "assignee_required"})
 		}
 
+		// Priority 6: Resource Existence
 		var owner uuid.UUID
 		var fullName, installationID string
 		err = h.db.Pool.QueryRow(c.Context(), `
@@ -436,12 +470,18 @@ WHERE id = $1 AND status = 'verified' AND deleted_at IS NULL
 		if errors.Is(err, pgx.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "project_not_found"})
 		}
+		
+		// Priority 7: Database/Internal Errors
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "project_lookup_failed"})
 		}
+		
+		// Priority 8: Authorization
 		if owner != userID && role != "admin" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 		}
+		
+		// Priority 9: Business Logic Constraints
 		if installationID == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "project_has_no_github_app_installation"})
 		}
@@ -501,6 +541,7 @@ WHERE project_id = $1 AND number = $2
 // Unassign removes the current assignee(s) from the GitHub issue and posts a bot comment. Maintainer only.
 func (h *IssueApplicationsHandler) Unassign() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Priority 1: Service Availability
 		if h.db == nil || h.db.Pool == nil {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "db_not_configured"})
 		}
@@ -508,6 +549,7 @@ func (h *IssueApplicationsHandler) Unassign() fiber.Handler {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "github_app_not_configured"})
 		}
 
+		// Priority 2: Input Format Validation
 		projectID, err := uuid.Parse(c.Params("id"))
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_project_id"})
@@ -517,6 +559,7 @@ func (h *IssueApplicationsHandler) Unassign() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_issue_number"})
 		}
 
+		// Priority 3: Authentication
 		userIDStr, _ := c.Locals(auth.LocalUserID).(string)
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
@@ -524,6 +567,7 @@ func (h *IssueApplicationsHandler) Unassign() fiber.Handler {
 		}
 		role, _ := c.Locals(auth.LocalRole).(string)
 
+		// Priority 6: Resource Existence
 		var owner uuid.UUID
 		var fullName, installationID string
 		var assigneesJSON []byte
@@ -536,12 +580,18 @@ WHERE p.id = $1 AND p.status = 'verified' AND p.deleted_at IS NULL AND gi.number
 		if errors.Is(err, pgx.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "issue_not_found"})
 		}
+		
+		// Priority 7: Database/Internal Errors
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "project_lookup_failed"})
 		}
+		
+		// Priority 8: Authorization
 		if owner != userID && role != "admin" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 		}
+		
+		// Priority 9: Business Logic Constraints
 		if installationID == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "project_has_no_github_app_installation"})
 		}
@@ -614,6 +664,7 @@ type rejectRequest struct {
 // Reject posts a bot comment that the applicant's application was not accepted. Maintainer only.
 func (h *IssueApplicationsHandler) Reject() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Priority 1: Service Availability
 		if h.db == nil || h.db.Pool == nil {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "db_not_configured"})
 		}
@@ -621,6 +672,7 @@ func (h *IssueApplicationsHandler) Reject() fiber.Handler {
 			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "github_app_not_configured"})
 		}
 
+		// Priority 2: Input Format Validation
 		projectID, err := uuid.Parse(c.Params("id"))
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_project_id"})
@@ -630,6 +682,7 @@ func (h *IssueApplicationsHandler) Reject() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_issue_number"})
 		}
 
+		// Priority 3: Authentication
 		userIDStr, _ := c.Locals(auth.LocalUserID).(string)
 		userID, err := uuid.Parse(userIDStr)
 		if err != nil {
@@ -637,6 +690,7 @@ func (h *IssueApplicationsHandler) Reject() fiber.Handler {
 		}
 		role, _ := c.Locals(auth.LocalRole).(string)
 
+		// Priority 4: Request Body Validation
 		var req rejectRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid_body"})
@@ -646,6 +700,7 @@ func (h *IssueApplicationsHandler) Reject() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "assignee_required"})
 		}
 
+		// Priority 6: Resource Existence
 		var owner uuid.UUID
 		var fullName, installationID string
 		err = h.db.Pool.QueryRow(c.Context(), `
@@ -656,12 +711,18 @@ WHERE id = $1 AND status = 'verified' AND deleted_at IS NULL
 		if errors.Is(err, pgx.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "project_not_found"})
 		}
+		
+		// Priority 7: Database/Internal Errors
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "project_lookup_failed"})
 		}
+		
+		// Priority 8: Authorization
 		if owner != userID && role != "admin" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 		}
+		
+		// Priority 9: Business Logic Constraints
 		if installationID == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "project_has_no_github_app_installation"})
 		}
