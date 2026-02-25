@@ -361,6 +361,7 @@ fn test_property_fuzz_lock_release_refund_invariants() {
     let start = env.ledger().timestamp();
 
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let token_admin = Address::generate(&env);
     let (token, _token_client, token_admin_client) = create_token_contract(&env, &token_admin);
@@ -409,6 +410,7 @@ fn test_stress_high_load_bounty_operations() {
     let now = env.ledger().timestamp();
 
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let token_admin = Address::generate(&env);
     let (token, token_client, token_admin_client) = create_token_contract(&env, &token_admin);
