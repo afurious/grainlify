@@ -171,7 +171,6 @@ mod malicious_reentrant;
 mod test_granular_pause;
 
 #[cfg(test)]
-#[cfg(any())]
 mod test_lifecycle;
 
 #[cfg(test)]
