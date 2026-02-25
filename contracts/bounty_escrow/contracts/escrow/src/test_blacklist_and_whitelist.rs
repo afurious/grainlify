@@ -201,7 +201,7 @@ fn test_whitelist_mode_allows_whitelisted_depositor() {
     let deadline: u64 = env.ledger().timestamp() + 86_400;
 
     client.set_whitelist_mode(&true);
-    client.set_whitelist(&user, &true);
+    client.set_whitelist_entry(&user, &true);
 
     let result = client.try_lock_funds(&bounty_id, &user, &amount, &deadline);
     assert!(result.is_ok());
@@ -220,8 +220,8 @@ fn test_whitelist_mode_allows_whitelisted_recipient() {
     let deadline: u64 = env.ledger().timestamp() + 86_400;
 
     // Whitelist both parties before enabling mode so the lock succeeds.
-    client.set_whitelist(&depositor, &true);
-    client.set_whitelist(&recipient, &true);
+    client.set_whitelist_entry(&depositor, &true);
+    client.set_whitelist_entry(&recipient, &true);
     client.set_whitelist_mode(&true);
 
     client
@@ -245,7 +245,7 @@ fn test_whitelist_mode_blocks_non_whitelisted_recipient() {
     let deadline: u64 = env.ledger().timestamp() + 86_400;
 
     // Whitelist only the depositor so the lock can proceed.
-    client.set_whitelist(&depositor, &true);
+    client.set_whitelist_entry(&depositor, &true);
     client.set_whitelist_mode(&true);
 
     client
@@ -291,7 +291,7 @@ fn test_removing_from_whitelist_blocks_address_in_whitelist_mode() {
     let amount: i128 = 200;
     let deadline: u64 = env.ledger().timestamp() + 86_400;
 
-    client.set_whitelist(&user, &true);
+    client.set_whitelist_entry(&user, &true);
     client.set_whitelist_mode(&true);
 
     // First lock succeeds.
@@ -300,7 +300,7 @@ fn test_removing_from_whitelist_blocks_address_in_whitelist_mode() {
         .unwrap();
 
     // Remove from whitelist.
-    client.set_whitelist(&user, &false);
+    client.set_whitelist_entry(&user, &false);
 
     // Second lock should now fail.
     let result = client.try_lock_funds(&bounty_id_b, &user, &amount, &deadline);
@@ -323,7 +323,7 @@ fn test_blacklisted_address_rejected_even_if_whitelisted() {
     let deadline: u64 = env.ledger().timestamp() + 86_400;
 
     // Add to whitelist AND blacklist.
-    client.set_whitelist(&user, &true);
+    client.set_whitelist_entry(&user, &true);
     client.set_blacklist(&user, &true, &Some(String::from_str(&env, "Fraud")));
     client.set_whitelist_mode(&true);
 
