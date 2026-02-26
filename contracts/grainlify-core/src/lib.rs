@@ -402,8 +402,10 @@ mod monitoring {
         }
 
         true
-    // Verify core monitoring/config invariants.
-    // This is view-only and safe for frequent calls by off-chain monitors.
+    }
+
+    /// Verify core monitoring/config invariants.
+    /// This is view-only and safe for frequent calls by off-chain monitors.
     pub fn check_invariants(env: &Env) -> InvariantReport {
         let op_key = Symbol::new(env, OPERATION_COUNT);
         let usr_key = Symbol::new(env, USER_COUNT);
@@ -1137,20 +1139,6 @@ impl GrainlifyContract {
     /// Retrieves the chain identifier.
     pub fn get_chain_id(env: Env) -> Option<String> {
         env.storage().instance().get(&DataKey::ChainId)
-    }
-
-        let mut snapshots = Vec::new(&env);
-        for snapshot_id in index.iter() {
-            if let Some(snapshot) = env
-                .storage()
-                .instance()
-                .get(&DataKey::ConfigSnapshot(snapshot_id))
-            {
-                snapshots.push_back(snapshot);
-            }
-        }
-
-        snapshots
     }
 
     /// Restores core configuration from a previously captured snapshot (admin-only).
