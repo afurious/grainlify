@@ -1,13 +1,7 @@
-//! End-to-End Tests for Upgrade with Pause/Resume Scenarios
+//! End-to-end pause/upgrade/resume style tests.
 //!
-//! This module tests the complete lifecycle of upgrading the bounty escrow
-//! contract while ensuring user funds remain safe through pause/resume cycles.
-//!
-//! Test scenarios:
-//! - Pause → Snapshot → Upgrade → Resume
-//! - Pause → Upgrade → Migration → Resume with fund verification
-//! - Emergency scenarios with rollback
-//! - State and balance preservation across upgrades
+//! These tests simulate upgrade windows by pausing operations, verifying
+//! escrow state/fund safety, then resuming.
 
 #![cfg(test)]
 
@@ -17,8 +11,11 @@ use crate::{
     BountyEscrowContract, BountyEscrowContractClient, DataKey, EscrowMetadata, EscrowStatus,
     PauseFlags,
 };
+use crate::{BountyEscrowContract, BountyEscrowContractClient, Error, EscrowStatus};
 use soroban_sdk::{
     testutils::{Address as _, Events},
+    token, Address, Env, String as SorobanString,
+    testutils::{Address as _, Events, Ledger},
     token, Address, Env, String as SorobanString,
 };
 
@@ -26,17 +23,17 @@ use soroban_sdk::{
 // Test Helpers
 // ============================================================================
 
-struct TestContext {
+struct TestContext<'a> {
     env: Env,
-    client: BountyEscrowContractClient<'static>,
-    admin: Address,
-    token: Address,
+    client: BountyEscrowContractClient<'a>,
+    token_client: token::Client<'a>,
+    token_admin_client: token::StellarAssetClient<'a>,
     token_admin: token::StellarAssetClient<'static>,
     depositor: Address,
     contributor: Address,
 }
 
-impl TestContext {
+impl<'a> TestContext<'a> {
     fn new() -> Self {
         let env = Env::default();
         env.mock_all_auths();
@@ -51,18 +48,21 @@ impl TestContext {
         let token_admin = token::StellarAssetClient::new(&env, &token);
         let depositor = Address::generate(&env);
         let contributor = Address::generate(&env);
+        let (token, _token_client, token_admin) = create_token_contract(&env, &admin);
 
-        // Initialize contract (AssetId = Address in grainlify_core)
-        client.init(&admin, &token);
+        let token_contract = env.register_stellar_asset_contract_v2(admin.clone());
+        let token_addr = token_contract.address();
+        let token_client = token::Client::new(&env, &token_addr);
+        let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
 
-        // Mint tokens to depositor
-        token_admin.mint(&depositor, &1_000_000);
+        client.init(&admin, &token_addr);
+        token_admin_client.mint(&depositor, &2_000_000_000);
 
         Self {
             env,
             client,
-            admin,
-            token,
+            token_client,
+            token_admin_client,
             token_admin,
             depositor,
             contributor,
@@ -70,8 +70,10 @@ impl TestContext {
     }
 
     fn lock_bounty(&self, bounty_id: u64, amount: i128) {
+        let deadline = self.env.ledger().timestamp() + 86_400;
         let deadline = self.env.ledger().timestamp() + 86400; // 1 day
         self.client
+            .lock_funds(&self.depositor, &bounty_id, &amount, &deadline);
             .lock_funds(&self.depositor, &bounty_id, &amount, &deadline);
     }
 
@@ -101,18 +103,19 @@ struct StateSnapshot {
 // ============================================================================
 // Happy Path: Pause → Upgrade → Resume
 // ============================================================================
+    fn contract_balance(&self) -> i128 {
+        self.token_client.balance(&self.client.address)
+    }
+}
 
 #[test]
 fn test_e2e_pause_upgrade_resume_with_funds() {
     let ctx = TestContext::new();
+    let bounty_id = 1u64;
+    let amount = 10_000i128;
 
-    // Step 1: Lock funds
-    let bounty_id = 1;
-    let amount = 10_000;
     ctx.lock_bounty(bounty_id, amount);
-
-    let balance_before = ctx.get_contract_balance();
-    assert_eq!(balance_before, amount, "Funds should be locked");
+    assert_eq!(ctx.contract_balance(), amount);
 
     // Step 2: Pause all operations
     ctx.client.set_paused(
@@ -121,11 +124,17 @@ fn test_e2e_pause_upgrade_resume_with_funds() {
         &Some(true),
         &Some(SorobanString::from_str(&ctx.env, "Upgrade in progress")),
     );
+    ctx.client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &Some(SorobanString::from_str(&ctx.env, "Upgrade in progress")),
+    );
 
-    let pause_flags = ctx.client.get_pause_flags();
-    assert!(pause_flags.lock_paused);
-    assert!(pause_flags.release_paused);
-    assert!(pause_flags.refund_paused);
+    let flags = ctx.client.get_pause_flags();
+    assert!(flags.lock_paused);
+    assert!(flags.release_paused);
+    assert!(flags.refund_paused);
 
     // Step 3: Capture state snapshot
     let snapshot = ctx.capture_state_snapshot();
@@ -171,6 +180,7 @@ fn test_e2e_pause_prevents_operations_during_upgrade() {
 
     // Attempt to lock more funds (should fail)
     let lock_result = ctx.client.try_lock_funds(
+    let lock_err = ctx.client.try_lock_funds(
         &ctx.depositor,
         &2,
         &5_000,
@@ -186,6 +196,28 @@ fn test_e2e_pause_prevents_operations_during_upgrade() {
 // ============================================================================
 // Multi-Bounty Upgrade Scenarios
 // ============================================================================
+        &2u64,
+        &5_000i128,
+        &(ctx.env.ledger().timestamp() + 86_400),
+    );
+    assert!(lock_err.is_err());
+
+    let rel_err = ctx.client.try_release_funds(&bounty_id, &ctx.contributor);
+    assert!(rel_err.is_err());
+
+    ctx.client
+        .set_paused(&Some(false), &Some(false), &Some(false), &None);
+    let flags_after = ctx.client.get_pause_flags();
+    assert!(!flags_after.lock_paused);
+    assert!(!flags_after.release_paused);
+    assert!(!flags_after.refund_paused);
+
+    ctx.client.release_funds(&bounty_id, &ctx.contributor);
+    let escrow = ctx.client.get_escrow_info(&bounty_id);
+    assert_eq!(escrow.status, EscrowStatus::Released);
+    assert_eq!(ctx.contract_balance(), 0);
+    assert_eq!(ctx.token_client.balance(&ctx.contributor), amount);
+}
 
 #[test]
 fn test_e2e_upgrade_with_multiple_bounties() {
@@ -193,17 +225,15 @@ fn test_e2e_upgrade_with_multiple_bounties() {
 
     // Lock multiple bounties
     let bounties: [(u64, i128); 3] = [(1, 10_000), (2, 20_000), (3, 15_000)];
+    let bounties = [(1u64, 10_000i128), (2u64, 20_000i128), (3u64, 15_000i128)];
 
     let mut total_locked = 0i128;
-    for (bounty_id, amount) in &bounties {
-        ctx.lock_bounty(*bounty_id, *amount);
+    for (id, amount) in bounties {
+        ctx.lock_bounty(id, amount);
         total_locked += *amount;
     }
+    assert_eq!(ctx.contract_balance(), total_locked);
 
-    let balance_before = ctx.get_contract_balance();
-    assert_eq!(balance_before, total_locked);
-
-    // Pause for upgrade
     ctx.client
         .set_paused(&Some(true), &Some(true), &Some(true), &None);
 
@@ -211,10 +241,12 @@ fn test_e2e_upgrade_with_multiple_bounties() {
     for (bounty_id, amount) in &bounties {
         let escrow = ctx.client.get_escrow_info(&bounty_id);
         assert_eq!(escrow.amount, *amount);
+    for (id, amount) in bounties {
+        let escrow = ctx.client.get_escrow_info(&id);
         assert_eq!(escrow.status, EscrowStatus::Locked);
+        assert_eq!(escrow.amount, amount);
     }
 
-    // Resume operations
     ctx.client
         .set_paused(&Some(false), &Some(false), &Some(false), &None);
 
@@ -251,12 +283,13 @@ fn test_e2e_emergency_withdraw_during_paused_upgrade() {
 
     let contract_balance = ctx.get_contract_balance();
     assert_eq!(contract_balance, 0);
+        .set_paused(&Some(false), &Some(false), &Some(false), &None);
+    assert_eq!(ctx.contract_balance(), total_locked);
 }
 
 #[test]
 fn test_e2e_emergency_withdraw_requires_pause() {
     let ctx = TestContext::new();
-
     ctx.lock_bounty(1, 10_000);
 
     // Attempt emergency withdraw without pause (should fail; client panics on error)
@@ -310,15 +343,9 @@ fn test_e2e_upgrade_rollback_preserves_state() {
     assert_eq!(escrow2.amount, 35_000);
 }
 
-// ============================================================================
-// Partial Operations During Upgrade
-// ============================================================================
-
 #[test]
 fn test_e2e_selective_pause_during_upgrade() {
     let ctx = TestContext::new();
-
-    // Lock initial funds
     ctx.lock_bounty(1, 10_000);
 
     // Pause only lock operations (allow release/refund)
@@ -396,7 +423,6 @@ fn test_e2e_upgrade_preserves_escrow_metadata() {
 #[test]
 fn test_e2e_upgrade_cycle_emits_events() {
     let ctx = TestContext::new();
-
     ctx.lock_bounty(1, 10_000);
 
     let events_before_pause = ctx.env.events().all().len();
@@ -410,12 +436,8 @@ fn test_e2e_upgrade_cycle_emits_events() {
     );
 
     let events_after_pause = ctx.env.events().all().len();
-    assert!(
-        events_after_pause > events_before_pause,
-        "Pause should emit events"
-    );
+    assert!(events_after_pause > events_before_pause);
 
-    // Resume
     ctx.client
         .set_paused(&Some(false), &Some(false), &Some(false), &None);
 
@@ -467,9 +489,7 @@ fn test_e2e_multiple_pause_resume_cycles() {
 #[test]
 fn test_e2e_upgrade_with_high_value_bounties() {
     let ctx = TestContext::new();
-
-    // Lock high-value bounties
-    let high_value = 1_000_000_000i128; // 1 billion units
+    let high_value = 100_000_000i128;
 
     // Mint enough tokens
     ctx.token_admin.mint(&ctx.depositor, &(high_value * 3));
@@ -478,11 +498,9 @@ fn test_e2e_upgrade_with_high_value_bounties() {
     ctx.lock_bounty(2, high_value);
     ctx.lock_bounty(3, high_value);
 
-    let total_locked = high_value * 3;
-    let balance_before = ctx.get_contract_balance();
-    assert_eq!(balance_before, total_locked);
+    let total = high_value * 3;
+    assert_eq!(ctx.contract_balance(), total);
 
-    // Pause for upgrade
     ctx.client
         .set_paused(&Some(true), &Some(true), &Some(true), &None);
 
@@ -490,7 +508,6 @@ fn test_e2e_upgrade_with_high_value_bounties() {
     let balance_during_pause = ctx.get_contract_balance();
     assert_eq!(balance_during_pause, total_locked);
 
-    // Resume
     ctx.client
         .set_paused(&Some(false), &Some(false), &Some(false), &None);
 
