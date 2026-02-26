@@ -2570,25 +2570,6 @@ impl BountyEscrowContract {
                 .set(&DataKey::AnonymousResolver, &addr),
             None => env.storage().instance().remove(&DataKey::AnonymousResolver),
         }
-    /// Set the anonymous resolver address (admin only).
-    /// The resolver is authorized to call `refund_resolved` for anonymous escrows.
-    /// Pass `None` to clear/unset the resolver.
-    pub fn set_anonymous_resolver(env: Env, resolver: Option<Address>) -> Result<(), Error> {
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::Admin)
-            .ok_or(Error::NotInitialized)?;
-        admin.require_auth();
-
-        if let Some(r) = resolver {
-            env.storage()
-                .instance()
-                .set(&DataKey::AnonymousResolver, &r);
-        } else {
-            env.storage().instance().remove(&DataKey::AnonymousResolver);
-        }
-
         Ok(())
     }
 

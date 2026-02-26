@@ -124,6 +124,7 @@ jobs:
 
       - name: Run script tests
         run: |
+          # From working-directory contracts/bounty_escrow, scripts live at ../scripts
           chmod +x ../scripts/test_deploy_failures.sh
           chmod +x ../scripts/test_upgrade_failures.sh
           chmod +x ../scripts/test_all_script_failures.sh
@@ -134,10 +135,6 @@ jobs:
 
           echo "Running comprehensive script failure test suite..."
           ../scripts/test_all_script_failures.sh
-          chmod +x contracts/scripts/test_deploy_failures.sh
-          chmod +x contracts/scripts/test_upgrade_failures.sh
-          contracts/scripts/test_deploy_failures.sh
-          contracts/scripts/test_upgrade_failures.sh
 
   sdk-smoke-tests:
     name: SDK Smoke Tests

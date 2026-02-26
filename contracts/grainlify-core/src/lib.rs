@@ -159,15 +159,10 @@ use soroban_sdk::{
 };
 pub mod asset;
 mod governance;
-mod multisig;
 pub mod nonce;
 
 pub use governance::{
     Error as GovError, GovernanceConfig, Proposal, ProposalStatus, Vote, VoteType, VotingScheme,
-};
-use multisig::{MultiSig, MultiSigConfig};
-use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, String, Symbol, Vec,
 };
 
 // ==================== MONITORING MODULE ====================
@@ -375,31 +370,6 @@ mod monitoring {
         }
     }
 
-    // NEW: verify_invariants for state consistency
-    pub fn verify_invariants(env: &Env) -> bool {
-        let op_count: u64 = env
-            .storage()
-            .persistent()
-            .get(&Symbol::new(env, OPERATION_COUNT))
-            .unwrap_or(0);
-        let err_count: u64 = env
-            .storage()
-            .persistent()
-            .get(&Symbol::new(env, ERROR_COUNT))
-            .unwrap_or(0);
-        let usr_count: u64 = env
-            .storage()
-            .persistent()
-            .get(&Symbol::new(env, USER_COUNT))
-            .unwrap_or(0);
-
-        if err_count > op_count || usr_count > op_count {
-            return false;
-        }
-
-        true
-    }
-
     /// Verify core monitoring/config invariants.
     /// This is view-only and safe for frequent calls by off-chain monitors.
     pub fn check_invariants(env: &Env) -> InvariantReport {
@@ -535,6 +505,12 @@ enum DataKey {
 
     /// Monotonic snapshot id counter
     SnapshotCounter,
+
+    /// Chain identifier for cross-network protection
+    ChainId,
+
+    /// Network identifier
+    NetworkId,
 }
 
 // ============================================================================
@@ -658,6 +634,7 @@ pub struct MigrationEvent {
 ///   --admin GADMIN_ADDRESS
 /// ```
 
+#[cfg(feature = "contract")]
 #[contractimpl]
 impl GrainlifyContract {
     /// Initializes the contract with multisig configuration.
