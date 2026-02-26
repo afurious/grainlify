@@ -331,36 +331,6 @@ mod test_release_schedules {
     }
 }
 
-#[cfg(test)]
-mod test_global_rate_limit {
-    use super::*;
-    use soroban_sdk::Env;
-
-    #[test]
-    #[should_panic]
-    fn global_limit_trips_after_threshold() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        // enable a tiny global window: allow 2 operations per window
-        anti_abuse::set_global_config(
-            &env,
-            anti_abuse::GlobalConfig {
-                window_size: 60,
-                max_operations: 2,
-                enabled: true,
-            },
-        );
-
-        // two checks should be fine
-        anti_abuse::check_global_rate_limit(&env);
-        anti_abuse::check_global_rate_limit(&env);
-
-        // third should panic due to limit
-        anti_abuse::check_global_rate_limit(&env);
-    }
-}
-
 mod anti_abuse {
     use soroban_sdk::{contracttype, symbol_short, Address, Env};
 
@@ -5687,3 +5657,33 @@ mod test_e2e_upgrade_with_pause;
 mod test_query_filters;
 #[cfg(test)]
 mod test_status_transitions;
+
+#[cfg(test)]
+mod test_global_rate_limit {
+    use super::*;
+    use soroban_sdk::Env;
+
+    #[test]
+    #[should_panic]
+    fn global_limit_trips_after_threshold() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        // enable a tiny global window: allow 2 operations per window
+        anti_abuse::set_global_config(
+            &env,
+            anti_abuse::GlobalConfig {
+                window_size: 60,
+                max_operations: 2,
+                enabled: true,
+            },
+        );
+
+        // two checks should be fine
+        anti_abuse::check_global_rate_limit(&env);
+        anti_abuse::check_global_rate_limit(&env);
+
+        // third should panic due to limit
+        anti_abuse::check_global_rate_limit(&env);
+    }
+}
