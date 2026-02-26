@@ -5267,11 +5267,11 @@ impl BountyEscrowContract {
             {
                 if escrow.status == status {
                     if skipped < offset {
-                        skipped += 1;
+                        skipped = skipped.checked_add(1).unwrap();
                         continue;
                     }
                     results.push_back(bounty_id);
-                    count += 1;
+                    count = count.checked_add(1).unwrap();
                 }
             }
         }
