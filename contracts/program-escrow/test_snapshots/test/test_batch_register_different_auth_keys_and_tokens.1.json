@@ -489,6 +489,20 @@
                     },
                     {
                       "key": {
+                        "symbol": "creator"
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "initial_liquidity"
+                      },
+                      "val": "void"
+                    },
+                    {
+                      "key": {
                         "symbol": "program_id"
                       },
                       "val": {
@@ -520,6 +534,20 @@
                       "val": {
                         "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                       }
+                    },
+                    {
+                      "key": {
+                        "symbol": "creator"
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "initial_liquidity"
+                      },
+                      "val": "void"
                     },
                     {
                       "key": {
