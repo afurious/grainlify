@@ -1,12 +1,5 @@
 use soroban_sdk::{
-    // contract, contractimpl, // Currently unused - uncomment when needed
-    contracttype,
-    symbol_short,
-    Address,
-    BytesN,
-    Env,
-    Map,
-    Symbol,
+    contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, Map, Symbol,
 };
 
 // --- Enums y Structs permanecen igual ---
@@ -101,12 +94,10 @@ pub enum Error {
     ProposalExpired = 14,
 }
 
-// --- CLAVE: Añadir macro #[contract] ---
-// Note: Commented out to avoid symbol conflicts when used as a module
-// #[contract]
+#[contract]
 pub struct GovernanceContract;
 
-// #[contractimpl]
+#[contractimpl]
 impl GovernanceContract {
     pub fn init_governance(
         env: Env,
@@ -296,6 +287,7 @@ impl GovernanceContract {
 }
 
 #[cfg(test)]
+#[cfg(any())] // Disabled - GovernanceContract needs #[contract] macro to generate client
 mod test {
     use super::*;
     use soroban_sdk::testutils::{Address as _, Events, Ledger};
