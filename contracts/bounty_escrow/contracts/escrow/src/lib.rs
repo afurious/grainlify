@@ -7,7 +7,11 @@ mod test_metadata;
 
 mod test_cross_contract_interface;
 #[cfg(test)]
+mod test_multi_token_fees;
+#[cfg(test)]
 mod test_rbac;
+#[cfg(test)]
+mod test_risk_flags;
 mod traits;
 
 #[cfg(test)]
@@ -20,6 +24,9 @@ use events::{
     ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsRefunded, FundsReleased,
     EVENT_VERSION_V2,
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
+    emit_funds_refunded, emit_funds_released, emit_risk_flags_updated, BatchFundsLocked,
+    BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
+    FundsLocked, FundsRefunded, FundsReleased, RiskFlagsUpdated, EVENT_VERSION_V2,
     emit_funds_refunded, emit_funds_released, emit_maintenance_mode_changed, BatchFundsLocked,
     BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
     FundsLocked, FundsRefunded, FundsReleased, MaintenanceModeChanged, EVENT_VERSION_V2,
@@ -500,12 +507,18 @@ pub enum Error {
     ContractDeprecated = 30,
 }
 
+pub const RISK_FLAG_HIGH_RISK: u32 = 1 << 0;
+pub const RISK_FLAG_UNDER_REVIEW: u32 = 1 << 1;
+pub const RISK_FLAG_RESTRICTED: u32 = 1 << 2;
+pub const RISK_FLAG_DEPRECATED: u32 = 1 << 3;
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EscrowMetadata {
     pub repo_id: u64,
     pub issue_id: u64,
     pub bounty_type: soroban_sdk::String,
+    pub risk_flags: u32,
     pub reference_hash: Option<soroban_sdk::Bytes>,
 }
 
@@ -3168,10 +3181,18 @@ impl BountyEscrowContract {
             .ok_or(Error::NotInitialized)?;
         stored_admin.require_auth();
 
+        let existing_flags = env
+            .storage()
+            .persistent()
+            .get::<DataKey, EscrowMetadata>(&DataKey::Metadata(bounty_id))
+            .map(|metadata| metadata.risk_flags)
+            .unwrap_or(0);
+
         let metadata = EscrowMetadata {
             repo_id,
             issue_id,
             bounty_type,
+            risk_flags: existing_flags,
             reference_hash,
         };
         env.storage()
@@ -3185,6 +3206,96 @@ impl BountyEscrowContract {
             .persistent()
             .get(&DataKey::Metadata(bounty_id))
             .ok_or(Error::BountyNotFound)
+    }
+
+    pub fn set_escrow_risk_flags(
+        env: Env,
+        bounty_id: u64,
+        flags: u32,
+    ) -> Result<EscrowMetadata, Error> {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        stored_admin.require_auth();
+
+        let mut metadata = env
+            .storage()
+            .persistent()
+            .get::<DataKey, EscrowMetadata>(&DataKey::Metadata(bounty_id))
+            .unwrap_or(EscrowMetadata {
+                repo_id: 0,
+                issue_id: 0,
+                bounty_type: soroban_sdk::String::from_str(&env, ""),
+                risk_flags: 0,
+            });
+
+        let previous_flags = metadata.risk_flags;
+        metadata.risk_flags = flags;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Metadata(bounty_id), &metadata);
+
+        emit_risk_flags_updated(
+            &env,
+            RiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                bounty_id,
+                previous_flags,
+                new_flags: metadata.risk_flags,
+                admin: stored_admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        Ok(metadata)
+    }
+
+    pub fn clear_escrow_risk_flags(
+        env: Env,
+        bounty_id: u64,
+        flags: u32,
+    ) -> Result<EscrowMetadata, Error> {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        stored_admin.require_auth();
+
+        let mut metadata = env
+            .storage()
+            .persistent()
+            .get::<DataKey, EscrowMetadata>(&DataKey::Metadata(bounty_id))
+            .unwrap_or(EscrowMetadata {
+                repo_id: 0,
+                issue_id: 0,
+                bounty_type: soroban_sdk::String::from_str(&env, ""),
+                risk_flags: 0,
+            });
+
+        let previous_flags = metadata.risk_flags;
+        metadata.risk_flags &= !flags;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Metadata(bounty_id), &metadata);
+
+        emit_risk_flags_updated(
+            &env,
+            RiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                bounty_id,
+                previous_flags,
+                new_flags: metadata.risk_flags,
+                admin: stored_admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        Ok(metadata)
     }
 }
 

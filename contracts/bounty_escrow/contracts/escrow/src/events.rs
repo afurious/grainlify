@@ -275,6 +275,22 @@ pub fn emit_batch_funds_released(env: &Env, event: BatchFundsReleased) {
 
 #[contracttype]
 #[derive(Clone, Debug)]
+pub struct RiskFlagsUpdated {
+    pub version: u32,
+    pub bounty_id: u64,
+    pub previous_flags: u32,
+    pub new_flags: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_risk_flags_updated(env: &Env, event: RiskFlagsUpdated) {
+    let topics = (symbol_short!("risk"), event.bounty_id);
+    env.events().publish(topics, event.clone());
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
 pub struct ApprovalAdded {
     pub bounty_id: u64,
     pub contributor: Address,
