@@ -20,16 +20,10 @@ mod test_maintenance_mode;
 use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized,
     emit_deprecation_state_changed, emit_funds_locked, emit_funds_refunded, emit_funds_released,
-    BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
-    ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsRefunded, FundsReleased,
+    emit_maintenance_mode_changed, emit_risk_flags_updated, BatchFundsLocked, BatchFundsReleased,
+    BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted, DeprecationStateChanged,
+    FundsLocked, FundsRefunded, FundsReleased, MaintenanceModeChanged, RiskFlagsUpdated,
     EVENT_VERSION_V2,
-    emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
-    emit_funds_refunded, emit_funds_released, emit_risk_flags_updated, BatchFundsLocked,
-    BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
-    FundsLocked, FundsRefunded, FundsReleased, RiskFlagsUpdated, EVENT_VERSION_V2,
-    emit_funds_refunded, emit_funds_released, emit_maintenance_mode_changed, BatchFundsLocked,
-    BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
-    FundsLocked, FundsRefunded, FundsReleased, MaintenanceModeChanged, EVENT_VERSION_V2,
 };
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, vec, Address, Env,
@@ -3357,11 +3351,9 @@ impl BountyEscrowContract {
         }
 
         // Process all items (atomic - all succeed or all fail)
+        // First loop: write all state (escrow, indices). Second loop: transfers + events.
         let mut locked_count = 0u32;
         for item in items.iter() {
-            // Transfer funds from depositor to contract
-            client.transfer(&item.depositor, &contract_address, &item.amount);
-
             // Create escrow record
             let escrow = Escrow {
                 depositor: item.depositor.clone(),
@@ -3406,8 +3398,6 @@ impl BountyEscrowContract {
                 &DataKey::DepositorIndex(item.depositor.clone()),
                 &depositor_index,
             );
-
-            locked_count += 1;
         }
 
         // INTERACTION: all external token transfers happen after state is finalized
