@@ -144,180 +144,6 @@ use soroban_sdk::{
     Vec,
 };
 
-// ============================================================================
-// INPUT VALIDATION MODULE
-// ============================================================================
-
-/// Validation rules for human-readable identifiers to prevent malicious or confusing inputs.
-/// 
-/// This module provides consistent validation across all contracts for:
-/// - Program IDs, names, and metadata
-/// - Tags, types, and references
-/// - Any user-provided string identifiers
-/// 
-/// Rules enforced:
-/// - Maximum length limits to prevent UI/log issues
-/// - Allowed character sets (alphanumeric, spaces, safe punctuation)
-/// - No control characters that could cause display issues
-/// - No leading/trailing whitespace
-mod validation {
-    use soroban_sdk::{Env, String};
-
-    /// Maximum length for program IDs (used as storage keys)
-    const MAX_PROGRAM_ID_LEN: usize = 64;
-    
-    /// Maximum length for program names and descriptions
-    const MAX_NAME_LEN: usize = 100;
-    
-    /// Maximum length for types, tags, and short identifiers
-    const MAX_TAG_LEN: usize = 50;
-    
-    /// Maximum length for custom field values
-    const MAX_FIELD_LEN: usize = 200;
-
-    /// Validates a program ID string.
-    /// 
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `program_id` - The program ID to validate
-    /// 
-    /// # Panics
-    /// Panics if validation fails with a descriptive error message.
-    pub fn validate_program_id(_env: &Env, program_id: &String) {
-        // Basic validation for program IDs
-        if program_id.len() == 0 {
-            panic!("Program ID cannot be empty");
-        }
-        
-        if program_id.len() > MAX_PROGRAM_ID_LEN {
-            panic!("Program ID exceeds maximum length of {} characters", MAX_PROGRAM_ID_LEN);
-        }
-        
-        if program_id.len() < 3 {
-            panic!("Program ID must be at least 3 characters long");
-        }
-        
-        // Program IDs should not contain spaces (for URL/query compatibility)
-        // Note: Full character validation will be implemented when Soroban SDK provides better string utilities
-        // For now, we rely on length validation and manual review
-    }
-
-    /// Validates a program name or similar descriptive field.
-    /// 
-    /// # Arguments
-    /// * `env` - The contract environment  
-    /// * `name` - The name string to validate
-    /// * `field_name` - Name of the field for error messages
-    /// 
-    /// # Panics
-    /// Panics if validation fails with a descriptive error message.
-    pub fn validate_name(_env: &Env, name: &String, field_name: &str) {
-        if name.len() > MAX_NAME_LEN {
-            panic!("{} exceeds maximum length of {} characters", field_name, MAX_NAME_LEN);
-        }
-        // Additional character validation can be added when SDK supports it
-    }
-
-    /// Validates a tag, type, or short identifier.
-    /// 
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `tag` - The tag string to validate
-    /// * `field_name` - Name of the field for error messages
-    /// 
-    /// # Panics
-    /// Panics if validation fails with a descriptive error message.
-    pub fn validate_tag(_env: &Env, tag: &String, field_name: &str) {
-        if tag.len() > MAX_TAG_LEN {
-            panic!("{} exceeds maximum length of {} characters", field_name, MAX_TAG_LEN);
-        }
-        
-        // Tags should not be empty if provided
-        if tag.len() == 0 {
-            panic!("{} cannot be empty", field_name);
-        }
-        // Additional character validation can be added when SDK supports it
-    }
-
-    /// Validates a custom field value.
-    /// 
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `value` - The field value to validate
-    /// * `field_name` - Name of the field for error messages
-    /// 
-    /// # Panics
-    /// Panics if validation fails with a descriptive error message.
-    pub fn validate_custom_field(_env: &Env, value: &String, field_name: &str) {
-        if value.len() > MAX_FIELD_LEN {
-            panic!("{} exceeds maximum length of {} characters", field_name, MAX_FIELD_LEN);
-        }
-        // Additional character validation can be added when SDK supports it
-    }
-
-    /// Validates program metadata including all string fields.
-    /// 
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `metadata` - The metadata to validate
-    /// 
-    /// # Panics
-    /// Panics if validation fails with a descriptive error message.
-    pub fn validate_metadata(env: &Env, metadata: &ProgramMetadata) {
-        // Validate program name
-        if let Some(ref name) = metadata.program_name {
-            validate_name(env, name, "program name");
-        }
-
-        // Validate program type
-        if let Some(ref prog_type) = metadata.program_type {
-            validate_tag(env, prog_type, "program type");
-        }
-
-        // Validate ecosystem
-        if let Some(ref ecosystem) = metadata.ecosystem {
-            validate_tag(env, ecosystem, "ecosystem");
-        }
-
-        // Validate tags
-        for tag in metadata.tags.iter() {
-            validate_tag(env, tag, "tag");
-        }
-
-        // Validate custom fields
-        for (key, value) in metadata.custom_fields.iter() {
-            validate_tag(env, key, "custom field key");
-            validate_custom_field(env, value, "custom field value");
-        }
-    }
-
-    /// Core string validation logic shared by all validators.
-    /// 
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `value` - The string to validate
-    /// * `max_len` - Maximum allowed length
-    /// * `field_name` - Name of the field for error messages
-    /// 
-    /// # Panics
-    /// Panics if validation fails with a descriptive error message.
-    fn validate_string_basic(_env: &Env, value: &String, max_len: usize, field_name: &str) {
-        // Check length
-        if value.len() > max_len {
-            panic!("{} exceeds maximum length of {} characters", field_name, max_len);
-        }
-        
-        // For now, use a simplified validation that checks for common issues
-        // TODO: Implement full character validation when Soroban SDK provides better string utilities
-        
-        // Check for empty strings (basic check)
-        if value.len() == 0 {
-            return; // Empty strings are allowed for optional fields
-        }
-        
-}
-}
-
 // Event types
 const PROGRAM_INITIALIZED: Symbol = symbol_short!("ProgInit");
 const FUNDS_LOCKED: Symbol = symbol_short!("FundLock");
@@ -902,6 +728,24 @@ pub struct ProgramData {
     pub metadata: Option<ProgramMetadata>,
 }
 
+/// Reputation metrics derived from on-chain program behavior.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramReputationScore {
+    pub total_payouts: u32,
+    pub total_scheduled: u32,
+    pub completed_releases: u32,
+    pub pending_releases: u32,
+    pub overdue_releases: u32,
+    pub dispute_count: u32,
+    pub refund_count: u32,
+    pub total_funds_locked: i128,
+    pub total_funds_distributed: i128,
+    pub completion_rate_bps: u32,
+    pub payout_fulfillment_rate_bps: u32,
+    pub overall_score_bps: u32,
+}
+
 /// Storage key type for individual programs
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1139,8 +983,6 @@ impl ProgramEscrowContract {
 
         // Store program data
         env.storage().instance().set(&program_key, &program_data);
-        // Store program data
-        env.storage().instance().set(&program_key, &program_data);
 
         // Update registry
         let mut registry: Vec<String> = env
@@ -1167,62 +1009,16 @@ impl ProgramEscrowContract {
         program_data
     }
 
-    /// Get program metadata
-    ///
-    /// Retrieves the metadata associated with a program.
-    ///
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `program_id` - The program ID to get metadata for
-    ///
-    /// # Returns
-    /// * `ProgramMetadata` - The program metadata
-    ///
-    /// # Panics
-    /// Panics if the program doesn't exist
-    pub fn get_program_metadata(env: Env, program_id: String) -> ProgramMetadata {
-        let program_key = DataKey::Program(program_id.clone());
-        let program_data: ProgramData = env
-            .storage()
-            .instance()
-            .get(&program_key)
-            .unwrap_or_else(|| panic!("Program not found"));
-
-        program_data.metadata.unwrap_or_else(|| panic!("Program has no metadata"))
-    }
-
-    /// Update program metadata
-    ///
-    /// Updates the metadata for an existing program.
-    ///
-    /// # Arguments
-    /// * `env` - The contract environment
-    /// * `program_id` - The program ID to update
-    /// * `metadata` - The new metadata
-    ///
-    /// # Panics
-    /// Panics if the program doesn't exist or validation fails
-    pub fn update_program_metadata(env: Env, program_id: String, metadata: ProgramMetadata) {
-        let program_key = DataKey::Program(program_id.clone());
-        let mut program_data: ProgramData = env
-            .storage()
-            .instance()
-            .get(&program_key)
-            .unwrap_or_else(|| panic!("Program not found"));
-
-        // Validate new metadata
-        validation::validate_metadata(&env, &metadata);
-
-        // Update metadata
-        program_data.metadata = Some(metadata);
-
-        // Save updated program data
-        env.storage().instance().set(&program_key, &program_data);
-    }
-
-    /// Calculate fee using floor rounding. Delegates to `token_math::calculate_fee`.
+    /// Calculate fee amount based on rate (in basis points)
     fn calculate_fee(amount: i128, fee_rate: i128) -> i128 {
-        token_math::calculate_fee(amount, fee_rate)
+        if fee_rate == 0 {
+            return 0;
+        }
+        // Fee = (amount * fee_rate) / BASIS_POINTS
+        amount
+            .checked_mul(fee_rate)
+            .and_then(|x| x.checked_div(BASIS_POINTS))
+            .unwrap_or(0)
     }
 
     /// Get fee configuration (internal helper)
@@ -1269,174 +1065,6 @@ impl ProgramEscrowContract {
     pub fn program_exists(env: Env, program_id: String) -> bool {
         let program_key = DataKey::Program(program_id);
         env.storage().instance().has(&program_key)
-    }
-
-    fn assert_dependencies_satisfied(env: &Env, program_id: &String) {
-        let dependencies = get_program_dependencies_internal(env, program_id);
-        for dependency_id in dependencies.iter() {
-            match dependency_status_internal(env, &dependency_id) {
-                DependencyStatus::Completed => {}
-                DependencyStatus::Pending => panic!("Dependency not satisfied"),
-                DependencyStatus::Failed => panic!("Dependency failed"),
-            }
-        }
-    }
-
-    /// Defines explicit dependencies for a program.
-    ///
-    /// Dependencies can point to:
-    /// - another registered program id; or
-    /// - an externally managed dependency id with a pre-registered status.
-    ///
-    /// Cycle checks are applied for program-to-program edges.
-    pub fn set_program_dependencies(
-        env: Env,
-        program_id: String,
-        dependency_ids: Vec<String>,
-    ) -> Vec<String> {
-        let program_key = DataKey::Program(program_id.clone());
-        let program_data: ProgramData = env
-            .storage()
-            .instance()
-            .get(&program_key)
-            .unwrap_or_else(|| panic!("Program not found"));
-
-        program_data.authorized_payout_key.require_auth();
-
-        let old_dependencies = get_program_dependencies_internal(&env, &program_id);
-        let mut validated_dependencies = vec![&env];
-
-        for dependency_id in dependency_ids.iter() {
-            if dependency_id.len() == 0 {
-                panic!("Dependency id cannot be empty");
-            }
-            if dependency_id == program_id {
-                panic!("Program cannot depend on itself");
-            }
-            if vec_contains(&validated_dependencies, &dependency_id) {
-                panic!("Duplicate dependency");
-            }
-
-            let is_program_dependency = env
-                .storage()
-                .instance()
-                .has(&DataKey::Program(dependency_id.clone()));
-            let is_registered_external = env
-                .storage()
-                .instance()
-                .has(&DataKey::DependencyStatus(dependency_id.clone()));
-            if !is_program_dependency && !is_registered_external {
-                panic!("Dependency not registered");
-            }
-
-            if is_program_dependency {
-                let mut visited = Vec::new(&env);
-                if path_exists_to_target(&env, &dependency_id, &program_id, &mut visited) {
-                    panic!("Dependency cycle detected");
-                }
-            }
-
-            validated_dependencies.push_back(dependency_id.clone());
-        }
-
-        env.storage().instance().set(
-            &DataKey::ProgramDependencies(program_id.clone()),
-            &validated_dependencies,
-        );
-
-        for dependency_id in validated_dependencies.iter() {
-            if !vec_contains(&old_dependencies, &dependency_id) {
-                env.events().publish(
-                    (DEPENDENCY_CREATED,),
-                    (program_id.clone(), dependency_id.clone()),
-                );
-            }
-        }
-        for dependency_id in old_dependencies.iter() {
-            if !vec_contains(&validated_dependencies, &dependency_id) {
-                env.events().publish(
-                    (DEPENDENCY_CLEARED,),
-                    (program_id.clone(), dependency_id.clone()),
-                );
-            }
-        }
-
-        validated_dependencies
-    }
-
-    /// Clears all dependencies for a program.
-    pub fn clear_program_dependencies(env: Env, program_id: String) {
-        let program_key = DataKey::Program(program_id.clone());
-        let program_data: ProgramData = env
-            .storage()
-            .instance()
-            .get(&program_key)
-            .unwrap_or_else(|| panic!("Program not found"));
-
-        program_data.authorized_payout_key.require_auth();
-
-        let old_dependencies = get_program_dependencies_internal(&env, &program_id);
-        let empty_dependencies: Vec<String> = vec![&env];
-        env.storage()
-            .instance()
-            .set(&DataKey::ProgramDependencies(program_id.clone()), &empty_dependencies);
-
-        for dependency_id in old_dependencies.iter() {
-            env.events().publish(
-                (DEPENDENCY_CLEARED,),
-                (program_id.clone(), dependency_id.clone()),
-            );
-        }
-    }
-
-    /// Reads all dependencies configured for a program.
-    pub fn get_program_dependencies(env: Env, program_id: String) -> Vec<String> {
-        if !env
-            .storage()
-            .instance()
-            .has(&DataKey::Program(program_id.clone()))
-        {
-            panic!("Program not found");
-        }
-        get_program_dependencies_internal(&env, &program_id)
-    }
-
-    /// Updates dependency status.
-    ///
-    /// For registered programs, only that program's authorized payout key can update status.
-    /// For external dependency ids, anti-abuse admin authorization is required.
-    pub fn set_dependency_status(env: Env, dependency_id: String, status: DependencyStatus) {
-        if dependency_id.len() == 0 {
-            panic!("Dependency id cannot be empty");
-        }
-
-        if env
-            .storage()
-            .instance()
-            .has(&DataKey::Program(dependency_id.clone()))
-        {
-            let program_data: ProgramData = env
-                .storage()
-                .instance()
-                .get(&DataKey::Program(dependency_id.clone()))
-                .unwrap();
-            program_data.authorized_payout_key.require_auth();
-        } else {
-            let admin = anti_abuse::get_admin(&env)
-                .unwrap_or_else(|| panic!("Admin not set for external dependency status update"));
-            admin.require_auth();
-        }
-
-        env.storage()
-            .instance()
-            .set(&DataKey::DependencyStatus(dependency_id.clone()), &status.clone());
-        env.events()
-            .publish((DEPENDENCY_STATUS_UPDATED,), (dependency_id, status));
-    }
-
-    /// Reads dependency status; defaults to pending if no explicit status exists.
-    pub fn get_dependency_status(env: Env, dependency_id: String) -> DependencyStatus {
-        dependency_status_internal(&env, &dependency_id)
     }
 
     // ========================================================================
@@ -1788,6 +1416,9 @@ impl ProgramEscrowContract {
                 timestamp,
             };
             updated_history.push_back(payout_record);
+            
+            // Record outflow for threshold monitoring
+            threshold_monitor::record_outflow(&env, amount);
         }
 
         // Emit fee collected event if applicable
@@ -1900,6 +1531,12 @@ impl ProgramEscrowContract {
         program_data.authorized_payout_key.require_auth();
         // Apply rate limiting to the authorized payout key
         anti_abuse::check_rate_limit(&env, program_data.authorized_payout_key.clone());
+
+        // Check circuit breaker with thresholds
+        if let Err(_) = error_recovery::check_and_allow_with_thresholds(&env) {
+            reentrancy_guard::clear_entered(&env);
+            panic!("Circuit breaker open or threshold breached");
+        }
 
         // Verify authorization
         // let caller = env.invoker();
@@ -2720,7 +2357,9 @@ impl ProgramEscrowContract {
             .get(&ConfigSnapshotKey::Snapshot(snapshot_id))
             .unwrap_or_else(|| panic!("Snapshot not found"));
 
-        env.storage().instance().set(&FEE_CONFIG, &snapshot.fee_config);
+        env.storage()
+            .instance()
+            .set(&FEE_CONFIG, &snapshot.fee_config);
         anti_abuse::set_config(&env, snapshot.anti_abuse_config);
 
         match snapshot.anti_abuse_admin {
@@ -2728,7 +2367,9 @@ impl ProgramEscrowContract {
             None => anti_abuse::clear_admin(&env),
         }
 
-        env.storage().instance().set(&DataKey::IsPaused, &snapshot.is_paused);
+        env.storage()
+            .instance()
+            .set(&DataKey::IsPaused, &snapshot.is_paused);
 
         env.events().publish(
             (symbol_short!("cfg_snap"), symbol_short!("restore")),
@@ -2860,6 +2501,76 @@ impl ProgramEscrowContract {
             .get(&DataKey::ReleaseHistory(program_id))
             .unwrap_or(vec![&env])
     }
+
+    /// Compute reputation score from on-chain program state.
+    ///
+    /// Scores are in basis points (10000 = 100%).
+    /// - `completion_rate_bps`: completed_releases / total_scheduled
+    /// - `payout_fulfillment_rate_bps`: funds_distributed / funds_locked
+    /// - `overall_score_bps`: weighted average (60% completion, 40% fulfillment)
+    pub fn get_program_reputation(env: Env, program_id: String) -> ProgramReputationScore {
+        let program_key = DataKey::Program(program_id.clone());
+        let program_data: ProgramData = env
+            .storage()
+            .instance()
+            .get(&program_key)
+            .unwrap_or_else(|| panic!("Program not found"));
+        let schedules = Self::get_all_prog_release_schedules(env.clone(), program_id);
+
+        let now = env.ledger().timestamp();
+        let total_payouts = program_data.payout_history.len();
+        let total_scheduled = schedules.len();
+        let mut completed_releases = 0u32;
+        let mut pending_releases = 0u32;
+        let mut overdue_releases = 0u32;
+
+        for i in 0..schedules.len() {
+            let schedule = schedules.get(i).unwrap();
+            if schedule.released {
+                completed_releases += 1;
+            } else {
+                pending_releases += 1;
+                if schedule.release_timestamp <= now {
+                    overdue_releases += 1;
+                }
+            }
+        }
+
+        let total_funds_locked = program_data.total_funds;
+        let total_funds_distributed = program_data.total_funds - program_data.remaining_balance;
+
+        let completion_rate_bps: u32 = if total_scheduled > 0 {
+            ((completed_releases as u64 * BASIS_POINTS as u64) / total_scheduled as u64) as u32
+        } else {
+            10_000
+        };
+
+        let payout_fulfillment_rate_bps: u32 = if total_funds_locked > 0 {
+            ((total_funds_distributed as u64 * BASIS_POINTS as u64) / total_funds_locked as u64)
+                as u32
+        } else {
+            10_000
+        };
+
+        let overall_score_bps: u32 =
+            (completion_rate_bps as u64 * 60 + payout_fulfillment_rate_bps as u64 * 40) as u32
+                / 100;
+
+        ProgramReputationScore {
+            total_payouts,
+            total_scheduled,
+            completed_releases,
+            pending_releases,
+            overdue_releases,
+            dispute_count: 0,
+            refund_count: 0,
+            total_funds_locked,
+            total_funds_distributed,
+            completion_rate_bps,
+            payout_fulfillment_rate_bps,
+            overall_score_bps,
+        }
+    }
 }
 
 /// Helper function to calculate total scheduled amount for a program.
@@ -2887,13 +2598,14 @@ fn get_program_total_scheduled_amount(env: &Env, program_id: &String) -> i128 {
             }
         }
     }
-
-    total
 }
 
 /// ============================================================================
 // Tests
 // ============================================================================
+
+#[cfg(test)]
+mod test_reputation;
 
 #[cfg(test)]
 mod test {
