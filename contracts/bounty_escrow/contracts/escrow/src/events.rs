@@ -116,6 +116,43 @@ pub fn emit_funds_refunded(env: &Env, event: FundsRefunded) {
     env.events().publish(topics, event.clone());
 }
 
+// ============================================================================
+// Optional require-receipt for critical operations (Issue #677)
+// ============================================================================
+
+/// Outcome of a critical operation for receipt proof.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CriticalOperationOutcome {
+    Released,
+    Refunded,
+}
+
+/// Receipt (signed/committed proof of execution) for release or refund.
+/// Emitted for each release/refund so users can prove completion off-chain;
+/// optional on-chain verification via verify_receipt(receipt_id).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CriticalOperationReceipt {
+    /// Unique receipt id (monotonic counter).
+    pub receipt_id: u64,
+    /// Operation that was executed.
+    pub outcome: CriticalOperationOutcome,
+    /// Bounty that was released or refunded.
+    pub bounty_id: u64,
+    /// Amount transferred.
+    pub amount: i128,
+    /// Recipient (release) or refund_to (refund).
+    pub party: Address,
+    /// Ledger timestamp when the operation completed.
+    pub timestamp: u64,
+}
+
+pub fn emit_operation_receipt(env: &Env, receipt: CriticalOperationReceipt) {
+    let topics = (symbol_short!("receipt"), receipt.receipt_id);
+    env.events().publish(topics, receipt.clone());
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FeeOperationType {
