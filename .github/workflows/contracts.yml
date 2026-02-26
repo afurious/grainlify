@@ -25,6 +25,7 @@ jobs:
       run: |
         source $HOME/.cargo/env
         rustup target add wasm32v1-none
+        rustup target add wasm32-unknown-unknown
 
     - name: Install Stellar CLI with Homebrew
       run: |
@@ -50,3 +51,8 @@ jobs:
         cd contracts/bounty_escrow/contracts/escrow
         cargo test --verbose --lib
 
+    - name: Run invariant checker tests
+      run: |
+        source $HOME/.cargo/env
+        cd contracts/bounty_escrow/contracts/escrow
+        cargo test --verbose --lib invariant_checker_ci
