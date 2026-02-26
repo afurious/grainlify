@@ -20,10 +20,7 @@
 //! | true        | true           | true          | ✗          | ✗             | ✗            |
 
 use super::*;
-use soroban_sdk::{
-    testutils::Address as _,
-    token, vec, Address, Env, String,
-};
+use soroban_sdk::{testutils::Address as _, token, vec, Address, Env, String};
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -58,7 +55,7 @@ fn setup(
     // Initialize program
     let payout_key = Address::generate(env);
     let program_id = String::from_str(env, "test-prog");
-    client.init_program(&program_id, &payout_key, &token_addr);
+    client.init_program(&program_id, &payout_key, &token_addr, &admin.clone(, &None, &None), &None, &None);
 
     // Fund the contract with tokens and lock them
     if initial_balance > 0 {
@@ -80,8 +77,14 @@ fn test_default_all_flags_false() {
 
     let flags = client.get_pause_flags();
     assert!(!flags.lock_paused, "lock_paused should default to false");
-    assert!(!flags.release_paused, "release_paused should default to false");
-    assert!(!flags.refund_paused, "refund_paused should default to false");
+    assert!(
+        !flags.release_paused,
+        "release_paused should default to false"
+    );
+    assert!(
+        !flags.refund_paused,
+        "refund_paused should default to false"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -93,7 +96,7 @@ fn test_set_lock_paused_only() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &None, &None);
+    client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
     let flags = client.get_pause_flags();
     assert!(flags.lock_paused);
     assert!(!flags.release_paused);
@@ -105,7 +108,7 @@ fn test_set_release_paused_only() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&None, &Some(true), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
     let flags = client.get_pause_flags();
     assert!(!flags.lock_paused);
     assert!(flags.release_paused);
@@ -117,7 +120,7 @@ fn test_set_refund_paused_only() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&None, &None, &Some(true));
+    client.set_paused(&None, &None, &Some(true), &None::<soroban_sdk::String>);
     let flags = client.get_pause_flags();
     assert!(!flags.lock_paused);
     assert!(!flags.release_paused);
@@ -129,8 +132,8 @@ fn test_unset_lock_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &None, &None);
-    client.set_paused(&Some(false), &None, &None);
+    client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
+    client.set_paused(&Some(false), &None, &None, &None::<soroban_sdk::String>);
     let flags = client.get_pause_flags();
     assert!(!flags.lock_paused);
 }
@@ -140,8 +143,8 @@ fn test_unset_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&None, &Some(true), &None);
-    client.set_paused(&None, &Some(false), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
+    client.set_paused(&None, &Some(false), &None, &None::<soroban_sdk::String>);
     let flags = client.get_pause_flags();
     assert!(!flags.release_paused);
 }
@@ -156,13 +159,21 @@ fn test_partial_update_preserves_other_flags() {
     let (client, _token) = setup(&env, 0);
 
     // Pause all three
-    client.set_paused(&Some(true), &Some(true), &Some(true));
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
 
     // Only unpause release; lock and refund must remain paused
-    client.set_paused(&None, &Some(false), &None);
+    client.set_paused(&None, &Some(false), &None, &None::<soroban_sdk::String>);
     let flags = client.get_pause_flags();
     assert!(flags.lock_paused, "lock_paused should remain true");
-    assert!(!flags.release_paused, "release_paused should be false after unset");
+    assert!(
+        !flags.release_paused,
+        "release_paused should be false after unset"
+    );
     assert!(flags.refund_paused, "refund_paused should remain true");
 }
 
@@ -176,7 +187,7 @@ fn test_lock_blocked_when_lock_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &None, &None);
+    client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
     client.lock_program_funds(&500);
 }
 
@@ -186,7 +197,7 @@ fn test_release_allowed_when_only_lock_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&Some(true), &None, &None);
+    client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
 
     let recipient = Address::generate(&env);
     // Should succeed — release_paused is false
@@ -200,14 +211,11 @@ fn test_batch_allowed_when_only_lock_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&Some(true), &None, &None);
+    client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
 
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
-    let data = client.batch_payout(
-        &vec![&env, r1, r2],
-        &vec![&env, 100i128, 200i128],
-    );
+    let data = client.batch_payout(&vec![&env, r1, r2], &vec![&env, 100i128, 200i128]);
     assert_eq!(data.remaining_balance, 700);
 }
 
@@ -221,7 +229,7 @@ fn test_single_payout_blocked_when_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&None, &Some(true), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
     let recipient = Address::generate(&env);
     client.single_payout(&recipient, &100);
 }
@@ -232,7 +240,7 @@ fn test_batch_payout_blocked_when_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&None, &Some(true), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
     let r1 = Address::generate(&env);
     client.batch_payout(&vec![&env, r1], &vec![&env, 100i128]);
 }
@@ -243,7 +251,7 @@ fn test_lock_allowed_when_only_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&None, &Some(true), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
 
     // Should succeed — lock_paused is false
     let data = client.lock_program_funds(&300);
@@ -261,7 +269,7 @@ fn test_lock_allowed_when_only_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&None, &None, &Some(true));
+    client.set_paused(&None, &None, &Some(true), &None::<soroban_sdk::String>);
     let data = client.lock_program_funds(&400);
     assert_eq!(data.remaining_balance, 400);
 }
@@ -272,7 +280,7 @@ fn test_single_payout_allowed_when_only_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&None, &None, &Some(true));
+    client.set_paused(&None, &None, &Some(true), &None::<soroban_sdk::String>);
     let recipient = Address::generate(&env);
     let data = client.single_payout(&recipient, &300);
     assert_eq!(data.remaining_balance, 700);
@@ -284,7 +292,7 @@ fn test_batch_allowed_when_only_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&None, &None, &Some(true));
+    client.set_paused(&None, &None, &Some(true), &None::<soroban_sdk::String>);
     let r1 = Address::generate(&env);
     let data = client.batch_payout(&vec![&env, r1], &vec![&env, 100i128]);
     assert_eq!(data.remaining_balance, 900);
@@ -300,7 +308,12 @@ fn test_lock_blocked_when_lock_and_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &Some(true), &None);
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &None,
+        &None::<soroban_sdk::String>,
+    );
     client.lock_program_funds(&100);
 }
 
@@ -310,7 +323,12 @@ fn test_single_payout_blocked_when_lock_and_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &Some(true), &None);
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &None,
+        &None::<soroban_sdk::String>,
+    );
     let recipient = Address::generate(&env);
     client.single_payout(&recipient, &100);
 }
@@ -321,7 +339,12 @@ fn test_batch_payout_blocked_when_lock_and_release_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &Some(true), &None);
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &None,
+        &None::<soroban_sdk::String>,
+    );
     let r1 = Address::generate(&env);
     client.batch_payout(&vec![&env, r1], &vec![&env, 100i128]);
 }
@@ -336,7 +359,12 @@ fn test_lock_blocked_when_lock_and_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &None, &Some(true));
+    client.set_paused(
+        &Some(true),
+        &None,
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     client.lock_program_funds(&100);
 }
 
@@ -345,7 +373,12 @@ fn test_single_payout_allowed_when_lock_and_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &None, &Some(true));
+    client.set_paused(
+        &Some(true),
+        &None,
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let recipient = Address::generate(&env);
     let data = client.single_payout(&recipient, &100);
     assert_eq!(data.remaining_balance, 400);
@@ -356,7 +389,12 @@ fn test_batch_allowed_when_lock_and_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &None, &Some(true));
+    client.set_paused(
+        &Some(true),
+        &None,
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let r1 = Address::generate(&env);
     let data = client.batch_payout(&vec![&env, r1], &vec![&env, 200i128]);
     assert_eq!(data.remaining_balance, 300);
@@ -371,7 +409,12 @@ fn test_lock_allowed_when_release_and_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&None, &Some(true), &Some(true));
+    client.set_paused(
+        &None,
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let data = client.lock_program_funds(&600);
     assert_eq!(data.remaining_balance, 600);
 }
@@ -382,7 +425,12 @@ fn test_single_payout_blocked_when_release_and_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 600);
 
-    client.set_paused(&None, &Some(true), &Some(true));
+    client.set_paused(
+        &None,
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let recipient = Address::generate(&env);
     client.single_payout(&recipient, &100);
 }
@@ -393,7 +441,12 @@ fn test_batch_blocked_when_release_and_refund_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 600);
 
-    client.set_paused(&None, &Some(true), &Some(true));
+    client.set_paused(
+        &None,
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let r1 = Address::generate(&env);
     client.batch_payout(&vec![&env, r1], &vec![&env, 100i128]);
 }
@@ -408,7 +461,12 @@ fn test_lock_blocked_when_all_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &Some(true), &Some(true));
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     client.lock_program_funds(&100);
 }
 
@@ -418,7 +476,12 @@ fn test_single_payout_blocked_when_all_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &Some(true), &Some(true));
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let recipient = Address::generate(&env);
     client.single_payout(&recipient, &100);
 }
@@ -429,7 +492,12 @@ fn test_batch_payout_blocked_when_all_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &Some(true), &Some(true));
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
     let r1 = Address::generate(&env);
     client.batch_payout(&vec![&env, r1], &vec![&env, 100i128]);
 }
@@ -443,11 +511,11 @@ fn test_lock_restored_after_unpause() {
     let env = Env::default();
     let (client, _token) = setup(&env, 0);
 
-    client.set_paused(&Some(true), &None, &None);
+    client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
     // Confirm it's blocked
     assert!(client.try_lock_program_funds(&200).is_err());
 
-    client.set_paused(&Some(false), &None, &None);
+    client.set_paused(&Some(false), &None, &None, &None::<soroban_sdk::String>);
     // Now it should succeed
     let data = client.lock_program_funds(&200);
     assert_eq!(data.remaining_balance, 200);
@@ -458,11 +526,11 @@ fn test_single_payout_restored_after_unpause() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&None, &Some(true), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
     let recipient = Address::generate(&env);
     assert!(client.try_single_payout(&recipient, &100).is_err());
 
-    client.set_paused(&None, &Some(false), &None);
+    client.set_paused(&None, &Some(false), &None, &None::<soroban_sdk::String>);
     let data = client.single_payout(&recipient, &100);
     assert_eq!(data.remaining_balance, 900);
 }
@@ -472,15 +540,13 @@ fn test_batch_payout_restored_after_unpause() {
     let env = Env::default();
     let (client, _token) = setup(&env, 1_000);
 
-    client.set_paused(&None, &Some(true), &None);
+    client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
     let r1 = Address::generate(&env);
-    assert!(
-        client
-            .try_batch_payout(&vec![&env, r1.clone()], &vec![&env, 100i128])
-            .is_err()
-    );
+    assert!(client
+        .try_batch_payout(&vec![&env, r1.clone()], &vec![&env, 100i128])
+        .is_err());
 
-    client.set_paused(&None, &Some(false), &None);
+    client.set_paused(&None, &Some(false), &None, &None::<soroban_sdk::String>);
     let data = client.batch_payout(&vec![&env, r1], &vec![&env, 100i128]);
     assert_eq!(data.remaining_balance, 900);
 }
@@ -494,7 +560,12 @@ fn test_query_functions_unaffected_when_all_paused() {
     let env = Env::default();
     let (client, _token) = setup(&env, 500);
 
-    client.set_paused(&Some(true), &Some(true), &Some(true));
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
 
     // Read-only queries must still succeed
     let info = client.get_program_info();

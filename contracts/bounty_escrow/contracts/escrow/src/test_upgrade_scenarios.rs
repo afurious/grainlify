@@ -1,6 +1,12 @@
 #![cfg(test)]
 use crate::{ BountyEscrowContract, BountyEscrowContractClient, EscrowStatus };
 use soroban_sdk::{ testutils::{ Address as _, Ledger }, token, Address, Env };
+use crate::{BountyEscrowContract, BountyEscrowContractClient, EscrowStatus};
+use soroban_sdk::testutils::Ledger;
+use soroban_sdk::{
+    testutils::{Address as _, LedgerInfo},
+    token, Address, Env,
+};
 
 fn create_test_env() -> (Env, BountyEscrowContractClient<'static>, Address) {
     let env = Env::default();
@@ -91,6 +97,17 @@ fn test_upgrade_pending_lock_then_refund() {
 
     // Advance time past deadline
     env.ledger().set_timestamp(env.ledger().timestamp() + 200);
+    let current_time = env.ledger().timestamp();
+    env.ledger().set(LedgerInfo {
+        timestamp: current_time + 200,
+        protocol_version: 20,
+        sequence_number: 0,
+        network_id: Default::default(),
+        base_reserve: 0,
+        min_temp_entry_ttl: 0,
+        min_persistent_entry_ttl: 0,
+        max_entry_ttl: 0,
+    });
 
     // Refund after upgrade
     client.refund(&2);

@@ -39,6 +39,27 @@ disable_identity_mock() {
     export PATH="$ORIGINAL_PATH"
 }
 
+enable_invalid_identity_with_network_mock() {
+    cat > "$MOCK_BIN/stellar" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" = "keys" && "$2" = "address" ]]; then
+    echo "Identity not found" >&2
+    exit 1
+fi
+echo "Mock stellar call"
+exit 0
+EOF
+
+    cat > "$MOCK_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+# Keep connectivity checks deterministic in offline CI/sandbox runs.
+exit 0
+EOF
+
+    chmod +x "$MOCK_BIN/stellar" "$MOCK_BIN/curl"
+    export PATH="$MOCK_BIN:$ORIGINAL_PATH"
+}
+
 ORIGINAL_PATH="$PATH"
 
 # --------------------- TEST RUNNER --------------------------
@@ -132,6 +153,8 @@ run_expect_fail "Invalid network" "Invalid network" "$FAKE_WASM" -n "invalid_net
 # ------------------------------------------------------------
 disable_identity_mock
 run_expect_fail "Invalid identity" "Identity not found" "$FAKE_WASM" --identity "nonexistent_test_identity_12345"
+enable_invalid_identity_with_network_mock
+run_expect_fail "Invalid identity" "Identity not found" "$FAKE_WASM" --identity "ghost_id"
 
 # ------------------------------------------------------------
 # 7. Missing CLI dependency (requires identity mock)
@@ -181,4 +204,5 @@ fi
 # Cleanup test files
 rm -f "$FAKE_WASM" "$INVALID_WASM" "$EMPTY_WASM"
 
+echo "All deployment failure tests passed!"
 echo "All deployment failure tests passed!"
