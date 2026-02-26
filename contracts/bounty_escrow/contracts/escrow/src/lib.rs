@@ -22,10 +22,10 @@ mod traits;
 
 use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
-    emit_funds_refunded, emit_funds_released, emit_ticket_claimed, emit_ticket_issued,
-    BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
-    ClaimExecuted, FundsLocked, FundsRefunded, FundsReleased, TicketClaimed, TicketIssued,
-    EVENT_VERSION_V2,
+    emit_funds_locked_anon, emit_funds_refunded, emit_funds_released, emit_ticket_claimed,
+    emit_ticket_issued, BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled,
+    ClaimCreated, ClaimExecuted, FundsLocked, FundsLockedAnon, FundsRefunded, FundsReleased,
+    TicketClaimed, TicketIssued, EVENT_VERSION_V2,
 };
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, vec, Address, BytesN,
@@ -422,6 +422,14 @@ pub enum Error {
     CapabilityUsesExhausted = 31,
     CapabilityExceedsAuthority = 32,
     InvalidAssetId = 33,
+    /// Refund for anonymous escrow must go through refund_resolved (resolver provides recipient)
+    AnonymousRefundRequiresResolution = 34,
+    /// Anonymous resolver address not set in instance storage
+    AnonymousResolverNotSet = 35,
+    /// Bounty exists but is not an anonymous escrow (for refund_resolved)
+    NotAnonymousEscrow = 36,
+    /// Use get_escrow_info_v2 for anonymous escrows
+    UseGetEscrowInfoV2ForAnonymous = 37,
 }
 
 #[contracttype]
@@ -468,6 +476,14 @@ pub struct AnonymousEscrow {
     pub refund_history: Vec<RefundRecord>,
 }
 
+/// Depositor identity: either a concrete address (non-anon) or a 32-byte commitment (anon).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AnonymousParty {
+    Address(Address),
+    Commitment(BytesN<32>),
+}
+
 /// Unified escrow view: exposes either address or commitment for depositor.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -484,7 +500,8 @@ pub struct EscrowInfo {
 pub enum DataKey {
     Admin,
     Token,
-    Escrow(u64), // bounty_id
+    Escrow(u64),    // bounty_id
+    EscrowAnon(u64), // bounty_id -> AnonymousEscrow (optional anonymization)
     Metadata(u64),
     EscrowIndex,             // Vec<u64> of all bounty_ids
     DepositorIndex(Address), // Vec<u64> of bounty_ids by depositor
@@ -503,6 +520,9 @@ pub enum DataKey {
     BeneficiaryTickets(Address), // Address -> Vec<u64> of ticket_ids for beneficiary
     CapabilityNonce, // monotonically increasing capability id
     Capability(u64), // capability_id -> Capability
+
+    /// Address of the resolver that may authorize refunds for anonymous escrows
+    AnonymousResolver,
 
     /// Chain identifier (e.g., "stellar", "ethereum") for cross-network protection
     ChainId,
@@ -1930,15 +1950,6 @@ impl BountyEscrowContract {
             reentrancy_guard::release(&env);
             return Err(Error::BountyNotFound);
         }
-
-        // EFFECTS: update state before external call (CEI)
-        let release_amount = escrow.amount;
-        escrow.status = EscrowStatus::Released;
-        escrow.remaining_amount = 0;
-        invariants::assert_escrow(&env, &escrow);
-        env.storage()
-            .persistent()
-            .set(&DataKey::Escrow(bounty_id), &escrow);
 
         // INTERACTION: external token transfer is last
         let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
