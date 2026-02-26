@@ -26,6 +26,34 @@
     [],
     [
       [
+<<<<<<< HEAD
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "function_name": "update_anti_abuse_config",
+              "args": [
+                {
+                  "u64": 3600
+                },
+                {
+                  "u32": 10
+                },
+                {
+                  "u64": 100
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [
+      [
+=======
+>>>>>>> upstream/master
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
         {
           "function": {
@@ -39,7 +67,11 @@
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<< HEAD
+                    "lo": 10000
+=======
                     "lo": 1000
+>>>>>>> upstream/master
                   }
                 }
               ]
@@ -67,11 +99,19 @@
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<< HEAD
+                    "lo": 100
+                  }
+                },
+                {
+                  "u64": 1010000
+=======
                     "lo": 1000
                   }
                 },
                 {
                   "u64": 100
+>>>>>>> upstream/master
                 }
               ]
             }
@@ -92,7 +132,11 @@
                     {
                       "i128": {
                         "hi": 0,
+<<<<<<< HEAD
+                        "lo": 100
+=======
                         "lo": 1000
+>>>>>>> upstream/master
                       }
                     }
                   ]
@@ -104,14 +148,21 @@
         }
       ]
     ],
+<<<<<<< HEAD
+=======
     [],
     [],
+>>>>>>> upstream/master
     []
   ],
   "ledger": {
     "protocol_version": 21,
     "sequence_number": 0,
+<<<<<<< HEAD
+    "timestamp": 1000050,
+=======
     "timestamp": 0,
+>>>>>>> upstream/master
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
     "min_persistent_entry_ttl": 4096,
@@ -184,6 +235,8 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
+<<<<<<< HEAD
+=======
               "symbol": "op_count"
             },
             "durability": "persistent"
@@ -215,6 +268,7 @@
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
             "key": {
+>>>>>>> upstream/master
               "vec": [
                 {
                   "symbol": "DepositorIndex"
@@ -303,7 +357,11 @@
                       "val": {
                         "i128": {
                           "hi": 0,
+<<<<<<< HEAD
+                          "lo": 100
+=======
                           "lo": 1000
+>>>>>>> upstream/master
                         }
                       }
                     },
@@ -312,7 +370,11 @@
                         "symbol": "deadline"
                       },
                       "val": {
+<<<<<<< HEAD
+                        "u64": 1010000
+=======
                         "u64": 100
+>>>>>>> upstream/master
                       }
                     },
                     {
@@ -338,7 +400,11 @@
                       "val": {
                         "i128": {
                           "hi": 0,
+<<<<<<< HEAD
+                          "lo": 100
+=======
                           "lo": 1000
+>>>>>>> upstream/master
                         }
                       }
                     },
@@ -448,7 +514,11 @@
                         "symbol": "last_operation_timestamp"
                       },
                       "val": {
+<<<<<<< HEAD
+                        "u64": 1000000
+=======
                         "u64": 0
+>>>>>>> upstream/master
                       }
                     },
                     {
@@ -464,7 +534,11 @@
                         "symbol": "window_start_timestamp"
                       },
                       "val": {
+<<<<<<< HEAD
+                        "u64": 1000000
+=======
                         "u64": 0
+>>>>>>> upstream/master
                       }
                     }
                   ]
@@ -523,6 +597,46 @@
                         "key": {
                           "vec": [
                             {
+<<<<<<< HEAD
+                              "symbol": "Config"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "map": [
+                            {
+                              "key": {
+                                "symbol": "cooldown_period"
+                              },
+                              "val": {
+                                "u64": 100
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "max_operations"
+                              },
+                              "val": {
+                                "u32": 10
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "window_size"
+                              },
+                              "val": {
+                                "u64": 3600
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+=======
+>>>>>>> upstream/master
                               "symbol": "Token"
                             }
                           ]
@@ -544,10 +658,50 @@
       [
         {
           "contract_data": {
+<<<<<<< HEAD
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 5541220902715666415
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": 5541220902715666415
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 4837995959683129791
+=======
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
             "key": {
               "ledger_key_nonce": {
                 "nonce": 1033654523790656264
+>>>>>>> upstream/master
               }
             },
             "durability": "temporary"
@@ -562,7 +716,11 @@
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
                 "key": {
                   "ledger_key_nonce": {
+<<<<<<< HEAD
+                    "nonce": 4837995959683129791
+=======
                     "nonce": 1033654523790656264
+>>>>>>> upstream/master
                   }
                 },
                 "durability": "temporary",
@@ -580,7 +738,11 @@
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
             "key": {
               "ledger_key_nonce": {
+<<<<<<< HEAD
+                "nonce": 1033654523790656264
+=======
                 "nonce": 5541220902715666415
+>>>>>>> upstream/master
               }
             },
             "durability": "temporary"
@@ -595,7 +757,11 @@
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
                 "key": {
                   "ledger_key_nonce": {
+<<<<<<< HEAD
+                    "nonce": 1033654523790656264
+=======
                     "nonce": 5541220902715666415
+>>>>>>> upstream/master
                   }
                 },
                 "durability": "temporary",
@@ -651,7 +817,11 @@
                       "val": {
                         "i128": {
                           "hi": 0,
+<<<<<<< HEAD
+                          "lo": 100
+=======
                           "lo": 1000
+>>>>>>> upstream/master
                         }
                       }
                     },
@@ -724,7 +894,11 @@
                       "val": {
                         "i128": {
                           "hi": 0,
+<<<<<<< HEAD
+                          "lo": 9900
+=======
                           "lo": 0
+>>>>>>> upstream/master
                         }
                       }
                     },
@@ -1069,7 +1243,11 @@
                     "symbol": "timestamp"
                   },
                   "val": {
+<<<<<<< HEAD
+                    "u64": 1000000
+=======
                     "u64": 0
+>>>>>>> upstream/master
                   }
                 },
                 {
@@ -1128,6 +1306,66 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<< HEAD
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+              },
+              {
+                "symbol": "update_anti_abuse_config"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "u64": 3600
+                },
+                {
+                  "u32": 10
+                },
+                {
+                  "u64": 100
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+                "symbol": "update_anti_abuse_config"
+              }
+            ],
+            "data": "void"
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+=======
+>>>>>>> upstream/master
                 "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
               },
               {
@@ -1142,7 +1380,11 @@
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<< HEAD
+                    "lo": 10000
+=======
                     "lo": 1000
+>>>>>>> upstream/master
                   }
                 }
               ]
@@ -1176,7 +1418,11 @@
             "data": {
               "i128": {
                 "hi": 0,
+<<<<<<< HEAD
+                "lo": 10000
+=======
                 "lo": 1000
+>>>>>>> upstream/master
               }
             }
           }
@@ -1234,11 +1480,19 @@
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<< HEAD
+                    "lo": 100
+                  }
+                },
+                {
+                  "u64": 1010000
+=======
                     "lo": 1000
                   }
                 },
                 {
                   "u64": 100
+>>>>>>> upstream/master
                 }
               ]
             }
@@ -1276,7 +1530,11 @@
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<< HEAD
+                    "lo": 100
+=======
                     "lo": 1000
+>>>>>>> upstream/master
                   }
                 }
               ]
@@ -1310,7 +1568,11 @@
             "data": {
               "i128": {
                 "hi": 0,
+<<<<<<< HEAD
+                "lo": 100
+=======
                 "lo": 1000
+>>>>>>> upstream/master
               }
             }
           }
@@ -1363,7 +1625,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<< HEAD
+                      "lo": 100
+=======
                       "lo": 1000
+>>>>>>> upstream/master
                     }
                   }
                 },
@@ -1380,7 +1646,11 @@
                     "symbol": "deadline"
                   },
                   "val": {
+<<<<<<< HEAD
+                    "u64": 1010000
+=======
                     "u64": 100
+>>>>>>> upstream/master
                   }
                 },
                 {
@@ -1415,6 +1685,8 @@
           "v0": {
             "topics": [
               {
+<<<<<<< HEAD
+=======
                 "symbol": "fn_call"
               },
               {
@@ -1531,6 +1803,7 @@
           "v0": {
             "topics": [
               {
+>>>>>>> upstream/master
                 "symbol": "fn_return"
               },
               {
@@ -1558,11 +1831,35 @@
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
               },
               {
+<<<<<<< HEAD
+                "symbol": "lock_funds"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                },
+                {
+                  "u64": 2
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 100
+                  }
+                },
+                {
+                  "u64": 1010000
+                }
+              ]
+=======
                 "symbol": "get_escrow_info"
               }
             ],
             "data": {
               "u64": 1
+>>>>>>> upstream/master
             }
           }
         }
@@ -1573,11 +1870,144 @@
       "event": {
         "ext": "v0",
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+<<<<<<< HEAD
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "abuse"
+              },
+              {
+                "symbol": "cooldown"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                },
+                {
+                  "u64": 1000050
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+=======
+>>>>>>> upstream/master
         "type_": "diagnostic",
         "body": {
           "v0": {
             "topics": [
               {
+<<<<<<< HEAD
+                "symbol": "log"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "string": "caught panic 'Operation in cooldown period' from contract function 'Symbol(obj#369)'"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                },
+                {
+                  "u64": 2
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 100
+                  }
+                },
+                {
+                  "u64": 1010000
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "string": "caught error from function"
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "string": "contract call failed"
+                },
+                {
+                  "symbol": "lock_funds"
+                },
+                {
+                  "vec": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "u64": 2
+                    },
+                    {
+                      "i128": {
+                        "hi": 0,
+                        "lo": 100
+                      }
+                    },
+                    {
+                      "u64": 1010000
+                    }
+                  ]
+=======
                 "symbol": "fn_return"
               },
               {
@@ -1643,6 +2073,7 @@
                       }
                     ]
                   }
+>>>>>>> upstream/master
                 }
               ]
             }
@@ -1660,6 +2091,18 @@
           "v0": {
             "topics": [
               {
+<<<<<<< HEAD
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "string": "escalating error to panic"
+=======
                 "symbol": "fn_call"
               },
               {
@@ -1855,6 +2298,7 @@
                 "hi": 0,
                 "lo": 1000
               }
+>>>>>>> upstream/master
             }
           }
         }
