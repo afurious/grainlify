@@ -43,7 +43,7 @@ fn setup_active_program(
     let (token_client, token_id, token_sac) = fund_contract(env, &contract_id, amount);
     let admin = Address::generate(env);
     let program_id = String::from_str(env, "rep-test");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     if amount > 0 {
         client.lock_program_funds(&amount);
     }

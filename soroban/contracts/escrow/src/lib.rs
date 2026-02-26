@@ -58,6 +58,14 @@ pub struct EscrowJurisdictionConfig {
     pub max_lock_amount: Option<i128>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum OptionalJurisdiction {
+    None,
+    Some(EscrowJurisdictionConfig),
+}
+
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Escrow {
@@ -66,7 +74,7 @@ pub struct Escrow {
     pub remaining_amount: i128,
     pub status: EscrowStatus,
     pub deadline: u64,
-    pub jurisdiction: Option<EscrowJurisdictionConfig>,
+    pub jurisdiction: OptionalJurisdiction,
 }
 
 #[contracttype]
@@ -116,7 +124,7 @@ impl EscrowContract {
         env: &Env,
         bounty_id: u64,
         operation: Symbol,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) {
         let (
             jurisdiction_tag,
@@ -126,7 +134,7 @@ impl EscrowContract {
             release_paused,
             refund_paused,
             max_lock_amount,
-        ) = if let Some(cfg) = jurisdiction {
+        ) = if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             (
                 cfg.tag.clone(),
                 cfg.requires_kyc,
@@ -162,9 +170,9 @@ impl EscrowContract {
         env: &Env,
         depositor: &Address,
         amount: i128,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) -> Result<(), Error> {
-        if let Some(cfg) = jurisdiction {
+        if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             if cfg.lock_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -189,9 +197,9 @@ impl EscrowContract {
         env: &Env,
         contributor: &Address,
         amount: i128,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) -> Result<(), Error> {
-        if let Some(cfg) = jurisdiction {
+        if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             if cfg.release_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -210,9 +218,9 @@ impl EscrowContract {
     fn enforce_refund_jurisdiction(
         env: &Env,
         depositor: &Address,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) -> Result<(), Error> {
-        if let Some(cfg) = jurisdiction {
+        if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             if cfg.refund_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -482,7 +490,7 @@ impl EscrowContract {
         amount: i128,
         deadline: u64,
     ) -> Result<(), Error> {
-        Self::lock_funds_with_jurisdiction(env, depositor, bounty_id, amount, deadline, None)
+        Self::lock_funds_with_jurisdiction(env, depositor, bounty_id, amount, deadline, OptionalJurisdiction::None)
     }
 
     /// Lock funds with optional jurisdiction controls.
@@ -492,7 +500,7 @@ impl EscrowContract {
         bounty_id: u64,
         amount: i128,
         deadline: u64,
-        jurisdiction: Option<EscrowJurisdictionConfig>,
+        jurisdiction: OptionalJurisdiction,
     ) -> Result<(), Error> {
         // GUARD: acquire reentrancy lock
         reentrancy_guard::acquire(&env);
@@ -717,7 +725,7 @@ impl EscrowContract {
     pub fn get_escrow_jurisdiction(
         env: Env,
         bounty_id: u64,
-    ) -> Result<Option<EscrowJurisdictionConfig>, Error> {
+    ) -> Result<OptionalJurisdiction, Error> {
         let escrow = Self::get_escrow(env, bounty_id)?;
         Ok(escrow.jurisdiction)
     }
