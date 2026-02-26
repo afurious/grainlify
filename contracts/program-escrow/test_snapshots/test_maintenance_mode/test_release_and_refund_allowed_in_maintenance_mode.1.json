@@ -1,12 +1,17 @@
 {
   "generators": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
     "address": 7,
+========
+    "address": 6,
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
     "nonce": 0
   },
   "auth": [
     [],
     [
       [
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
         {
           "function": {
@@ -16,6 +21,17 @@
               "args": [
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+========
+        "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+              "function_name": "set_admin",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 }
               ]
             }
@@ -24,14 +40,21 @@
         }
       ]
     ],
-    [],
     [
       [
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
         {
           "function": {
             "contract_fn": {
               "contract_address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               "function_name": "mint",
               "args": [
                 {
@@ -68,7 +91,11 @@
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "lo": 5000
+========
+                    "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 }
               ]
@@ -79,9 +106,35 @@
       ]
     ],
     [],
+    [],
     [
       [
-        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "function_name": "single_payout",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 200000
+                  }
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
         {
           "function": {
             "contract_fn": {
@@ -89,6 +142,7 @@
               "function_name": "set_maintenance_mode",
               "args": [
                 {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                   "bool": true
                 }
               ]
@@ -109,12 +163,23 @@
               "args": [
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
+========
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 },
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "lo": 1000
                   }
+========
+                    "lo": 100000
+                  }
+                },
+                {
+                  "u64": 50
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 }
               ]
             }
@@ -123,12 +188,34 @@
         }
       ]
     ],
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
+========
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "function_name": "trigger_program_releases",
+              "args": []
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
     []
   ],
   "ledger": {
     "protocol_version": 21,
     "sequence_number": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
     "timestamp": 0,
+========
+    "timestamp": 100,
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
     "min_persistent_entry_ttl": 4096,
@@ -138,7 +225,11 @@
       [
         {
           "account": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+========
+            "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
           }
         },
         [
@@ -146,7 +237,11 @@
             "last_modified_ledger_seq": 0,
             "data": {
               "account": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+========
+                "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "balance": 0,
                 "seq_num": 0,
                 "num_sub_entries": 0,
@@ -166,7 +261,11 @@
       [
         {
           "contract_data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+========
+            "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": {
               "ledger_key_nonce": {
                 "nonce": 801925984706572462
@@ -181,7 +280,11 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+========
+                "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "key": {
                   "ledger_key_nonce": {
                     "nonce": 801925984706572462
@@ -238,7 +341,11 @@
                                 "symbol": "authorized_payout_key"
                               },
                               "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                 "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+========
+                                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                               }
                             },
                             {
@@ -267,7 +374,11 @@
                                         "val": {
                                           "i128": {
                                             "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                             "lo": 1000
+========
+                                            "lo": 200000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                           }
                                         }
                                       },
@@ -285,6 +396,40 @@
                                         },
                                         "val": {
                                           "u64": 0
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
+========
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "map": [
+                                      {
+                                        "key": {
+                                          "symbol": "amount"
+                                        },
+                                        "val": {
+                                          "i128": {
+                                            "hi": 0,
+                                            "lo": 100000
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "key": {
+                                          "symbol": "recipient"
+                                        },
+                                        "val": {
+                                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                                        }
+                                      },
+                                      {
+                                        "key": {
+                                          "symbol": "timestamp"
+                                        },
+                                        "val": {
+                                          "u64": 100
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                         }
                                       }
                                     ]
@@ -297,7 +442,11 @@
                                 "symbol": "program_id"
                               },
                               "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                 "string": "test-prog"
+========
+                                "string": "rep-test"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                               }
                             },
                             {
@@ -307,7 +456,11 @@
                               "val": {
                                 "i128": {
                                   "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                   "lo": 4000
+========
+                                  "lo": 200000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                 }
                               }
                             },
@@ -316,7 +469,11 @@
                                 "symbol": "token_address"
                               },
                               "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                 "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+========
+                                "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                               }
                             },
                             {
@@ -326,7 +483,11 @@
                               "val": {
                                 "i128": {
                                   "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                   "lo": 5000
+========
+                                  "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                 }
                               }
                             }
@@ -346,7 +507,63 @@
                           "symbol": "RelHist"
                         },
                         "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                           "vec": []
+========
+                          "vec": [
+                            {
+                              "map": [
+                                {
+                                  "key": {
+                                    "symbol": "amount"
+                                  },
+                                  "val": {
+                                    "i128": {
+                                      "hi": 0,
+                                      "lo": 100000
+                                    }
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "recipient"
+                                  },
+                                  "val": {
+                                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "release_type"
+                                  },
+                                  "val": {
+                                    "vec": [
+                                      {
+                                        "symbol": "Automatic"
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "released_at"
+                                  },
+                                  "val": {
+                                    "u64": 100
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "schedule_id"
+                                  },
+                                  "val": {
+                                    "u64": 1
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                         }
                       },
                       {
@@ -361,7 +578,71 @@
                         "key": {
                           "vec": [
                             {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                               "symbol": "Admin"
+========
+                              "map": [
+                                {
+                                  "key": {
+                                    "symbol": "amount"
+                                  },
+                                  "val": {
+                                    "i128": {
+                                      "hi": 0,
+                                      "lo": 100000
+                                    }
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "recipient"
+                                  },
+                                  "val": {
+                                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "release_timestamp"
+                                  },
+                                  "val": {
+                                    "u64": 50
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "released"
+                                  },
+                                  "val": {
+                                    "bool": true
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "released_at"
+                                  },
+                                  "val": {
+                                    "u64": 100
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "released_by"
+                                  },
+                                  "val": {
+                                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                                  }
+                                },
+                                {
+                                  "key": {
+                                    "symbol": "schedule_id"
+                                  },
+                                  "val": {
+                                    "u64": 1
+                                  }
+                                }
+                              ]
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                             }
                           ]
                         },
@@ -397,6 +678,7 @@
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
             "key": {
               "ledger_key_nonce": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "nonce": 4837995959683129791
               }
             },
@@ -431,6 +713,9 @@
             "key": {
               "ledger_key_nonce": {
                 "nonce": 2032731177588607455
+========
+                "nonce": 5541220902715666415
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               }
             },
             "durability": "temporary"
@@ -442,7 +727,7 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
-                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
                 "key": {
                   "ledger_key_nonce": {
                     "nonce": 2032731177588607455
@@ -493,7 +778,11 @@
       [
         {
           "contract_data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+========
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": {
               "ledger_key_nonce": {
                 "nonce": 1033654523790656264
@@ -508,7 +797,11 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+========
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "key": {
                   "ledger_key_nonce": {
                     "nonce": 1033654523790656264
@@ -526,7 +819,77 @@
       [
         {
           "contract_data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 2032731177588607455
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": 2032731177588607455
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 4837995959683129791
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": 4837995959683129791
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": {
               "vec": [
                 {
@@ -546,7 +909,11 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+                "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "key": {
                   "vec": [
                     {
@@ -567,6 +934,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                           "lo": 4000
                         }
                       }
@@ -641,6 +1009,9 @@
                         "i128": {
                           "hi": 0,
                           "lo": 0
+========
+                          "lo": 200000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                         }
                       }
                     },
@@ -672,7 +1043,11 @@
       [
         {
           "contract_data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+            "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": {
               "vec": [
                 {
@@ -692,7 +1067,11 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+                "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "key": {
                   "vec": [
                     {
@@ -713,7 +1092,11 @@
                       "val": {
                         "i128": {
                           "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                           "lo": 1000
+========
+                          "lo": 200000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                         }
                       }
                     },
@@ -745,7 +1128,84 @@
       [
         {
           "contract_data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+            "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "Balance"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "Balance"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "amount"
+                      },
+                      "val": {
+                        "i128": {
+                          "hi": 0,
+                          "lo": 100000
+                        }
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "authorized"
+                      },
+                      "val": {
+                        "bool": true
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "clawback"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          518400
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": "ledger_key_contract_instance",
             "durability": "persistent"
           }
@@ -756,7 +1216,11 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+========
+                "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "key": "ledger_key_contract_instance",
                 "durability": "persistent",
                 "val": {
@@ -782,7 +1246,11 @@
                                 "symbol": "name"
                               },
                               "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                 "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+========
+                                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                               }
                             },
                             {
@@ -805,7 +1273,11 @@
                           ]
                         },
                         "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+========
+                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                         }
                       },
                       {
@@ -836,7 +1308,11 @@
                                     "symbol": "issuer"
                                   },
                                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                                     "bytes": "0000000000000000000000000000000000000000000000000000000000000005"
+========
+                                    "bytes": "0000000000000000000000000000000000000000000000000000000000000003"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                   }
                                 }
                               ]
@@ -890,14 +1366,22 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+========
+                "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               },
               {
                 "symbol": "initialize_contract"
               }
             ],
             "data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
               "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+========
+              "bytes": "0000000161616100000000000000000000000000000000000000000000000000000000000000000000000003"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             }
           }
         }
@@ -907,6 +1391,7 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
         "type_": "diagnostic",
         "body": {
@@ -955,6 +1440,9 @@
       "event": {
         "ext": "v0",
         "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+========
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -984,14 +1472,22 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
+========
+                "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               },
               {
                 "symbol": "set_admin"
               }
             ],
             "data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
               "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+========
+              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             }
           }
         }
@@ -1001,7 +1497,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+========
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "type_": "contract",
         "body": {
           "v0": {
@@ -1010,6 +1510,7 @@
                 "symbol": "set_admin"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
               },
               {
@@ -1018,6 +1519,16 @@
             ],
             "data": {
               "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+========
+                "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+              }
+            ],
+            "data": {
+              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             }
           }
         }
@@ -1027,7 +1538,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+========
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1057,6 +1572,95 @@
                 "symbol": "fn_call"
               },
               {
+                "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+              },
+              {
+                "symbol": "mint"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 500000
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "mint"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+              }
+            ],
+            "data": {
+              "i128": {
+                "hi": 0,
+                "lo": 500000
+              }
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+                "symbol": "mint"
+              }
+            ],
+            "data": "void"
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
               },
               {
@@ -1066,6 +1670,7 @@
             "data": {
               "vec": [
                 {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                   "string": "test-prog"
                 },
                 {
@@ -1073,9 +1678,18 @@
                 },
                 {
                   "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+========
+                  "string": "rep-test"
                 },
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                },
+                {
+                  "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                 },
                 "void"
               ]
@@ -1104,7 +1718,11 @@
                     "symbol": "authorized_payout_key"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+========
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1112,7 +1730,11 @@
                     "symbol": "program_id"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "string": "test-prog"
+========
+                    "string": "rep-test"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1120,7 +1742,11 @@
                     "symbol": "token_address"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+========
+                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1171,7 +1797,11 @@
                     "symbol": "authorized_payout_key"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+========
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1198,7 +1828,11 @@
                     "symbol": "program_id"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "string": "test-prog"
+========
+                    "string": "rep-test"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1217,7 +1851,11 @@
                     "symbol": "token_address"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+========
+                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1250,6 +1888,7 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
               },
               {
@@ -1431,6 +2070,8 @@
                 "symbol": "fn_call"
               },
               {
+========
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
               },
               {
@@ -1440,7 +2081,11 @@
             "data": {
               "i128": {
                 "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "lo": 5000
+========
+                "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               }
             }
           }
@@ -1469,7 +2114,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                       "lo": 5000
+========
+                      "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     }
                   }
                 },
@@ -1478,7 +2127,11 @@
                     "symbol": "program_id"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "string": "test-prog"
+========
+                    "string": "rep-test"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1488,7 +2141,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                       "lo": 5000
+========
+                      "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     }
                   }
                 },
@@ -1529,7 +2186,11 @@
                     "symbol": "authorized_payout_key"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+========
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1556,7 +2217,11 @@
                     "symbol": "program_id"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "string": "test-prog"
+========
+                    "string": "rep-test"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1566,7 +2231,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                       "lo": 5000
+========
+                      "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     }
                   }
                 },
@@ -1575,7 +2244,11 @@
                     "symbol": "token_address"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+========
+                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
@@ -1585,7 +2258,327 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                       "lo": 5000
+========
+                      "lo": 500000
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+              },
+              {
+                "symbol": "single_payout"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 200000
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+                "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+              },
+              {
+                "symbol": "transfer"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 200000
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "transfer"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+              }
+            ],
+            "data": {
+              "i128": {
+                "hi": 0,
+                "lo": 200000
+              }
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+                "symbol": "transfer"
+              }
+            ],
+            "data": "void"
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "Payout"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "amount"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 200000
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "program_id"
+                  },
+                  "val": {
+                    "string": "rep-test"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "recipient"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "remaining_balance"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 300000
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "version"
+                  },
+                  "val": {
+                    "u32": 2
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+                "symbol": "single_payout"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "authorized_payout_key"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "initial_liquidity"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 0
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "payout_history"
+                  },
+                  "val": {
+                    "vec": [
+                      {
+                        "map": [
+                          {
+                            "key": {
+                              "symbol": "amount"
+                            },
+                            "val": {
+                              "i128": {
+                                "hi": 0,
+                                "lo": 200000
+                              }
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "recipient"
+                            },
+                            "val": {
+                              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "timestamp"
+                            },
+                            "val": {
+                              "u64": 0
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "program_id"
+                  },
+                  "val": {
+                    "string": "rep-test"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "remaining_balance"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 300000
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "token_address"
+                  },
+                  "val": {
+                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "total_funds"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     }
                   }
                 }
@@ -1637,6 +2630,7 @@
             "data": {
               "vec": [
                 {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                   "bool": true
                 },
                 {
@@ -1644,6 +2638,18 @@
                 },
                 {
                   "u64": 0
+========
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 100000
+                  }
+                },
+                {
+                  "u64": 50
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 }
               ]
             }
@@ -1667,7 +2673,69 @@
                 "symbol": "set_maintenance_mode"
               }
             ],
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
             "data": "void"
+========
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "amount"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 100000
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "recipient"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "release_timestamp"
+                  },
+                  "val": {
+                    "u64": 50
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "released"
+                  },
+                  "val": {
+                    "bool": false
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "released_at"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "released_by"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "schedule_id"
+                  },
+                  "val": {
+                    "u64": 1
+                  }
+                }
+              ]
+            }
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
           }
         }
       },
@@ -1721,7 +2789,11 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
+========
+                "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               },
               {
                 "symbol": "transfer"
@@ -1733,12 +2805,20 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                 },
                 {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
+========
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 },
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "lo": 1000
+========
+                    "lo": 100000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 }
               ]
@@ -1751,7 +2831,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+========
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "type_": "contract",
         "body": {
           "v0": {
@@ -1763,16 +2847,27 @@
                 "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
               },
               {
                 "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+========
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               }
             ],
             "data": {
               "i128": {
                 "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "lo": 1000
+========
+                "lo": 100000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               }
             }
           }
@@ -1783,7 +2878,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
         "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+========
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1871,6 +2970,33 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
+========
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+              },
+              {
+                "symbol": "get_program_reputation"
+              }
+            ],
+            "data": "void"
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
         "type_": "diagnostic",
         "body": {
@@ -1880,32 +3006,108 @@
                 "symbol": "fn_return"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                 "symbol": "single_payout"
+========
+                "symbol": "get_program_reputation"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               }
             ],
             "data": {
               "map": [
                 {
                   "key": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "symbol": "authorized_payout_key"
                   },
                   "val": {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+========
+                    "symbol": "completed_releases"
+                  },
+                  "val": {
+                    "u32": 1
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
                   "key": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "symbol": "initial_liquidity"
+========
+                    "symbol": "completion_rate_bps"
+                  },
+                  "val": {
+                    "u32": 10000
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "dispute_count"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "overall_score_bps"
+                  },
+                  "val": {
+                    "u32": 8400
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "overdue_releases"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "payout_fulfillment_rate_bps"
+                  },
+                  "val": {
+                    "u32": 6000
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "pending_releases"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "refund_count"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "total_funds_distributed"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   },
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                       "lo": 0
+========
+                      "lo": 300000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     }
                   }
                 },
                 {
                   "key": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "symbol": "payout_history"
                   },
                   "val": {
@@ -1955,24 +3157,39 @@
                 {
                   "key": {
                     "symbol": "remaining_balance"
+========
+                    "symbol": "total_funds_locked"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   },
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                       "lo": 4000
+========
+                      "lo": 500000
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     }
                   }
                 },
                 {
                   "key": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "symbol": "token_address"
                   },
                   "val": {
                     "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+========
+                    "symbol": "total_payouts"
+                  },
+                  "val": {
+                    "u32": 2
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   }
                 },
                 {
                   "key": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_maintenance_mode/test_release_and_refund_allowed_in_maintenance_mode.1.json
                     "symbol": "total_funds"
                   },
                   "val": {
@@ -2035,6 +3252,15 @@
                 "hi": 0,
                 "lo": 1000
               }
+========
+                    "symbol": "total_scheduled"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                }
+              ]
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             }
           }
         }

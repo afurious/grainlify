@@ -259,6 +259,15 @@
                             },
                             {
                               "key": {
+<<<<<<< HEAD
+=======
+                                "symbol": "reference_hash"
+                              },
+                              "val": "void"
+                            },
+                            {
+                              "key": {
+>>>>>>> upstream/master
                                 "symbol": "remaining_balance"
                               },
                               "val": {
@@ -317,6 +326,21 @@
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                         }
+<<<<<<< HEAD
+=======
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "ReceiptCounter"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "u64": 2
+                        }
+>>>>>>> upstream/master
                       }
                     ]
                   }
@@ -842,6 +866,10 @@
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                 },
+<<<<<<< HEAD
+=======
+                "void",
+>>>>>>> upstream/master
                 "void"
               ]
             }
@@ -882,6 +910,23 @@
                 },
                 {
                   "key": {
+<<<<<<< HEAD
+=======
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+>>>>>>> upstream/master
                     "symbol": "token_address"
                   },
                   "val": {
@@ -968,6 +1013,15 @@
                 },
                 {
                   "key": {
+<<<<<<< HEAD
+=======
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+>>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1248,9 +1302,23 @@
                 },
                 {
                   "key": {
+<<<<<<< HEAD
                     "symbol": "remaining_balance"
                   },
                   "val": {
+=======
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 2
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "remaining_balance"
+                  },
+                  "val": {
+>>>>>>> upstream/master
                     "i128": {
                       "hi": 0,
                       "lo": 500
@@ -1326,6 +1394,15 @@
                 },
                 {
                   "key": {
+<<<<<<< HEAD
+=======
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+>>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1402,7 +1479,11 @@
             "data": {
               "vec": [
                 {
+<<<<<<< HEAD
                   "string": "caught panic 'Not paused' from contract function 'Symbol(obj#383)'"
+=======
+                  "string": "caught panic 'Not paused' from contract function 'Symbol(obj#419)'"
+>>>>>>> upstream/master
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"

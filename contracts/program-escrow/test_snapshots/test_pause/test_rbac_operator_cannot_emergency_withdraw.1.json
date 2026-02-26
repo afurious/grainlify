@@ -259,6 +259,15 @@
                             },
                             {
                               "key": {
+<<<<<<< HEAD
+=======
+                                "symbol": "reference_hash"
+                              },
+                              "val": "void"
+                            },
+                            {
+                              "key": {
+>>>>>>> upstream/master
                                 "symbol": "remaining_balance"
                               },
                               "val": {
@@ -317,6 +326,21 @@
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                         }
+<<<<<<< HEAD
+=======
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "ReceiptCounter"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "u64": 2
+                        }
+>>>>>>> upstream/master
                       }
                     ]
                   }
@@ -842,6 +866,7 @@
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                 },
+                "void",
                 "void"
               ]
             }
@@ -879,6 +904,20 @@
                   "val": {
                     "string": "rbac-program"
                   }
+                },
+                {
+                  "key": {
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
                 },
                 {
                   "key": {
@@ -965,6 +1004,12 @@
                   "val": {
                     "string": "rbac-program"
                   }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
                 },
                 {
                   "key": {
@@ -1244,6 +1289,17 @@
                   },
                   "val": {
                     "string": "rbac-program"
+<<<<<<< HEAD
+=======
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 2
+>>>>>>> upstream/master
                   }
                 },
                 {
@@ -1323,6 +1379,12 @@
                   "val": {
                     "string": "rbac-program"
                   }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
                 },
                 {
                   "key": {

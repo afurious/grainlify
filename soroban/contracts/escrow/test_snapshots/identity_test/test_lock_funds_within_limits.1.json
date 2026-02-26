@@ -322,6 +322,10 @@
                     },
                     {
                       "key": {
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:soroban/contracts/program-escrow/test_snapshots/test/test_batch_register_with_different_admins.1.json
+>>>>>>> upstream/master
                         "symbol": "jurisdiction"
                       },
                       "val": {
@@ -334,7 +338,14 @@
                     },
                     {
                       "key": {
+<<<<<<< HEAD
                         "symbol": "remaining_amount"
+=======
+                        "symbol": "name"
+========
+                        "symbol": "remaining_amount"
+>>>>>>>> upstream/master:soroban/contracts/escrow/test_snapshots/identity_test/test_lock_funds_within_limits.1.json
+>>>>>>> upstream/master
                       },
                       "val": {
                         "i128": "500000000"
@@ -402,7 +413,27 @@
                     },
                     {
                       "key": {
+<<<<<<< HEAD
                         "symbol": "high_risk_threshold"
+=======
+<<<<<<<< HEAD:soroban/contracts/program-escrow/test_snapshots/test/test_batch_register_with_different_admins.1.json
+                        "symbol": "jurisdiction"
+                      },
+                      "val": {
+                        "vec": [
+                          {
+                            "symbol": "None"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "name"
+========
+                        "symbol": "high_risk_threshold"
+>>>>>>>> upstream/master:soroban/contracts/escrow/test_snapshots/identity_test/test_lock_funds_within_limits.1.json
+>>>>>>> upstream/master
                       },
                       "val": {
                         "u32": 70
@@ -528,6 +559,7 @@
                         "key": {
                           "vec": [
                             {
+<<<<<<< HEAD
                               "symbol": "ReentrancyGuard"
                             }
                           ]
@@ -540,6 +572,8 @@
                         "key": {
                           "vec": [
                             {
+=======
+>>>>>>> upstream/master
                               "symbol": "Token"
                             }
                           ]
