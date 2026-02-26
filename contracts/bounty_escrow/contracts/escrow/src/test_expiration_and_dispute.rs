@@ -351,15 +351,10 @@ fn test_multiple_bounties_independent_resolution() {
     // Bounty 1: Will be cancelled and refunded
     setup
         .escrow
-<<<<<<< HEAD
         .lock_funds(&setup.depositor, &1, &1000, &(now + 500), &None);
-    setup.escrow.authorize_claim(&1, &setup.contributor);
-=======
-        .lock_funds(&setup.depositor, &1, &1000, &(now + 500));
     setup
         .escrow
         .authorize_claim(&1, &setup.contributor, &DisputeReason::Other);
->>>>>>> upstream
 
     // Bounty 2: Will be refunded directly (no claim)
     setup
@@ -369,15 +364,10 @@ fn test_multiple_bounties_independent_resolution() {
     // Bounty 3: Will be claimed
     setup
         .escrow
-<<<<<<< HEAD
         .lock_funds(&setup.depositor, &3, &1500, &(now + 1000), &None);
-    setup.escrow.authorize_claim(&3, &setup.contributor);
-=======
-        .lock_funds(&setup.depositor, &3, &1500, &(now + 1000));
     setup
         .escrow
         .authorize_claim(&3, &setup.contributor, &DisputeReason::Other);
->>>>>>> upstream
 
     setup.env.ledger().set_timestamp(now + 550);
 
@@ -465,14 +455,9 @@ fn test_expiry_does_not_bypass_active_dispute() {
 
     s.escrow.set_claim_window(&300);
     s.escrow
-<<<<<<< HEAD
         .lock_funds(&s.depositor, &bounty_id, &amount, &deadline, &None);
-    s.escrow.authorize_claim(&bounty_id, &s.contributor);
-=======
-        .lock_funds(&s.depositor, &bounty_id, &amount, &deadline);
     s.escrow
         .authorize_claim(&bounty_id, &s.contributor, &DisputeReason::Other);
->>>>>>> upstream
 
     s.env.ledger().set_timestamp(deadline + 1);
 
@@ -529,14 +514,9 @@ fn test_dispute_before_expiry_contributor_claims_wins() {
 
     s.escrow.set_claim_window(&400);
     s.escrow
-<<<<<<< HEAD
         .lock_funds(&s.depositor, &bounty_id, &amount, &deadline, &None);
-    s.escrow.authorize_claim(&bounty_id, &s.contributor);
-=======
-        .lock_funds(&s.depositor, &bounty_id, &amount, &deadline);
     s.escrow
         .authorize_claim(&bounty_id, &s.contributor, &DisputeReason::Other);
->>>>>>> upstream
 
     let claim = s.escrow.get_pending_claim(&bounty_id);
 
@@ -594,14 +574,9 @@ fn test_both_windows_expired_admin_cancels_stale_claim_then_refund() {
 
     s.escrow.set_claim_window(&100);
     s.escrow
-<<<<<<< HEAD
         .lock_funds(&s.depositor, &bounty_id, &amount, &deadline, &None);
-    s.escrow.authorize_claim(&bounty_id, &s.contributor);
-=======
-        .lock_funds(&s.depositor, &bounty_id, &amount, &deadline);
     s.escrow
         .authorize_claim(&bounty_id, &s.contributor, &DisputeReason::Other);
->>>>>>> upstream
 
     // Jump far into the future — both windows long expired
     s.env.ledger().set_timestamp(deadline + 1_000);
