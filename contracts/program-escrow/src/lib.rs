@@ -473,6 +473,75 @@ pub struct ProgramReleaseHistory {
     pub release_type: ReleaseType,
 }
 
+/// Program metadata for enhanced program information and tagging.
+/// 
+/// # Fields
+/// * `program_name` - Human-readable name of the program
+/// * `program_type` - Type/category of the program (hackathon, grant, bounty_program, etc.)
+/// * `ecosystem` - Target ecosystem (stellar, ethereum, etc.)
+/// * `tags` - List of tags for categorization and search
+/// * `start_date` - Program start timestamp
+/// * `end_date` - Program end timestamp  
+/// * `custom_fields` - Key-value pairs for additional metadata
+/// 
+/// # Validation
+/// All string fields are validated for length and character safety.
+/// 
+/// # Usage
+/// Used to store rich metadata about programs for indexing and UI display.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramMetadata {
+    pub program_name: Option<String>,
+    pub program_type: Option<String>,
+    pub ecosystem: Option<String>,
+    pub tags: Vec<String>,
+    pub start_date: Option<u64>,
+    pub end_date: Option<u64>,
+    pub custom_fields: Vec<(String, String)>, // Key-value pairs
+}
+
+/// Complete program state and configuration.
+///
+/// # Fields
+/// * `program_id` - Unique identifier for the program/hackathon
+/// * `total_funds` - Total amount of funds locked (cumulative)
+/// * `remaining_balance` - Current available balance for payouts
+/// * `authorized_payout_key` - Address authorized to trigger payouts
+/// * `payout_history` - Complete record of all payouts
+/// * `token_address` - Token contract used for transfers
+///
+/// # Storage
+/// Stored in instance storage with key `PROGRAM_DATA`.
+///
+/// # Invariants
+/// - `remaining_balance <= total_funds` (always)
+/// - `remaining_balance = total_funds - sum(payout_history.amounts)`
+/// - `payout_history` is append-only
+/// - `program_id` and `authorized_payout_key` are immutable after init
+///
+/// # Example
+/// ```rust
+/// let program_data = ProgramData {
+///     program_id: String::from_str(&env, "Hackathon2024"),
+///     total_funds: 10_000_0000000,
+///     remaining_balance: 7_000_0000000,
+///     authorized_payout_key: backend_address,
+///     payout_history: vec![&env],
+///     token_address: usdc_token_address,
+/// };
+/// ```
+
+/// Complete program state and configuration.
+///
+/// # Storage Key
+/// Stored with key: `("Program", program_id)`
+///
+/// # Invariants
+/// - `remaining_balance <= total_funds` (always)
+/// - `remaining_balance = total_funds - sum(payout_history.amounts)`
+/// - `payout_history` is append-only
+/// - `program_id` and `authorized_payout_key` are immutable after registration
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgramAggregateStats {
@@ -482,6 +551,7 @@ pub struct ProgramAggregateStats {
     pub authorized_payout_key: Address,
     pub payout_history: Vec<PayoutRecord>,
     pub token_address: Address,
+    pub metadata: Option<ProgramMetadata>,
     pub payout_count: u32,
     pub scheduled_count: u32,
     pub released_count: u32,
@@ -515,6 +585,13 @@ pub enum BatchError {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramScheduleCreated {
+pub enum DataKey {
+    Program(String),              // program_id -> ProgramData
+    ReleaseSchedule(String, u64), // program_id, schedule_id -> ProgramReleaseSchedule
+    ReleaseHistory(String),       // program_id -> Vec<ProgramReleaseHistory>
+    NextScheduleId(String),       // program_id -> next schedule_id
+    IsPaused,                     // Global contract pause state
 pub struct MultisigConfig {
     pub threshold_amount: i128,
     pub signers: Vec<Address>,
@@ -656,6 +733,26 @@ impl ProgramEscrowContract {
         program_data
     }
 
+    pub fn init_program_with_metadata(
+        env: Env,
+        program_id: String,
+        authorized_payout_key: Address,
+        token_address: Address,
+        organizer: Option<Address>,
+        metadata: Option<ProgramMetadata>,
+    ) -> ProgramData {
+        // Apply rate limiting
+        anti_abuse::check_rate_limit(&env, authorized_payout_key.clone());
+
+        let start = env.ledger().timestamp();
+        let caller = authorized_payout_key.clone();
+
+        // Validate program_id
+        validation::validate_program_id(&env, &program_id);
+
+        // Validate metadata if provided
+        if let Some(ref meta) = metadata {
+            validation::validate_metadata(&env, meta);
     /// Batch-initialize multiple programs in one transaction (all-or-nothing).
     ///
     /// # Errors
@@ -684,6 +781,39 @@ impl ProgramEscrowContract {
             }
         }
 
+        // Create program data
+        let program_data = ProgramData {
+            program_id: program_id.clone(),
+            total_funds: 0,
+            remaining_balance: 0,
+            authorized_payout_key: authorized_payout_key.clone(),
+            payout_history: vec![&env],
+            token_address: token_address.clone(),
+            metadata: metadata.clone(),
+        };
+
+        // Initialize fee config with zero fees (disabled by default)
+        let fee_config = FeeConfig {
+            lock_fee_rate: 0,
+            payout_fee_rate: 0,
+            fee_recipient: authorized_payout_key.clone(),
+            fee_enabled: false,
+        };
+        env.storage().instance().set(&FEE_CONFIG, &fee_config);
+
+        // Initialize fee config with zero fees (disabled by default)
+        let fee_config = FeeConfig {
+            lock_fee_rate: 0,
+            payout_fee_rate: 0,
+            fee_recipient: authorized_payout_key.clone(),
+            fee_enabled: false,
+        };
+        env.storage().instance().set(&FEE_CONFIG, &fee_config);
+
+        // Store program data
+        env.storage().instance().set(&program_key, &program_data);
+
+        // Update registry
         let mut registry: Vec<String> = env
             .storage()
             .instance()

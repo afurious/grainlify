@@ -1442,28 +1442,24 @@ fn test_pause_functionality() {
     client.init(&admin, &token_address);
 
     // Initially not paused
-    let flags = client.get_pause_flags();
-    assert!(!flags.lock_paused);
+    assert_eq!(client.is_paused(), false);
 
-    // Pause lock
-    client.set_paused(
-        &Some(true),
-        &None::<bool>,
-        &None::<bool>,
-        &Some(soroban_sdk::String::from_str(&env, "test pause")),
-    );
-    let flags = client.get_pause_flags();
-    assert!(flags.lock_paused);
+    // Pause contract
+    client.pause();
+    assert_eq!(client.is_paused(), true);
 
-    // Unpause lock
-    client.set_paused(
-        &Some(false),
-        &None::<bool>,
-        &None::<bool>,
-        &None::<soroban_sdk::String>,
-    );
-    let flags = client.get_pause_flags();
-    assert!(!flags.lock_paused);
+    // Unpause contract
+    client.unpause();
+    assert_eq!(client.is_paused(), false);
+
+    // Pause again for emergency test
+    client.pause();
+    assert_eq!(client.is_paused(), true);
+
+    // Unpause to verify idempotent
+    client.unpause();
+    client.unpause(); // Call again - should not error
+    assert_eq!(client.is_paused(), false);
 }
 
 #[test]
@@ -1479,21 +1475,15 @@ fn test_emergency_withdraw() {
     // Initialize escrow
     client.init(&admin, &token_address);
 
-    // Pause lock to enable emergency withdraw
-    client.set_paused(
-        &Some(true),
-        &None::<bool>,
-        &None::<bool>,
-        &Some(soroban_sdk::String::from_str(&env, "emergency")),
-    );
-    let flags = client.get_pause_flags();
-    assert!(flags.lock_paused);
+    // Pause contract
+    client.pause();
+    assert_eq!(client.is_paused(), true);
 
     // Call emergency_withdraw (it will fail gracefully if no funds)
+    // The important thing is that it's callable when paused
     let emergency_recipient = Address::generate(&env);
     client.emergency_withdraw(&emergency_recipient);
 
     // Verify pause state still true
-    let flags = client.get_pause_flags();
-    assert!(flags.lock_paused);
+    assert_eq!(client.is_paused(), true);
 }
