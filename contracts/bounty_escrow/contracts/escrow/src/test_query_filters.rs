@@ -426,8 +426,10 @@ fn test_query_by_deadline_no_results_outside_range() {
     let s = Setup::new();
     let base = s.env.ledger().timestamp();
 
-    s.escrow.lock_funds(&s.depositor, &1, &100, &(base + 100), &None);
-    s.escrow.lock_funds(&s.depositor, &2, &200, &(base + 200), &None);
+    s.escrow
+        .lock_funds(&s.depositor, &1, &100, &(base + 100), &None);
+    s.escrow
+        .lock_funds(&s.depositor, &2, &200, &(base + 200), &None);
 
     // Query a range that none of the deadlines fall into
     let results = s
