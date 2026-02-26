@@ -31,6 +31,7 @@ impl<'a> TestContext<'a> {
         let admin = Address::generate(&env);
         let depositor = Address::generate(&env);
         let contributor = Address::generate(&env);
+        let (token, _token_client, token_admin) = create_token_contract(&env, &admin);
 
         let token_contract = env.register_stellar_asset_contract_v2(admin.clone());
         let token_addr = token_contract.address();
