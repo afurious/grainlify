@@ -368,12 +368,6 @@
                             },
                             {
                               "key": {
-                                "symbol": "reference_hash"
-                              },
-                              "val": "void"
-                            },
-                            {
-                              "key": {
                                 "symbol": "remaining_balance"
                               },
                               "val": {
@@ -1081,7 +1075,6 @@
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                 },
-                "void",
                 "void"
               ]
             }
@@ -1119,12 +1112,6 @@
                   "val": {
                     "string": "rbac-program"
                   }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
                 },
                 {
                   "key": {
@@ -1211,12 +1198,6 @@
                   "val": {
                     "string": "rbac-program"
                   }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
                 },
                 {
                   "key": {
@@ -1575,12 +1556,6 @@
                   "val": {
                     "string": "rbac-program"
                   }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
                 },
                 {
                   "key": {

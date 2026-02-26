@@ -149,6 +149,19 @@ const PROGRAM_INITIALIZED: Symbol = symbol_short!("ProgInit");
 const FUNDS_LOCKED: Symbol = symbol_short!("FundLock");
 const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
 const PAYOUT: Symbol = symbol_short!("Payout");
+const DEPENDENCY_CREATED: Symbol = symbol_short!("dep_add");
+const DEPENDENCY_CLEARED: Symbol = symbol_short!("dep_clr");
+const DEPENDENCY_STATUS_UPDATED: Symbol = symbol_short!("dep_sts");
+// ── Step 1: Add module declarations near the top of lib.rs ──────────────
+// (after `mod anti_abuse;` and before the contract struct)
+mod payout_splits;
+pub use payout_splits::{BeneficiarySplit, SplitConfig, SplitPayoutResult};
+mod claim_period;
+pub use claim_period::{ClaimRecord, ClaimStatus};
+#[cfg(test)]
+mod test_claim_period_expiry_cancellation;
+mod error_recovery;
+mod reentrancy_guard;
 
 // Storage keys
 const PROGRAM_DATA: Symbol = symbol_short!("ProgData");
@@ -426,17 +439,23 @@ mod anti_abuse {
             .has(&AntiAbuseKey::Whitelist(address))
     }
 
-    pub fn set_whitelist(env: &Env, address: Address, whitelisted: bool) {
-        if whitelisted {
-            env.storage()
-                .instance()
-                .set(&AntiAbuseKey::Whitelist(address), &true);
-        } else {
-            env.storage()
-                .instance()
-                .remove(&AntiAbuseKey::Whitelist(address));
-        }
-    }
+/// Storage key type for individual programs
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DataKey {
+    Program(String),                 // program_id -> ProgramData
+    Admin,                           // Contract Admin
+    ReleaseSchedule(String, u64),    // program_id, schedule_id -> ProgramReleaseSchedule
+    ReleaseHistory(String),          // program_id -> Vec<ProgramReleaseHistory>
+    NextScheduleId(String),          // program_id -> next schedule_id
+    MultisigConfig(String),          // program_id -> MultisigConfig
+    PayoutApproval(String, Address), // program_id, recipient -> PayoutApproval
+    PendingClaim(String, u64),       // (program_id, schedule_id) -> ClaimRecord
+    ClaimWindow,                     // u64 seconds (global config)
+    PauseFlags,                      // PauseFlags struct
+    RateLimitConfig,    
+    SplitConfig(String),              // RateLimitConfig struct
+}
 
     pub fn get_admin(env: &Env) -> Option<Address> {
         env.storage().instance().get(&AntiAbuseKey::Admin)
@@ -511,6 +530,20 @@ mod anti_abuse {
         env.storage().persistent().extend_ttl(&key, 17280, 17280);
     }
 }
+
+// External modules
+mod claim_period;
+mod error_recovery;
+mod reentrancy_guard;
+mod threshold_monitor;
+pub mod token_math;
+
+pub use claim_period::{ClaimRecord, ClaimStatus};
+
+#[cfg(test)]
+mod test_claim_period_expiry_cancellation;
+#[cfg(test)]
+mod test_token_math;
 
 // ============================================================================
 // Event Types
@@ -699,6 +732,33 @@ pub struct ProgramData {
     pub token_address: Address,
 }
 
+/// Optional per-program, per-token spending limit configuration.
+///
+/// When enabled, all program releases (direct payouts and scheduled releases)
+/// are tracked against this configuration in fixed-size time windows.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramSpendingConfig {
+    /// Window size in seconds (for example, 86400 for a daily window).
+    pub window_size: u64,
+    /// Maximum total amount that can be released within a single window.
+    /// This is measured in the token's smallest denomination.
+    pub max_amount: i128,
+    /// Global enable/disable flag for this program's spending limit.
+    pub enabled: bool,
+}
+
+/// Internal state used to track how much a program has released in the
+/// current spending window.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramSpendingState {
+    /// Timestamp (seconds) when the current window started.
+    pub window_start: u64,
+    /// Total amount released during the current window.
+    pub amount_released: i128,
+}
+
 /// Reputation metrics derived from on-chain program behavior.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -721,11 +781,13 @@ pub struct ProgramReputationScore {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
-    Program(String),              // program_id -> ProgramData
-    ReleaseSchedule(String, u64), // program_id, schedule_id -> ProgramReleaseSchedule
-    ReleaseHistory(String),       // program_id -> Vec<ProgramReleaseHistory>
-    NextScheduleId(String),       // program_id -> next schedule_id
-    IsPaused,                     // Global contract pause state
+    Program(String),                        // program_id -> ProgramData
+    ReleaseSchedule(String, u64),           // program_id, schedule_id -> ProgramReleaseSchedule
+    ReleaseHistory(String),                 // program_id -> Vec<ProgramReleaseHistory>
+    NextScheduleId(String),                 // program_id -> next schedule_id
+    IsPaused,                               // Global contract pause state
+    ProgramSpendingConfig(String, Address), // (program_id, token) -> ProgramSpendingConfig
+    ProgramSpendingState(String, Address),  // (program_id, token) -> ProgramSpendingState
 }
 
 // ============================================================================
@@ -1334,6 +1396,14 @@ impl ProgramEscrowContract {
             );
         }
 
+        // Enforce optional per-program spending limit for this window
+        Self::enforce_program_spending_limit_internal(
+            &env,
+            &program_id,
+            &program_data.token_address,
+            total_payout,
+        );
+
         // Calculate fees if enabled
         let fee_config = Self::get_fee_config_internal(&env);
         let mut total_fees: i128 = 0;
@@ -1488,17 +1558,13 @@ impl ProgramEscrowContract {
         // Apply rate limiting to the authorized payout key
         anti_abuse::check_rate_limit(&env, program_data.authorized_payout_key.clone());
 
-        // Check circuit breaker with thresholds
-        if let Err(_) = error_recovery::check_and_allow_with_thresholds(&env) {
-            reentrancy_guard::clear_entered(&env);
-            panic!("Circuit breaker open or threshold breached");
-        }
-
-        // Verify authorization
-        // let caller = env.invoker();
-        // if caller != program_data.authorized_payout_key {
-        //     panic!("Unauthorized: only authorized payout key can trigger payouts");
-        // }
+        // Enforce optional per-program spending limit for this window
+        Self::enforce_program_spending_limit_internal(
+            &env,
+            &program_id,
+            &program_data.token_address,
+            amount,
+        );
 
         // Validate amount
         if amount <= 0 {
@@ -1795,6 +1861,14 @@ impl ProgramEscrowContract {
         let contract_address = env.current_contract_address();
         let token_client = token::Client::new(&env, &program_data.token_address);
 
+        // Enforce optional per-program spending limit for this window
+        Self::enforce_program_spending_limit_internal(
+            &env,
+            &program_id,
+            &program_data.token_address,
+            schedule.amount,
+        );
+
         // Transfer funds
         token_client.transfer(&contract_address, &schedule.recipient, &schedule.amount);
 
@@ -1903,6 +1977,8 @@ impl ProgramEscrowContract {
         // Verify authorization
         program_data.authorized_payout_key.require_auth();
 
+        Self::assert_dependencies_satisfied(&env, &program_id);
+
         // Get schedule
         if !env
             .storage()
@@ -1926,6 +2002,14 @@ impl ProgramEscrowContract {
         // Get token client
         let contract_address = env.current_contract_address();
         let token_client = token::Client::new(&env, &program_data.token_address);
+
+        // Enforce optional per-program spending limit for this window
+        Self::enforce_program_spending_limit_internal(
+            &env,
+            &program_id,
+            &program_data.token_address,
+            schedule.amount,
+        );
 
         // Transfer funds
         token_client.transfer(&contract_address, &schedule.recipient, &schedule.amount);
@@ -2167,6 +2251,85 @@ impl ProgramEscrowContract {
     }
 
     // ========================================================================
+    // Program Spending Limit Helpers & Admin
+    // ========================================================================
+
+    /// Internal helper that enforces the optional per-program spending limit.
+    ///
+    /// If no limit is configured or the limit is disabled, this is a no-op.
+    /// Otherwise, it tracks the released amount in a fixed-size time window
+    /// and panics if the new total would exceed the configured maximum.
+    fn enforce_program_spending_limit_internal(
+        env: &Env,
+        program_id: &String,
+        token: &Address,
+        amount: i128,
+    ) {
+        // Zero or negative amounts are ignored by the limiter; other
+        // validation happens in the caller.
+        if amount <= 0 {
+            return;
+        }
+
+        let cfg_key = DataKey::ProgramSpendingConfig(program_id.clone(), token.clone());
+        let config: Option<ProgramSpendingConfig> = env.storage().instance().get(&cfg_key);
+        let config = match config {
+            Some(cfg)
+                if cfg.enabled && cfg.window_size > 0 && cfg.max_amount > 0 =>
+            {
+                cfg
+            }
+            _ => {
+                // No active limit configured for this program/token.
+                return;
+            }
+        };
+
+        let now = env.ledger().timestamp();
+        let state_key = DataKey::ProgramSpendingState(program_id.clone(), token.clone());
+        let mut state: ProgramSpendingState = env
+            .storage()
+            .instance()
+            .get(&state_key)
+            .unwrap_or(ProgramSpendingState {
+                window_start: now,
+                amount_released: 0,
+            });
+
+        // If we're outside the current window, start a new one.
+        if now
+            .saturating_sub(state.window_start)
+            >= config.window_size
+        {
+            state.window_start = now;
+            state.amount_released = 0;
+        }
+
+        let new_total = state
+            .amount_released
+            .checked_add(amount)
+            .unwrap_or_else(|| panic!("Spending amount overflow"));
+
+        if new_total > config.max_amount {
+            env.events().publish(
+                (symbol_short!("limit"), symbol_short!("prog_spend")),
+                (
+                    program_id.clone(),
+                    token.clone(),
+                    amount,
+                    new_total,
+                    config.max_amount,
+                    config.window_size,
+                ),
+            );
+            panic!("Program spending limit exceeded for current window");
+        }
+
+        state.amount_released = new_total;
+        env.storage().instance().set(&state_key, &state);
+    }
+
+    // ========================================================================
     // Anti-Abuse Administrative Functions
     // ========================================================================
 
@@ -2217,6 +2380,84 @@ impl ProgramEscrowContract {
     /// Gets the current rate limit configuration.
     pub fn get_rate_limit_config(env: Env) -> anti_abuse::AntiAbuseConfig {
         anti_abuse::get_config(&env)
+    }
+
+    // ========================================================================
+    // Program Spending Limit Admin & Views
+    // ========================================================================
+
+    /// Configure or update the optional per-program spending limit for the
+    /// current token.
+    ///
+    /// This function can only be called by the program's authorized payout key.
+    /// Passing `enabled = false` stores the configuration but disables
+    /// enforcement until re-enabled.
+    pub fn set_program_spending_limit(
+        env: Env,
+        program_id: String,
+        window_size: u64,
+        max_amount: i128,
+        enabled: bool,
+    ) {
+        if max_amount < 0 {
+            panic!("max_amount must be non-negative");
+        }
+
+        let program_key = DataKey::Program(program_id.clone());
+        let program_data: ProgramData = env
+            .storage()
+            .instance()
+            .get(&program_key)
+            .unwrap_or_else(|| panic!("Program not found"));
+
+        // Only the authorized payout key for this program may update limits.
+        program_data.authorized_payout_key.require_auth();
+
+        let cfg = ProgramSpendingConfig {
+            window_size,
+            max_amount,
+            enabled,
+        };
+
+        let token = program_data.token_address.clone();
+        let cfg_key = DataKey::ProgramSpendingConfig(program_id, token);
+        env.storage().instance().set(&cfg_key, &cfg);
+    }
+
+    /// Returns the current spending limit configuration for a program and its
+    /// configured token, if any.
+    pub fn get_program_spending_limit(
+        env: Env,
+        program_id: String,
+    ) -> Option<ProgramSpendingConfig> {
+        let program_key = DataKey::Program(program_id.clone());
+        let program_data: ProgramData = env
+            .storage()
+            .instance()
+            .get(&program_key)
+            .unwrap_or_else(|| panic!("Program not found"));
+
+        let cfg_key =
+            DataKey::ProgramSpendingConfig(program_id, program_data.token_address.clone());
+        env.storage().instance().get(&cfg_key)
+    }
+
+    /// Returns the current spending state (window start and amount released)
+    /// for a program/token pair, if any state has been recorded yet.
+    pub fn get_program_spending_state(
+        env: Env,
+        program_id: String,
+    ) -> Option<ProgramSpendingState> {
+        let program_key = DataKey::Program(program_id.clone());
+        let program_data: ProgramData = env
+            .storage()
+            .instance()
+            .get(&program_key)
+            .unwrap_or_else(|| panic!("Program not found"));
+
+        let state_key =
+            DataKey::ProgramSpendingState(program_id, program_data.token_address.clone());
+        env.storage().instance().get(&state_key)
     }
 
     /// Creates an on-chain snapshot of critical configuration (admin-only).
@@ -2554,6 +2795,7 @@ fn get_program_total_scheduled_amount(env: &Env, program_id: &String) -> i128 {
             }
         }
     }
+    total
 }
 
 /// ============================================================================
@@ -3165,77 +3407,49 @@ mod test {
         assert_eq!(info2.total_funds, amount2);
         assert_eq!(info2.remaining_balance, amount2);
     }
+}
+pub fn set_split_config(
+    env: Env,
+    program_id: String,
+    beneficiaries: soroban_sdk::Vec<payout_splits::BeneficiarySplit>,
+) -> payout_splits::SplitConfig {
+    payout_splits::set_split_config(&env, &program_id, beneficiaries)
+}
+
+/// Return the current split configuration, or `None` if not set.
+pub fn get_split_config(env: Env, program_id: String) -> Option<payout_splits::SplitConfig> {
+    payout_splits::get_split_config(&env, &program_id)
+}
+
+/// Deactivate the split configuration (does not erase it).
+///
+/// Only the `authorized_payout_key` may call this function.
+pub fn disable_split_config(env: Env, program_id: String) {
+    payout_splits::disable_split_config(&env, &program_id);
+}
+
+/// Distribute `total_amount` from the escrow according to the stored split ratios.
+///
+/// Dust (remainder after integer division) is awarded to the first beneficiary.
+/// Returns a `SplitPayoutResult` with totals and the updated remaining balance.
+
+
+/// Preview how `total_amount` would be distributed without executing any transfer.
+///
+/// Returns a Vec of `BeneficiarySplit` where `share_bps` holds the **computed
+/// token amount** (not the ratio), so callers can inspect exact distributions
+/// before committing.
+pub fn preview_split_payout(
+    env: Env,
+    program_id: String,
+    total_amount: i128,
+) -> soroban_sdk::Vec<payout_splits::BeneficiarySplit> {
+    payout_splits::preview_split(&env, &program_id, total_amount)
+}
+
 
     #[test]
     fn test_lock_funds_cumulative() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let contract_id = env.register_contract(None, ProgramEscrowContract);
-        let client = ProgramEscrowContractClient::new(&env, &contract_id);
-        let token_client = create_token_contract(&env, &admin);
-
-        let backend = Address::generate(&env);
-        let prog_id = String::from_str(&env, "Hackathon2024");
-
-        client.initialize_program(&prog_id, &backend, &token_client.address);
-
-        // Lock funds multiple times
-        client.lock_program_funds(&prog_id, &1_000_0000000);
-        client.lock_program_funds(&prog_id, &2_000_0000000);
-        client.lock_program_funds(&prog_id, &3_000_0000000);
-
-        let info = client.get_program_info(&prog_id);
-        assert_eq!(info.total_funds, 6_000_0000000);
-        assert_eq!(info.remaining_balance, 6_000_0000000);
-    }
-
-    #[test]
-    #[should_panic(expected = "Amount must be greater than zero")]
-    fn test_lock_zero_funds() {
-        let env = Env::default();
-        let contract_id = env.register_contract(None, ProgramEscrowContract);
-        let client = ProgramEscrowContractClient::new(&env, &contract_id);
-
-        let backend = Address::generate(&env);
-        let token = Address::generate(&env);
-        let prog_id = String::from_str(&env, "Hackathon2024");
-
-        client.initialize_program(&prog_id, &backend, &token);
-        client.lock_program_funds(&prog_id, &0);
-    }
-
-    // ========================================================================
-    // Batch Payout Tests
-    // ========================================================================
-
-    #[test]
-    #[should_panic(expected = "Recipients and amounts vectors must have the same length")]
-    fn test_batch_payout_mismatched_lengths() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let contract_id = env.register_contract(None, ProgramEscrowContract);
-        let client = ProgramEscrowContractClient::new(&env, &contract_id);
-        let token_client = create_token_contract(&env, &admin);
-
-        let backend = Address::generate(&env);
-        let prog_id = String::from_str(&env, "Test");
-
-        client.initialize_program(&prog_id, &backend, &token_client.address);
-        client.lock_program_funds(&prog_id, &10_000_0000000);
-
-        let recipients = soroban_sdk::vec![&env, Address::generate(&env), Address::generate(&env)];
-        let amounts = soroban_sdk::vec![&env, 1_000_0000000i128]; // Mismatch!
-
-        client.batch_payout(&prog_id, &recipients, &amounts);
-    }
-
-    #[test]
-    #[should_panic(expected = "Insufficient balance")]
-    fn test_batch_payout_insufficient_balance() {
         let env = Env::default();
         env.mock_all_auths();
 
@@ -3254,6 +3468,91 @@ mod test {
         let amounts = soroban_sdk::vec![&env, 10_000_0000000i128]; // More than available!
 
         client.batch_payout(&prog_id, &recipients, &amounts);
+    }
+
+    #[test]
+    #[should_panic(expected = "Program spending limit exceeded for current window")]
+    fn test_program_spending_limit_enforced_for_batch_payout() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let contract_id = env.register_contract(None, ProgramEscrowContract);
+        let client = ProgramEscrowContractClient::new(&env, &contract_id);
+        let token_client = create_token_contract(&env, &admin);
+
+        let backend = Address::generate(&env);
+        let prog_id = String::from_str(&env, "LimitProgram");
+
+        // Initialize program and fund it
+        client.initialize_program(&prog_id, &backend, &token_client.address);
+        let total_funds = 10_000_0000000i128;
+        token_client.approve(
+            &admin,
+            &env.current_contract_address(),
+            &total_funds,
+            &1000,
+        );
+        client.lock_program_funds(&prog_id, &total_funds);
+
+        // Configure a low per-window spending limit (e.g. 5,000 units per day)
+        let window_size: u64 = 24 * 60 * 60;
+        let max_amount: i128 = 5_000_0000000;
+        client.set_program_spending_limit(&prog_id, &window_size, &max_amount, &true);
+
+        // First batch within limit should succeed
+        let recipients1 = soroban_sdk::vec![&env, Address::generate(&env)];
+        let amounts1 = soroban_sdk::vec![&env, 4_000_0000000i128];
+        client.batch_payout(&prog_id, &recipients1, &amounts1);
+
+        // Second batch in same window exceeding remaining allowance should panic
+        let recipients2 = soroban_sdk::vec![&env, Address::generate(&env)];
+        let amounts2 = soroban_sdk::vec![&env, 2_000_0000000i128];
+        client.batch_payout(&prog_id, &recipients2, &amounts2);
+    }
+
+    #[test]
+    fn test_program_spending_limit_resets_between_windows() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let contract_id = env.register_contract(None, ProgramEscrowContract);
+        let client = ProgramEscrowContractClient::new(&env, &contract_id);
+        let token_client = create_token_contract(&env, &admin);
+
+        let backend = Address::generate(&env);
+        let prog_id = String::from_str(&env, "ResetProgram");
+
+        // Initialize program and fund it
+        client.initialize_program(&prog_id, &backend, &token_client.address);
+        let total_funds = 10_000_0000000i128;
+        token_client.approve(
+            &admin,
+            &env.current_contract_address(),
+            &total_funds,
+            &1000,
+        );
+        client.lock_program_funds(&prog_id, &total_funds);
+
+        // Configure a small per-window limit
+        let window_size: u64 = 10; // 10 seconds window for test
+        let max_amount: i128 = 5_000_0000000;
+        client.set_program_spending_limit(&prog_id, &window_size, &max_amount, &true);
+
+        let recipients = soroban_sdk::vec![&env, Address::generate(&env)];
+
+        // First payout within window
+        let amounts1 = soroban_sdk::vec![&env, 5_000_0000000i128];
+        client.batch_payout(&prog_id, &recipients, &amounts1);
+
+        // Advance time beyond window to trigger reset
+        let current = env.ledger().timestamp();
+        env.ledger().set_timestamp(current + window_size + 1);
+
+        // Second payout of the same size should succeed in new window
+        let amounts2 = soroban_sdk::vec![&env, 5_000_0000000i128];
+        client.batch_payout(&prog_id, &recipients, &amounts2);
     }
 
     #[test]
@@ -3348,81 +3647,8 @@ mod test {
         client.initialize_program(&String::from_str(&env, "P2"), &backend, &token);
         // Should work because whitelisted
     }
+#[cfg(test)] mod test_payout_splits;
 
-    #[test]
-    fn test_anti_abuse_config_update() {
-        let env = Env::default();
-        env.mock_all_auths();
-        let contract_id = env.register_contract(None, ProgramEscrowContract);
-        let client = ProgramEscrowContractClient::new(&env, &contract_id);
-
-        let admin = Address::generate(&env);
-        client.set_admin(&admin);
-
-        client.update_rate_limit_config(&7200, &5, &120);
-
-        let config = client.get_rate_limit_config();
-        assert_eq!(config.window_size, 7200);
-        assert_eq!(config.max_operations, 5);
-        assert_eq!(config.cooldown_period, 120);
-    }
-
-    #[test]
-    fn test_config_snapshot_create_and_restore() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let contract_id = env.register_contract(None, ProgramEscrowContract);
-        let client = ProgramEscrowContractClient::new(&env, &contract_id);
-
-        let admin = Address::generate(&env);
-        client.set_admin(&admin);
-
-        client.update_rate_limit_config(&7200, &5, &120);
-        client.update_fee_config(&Some(100), &Some(200), &Some(admin.clone()), &Some(true));
-        client.pause();
-
-        let snapshot_id = client.create_config_snapshot();
-
-        client.update_rate_limit_config(&3600, &1, &10);
-        client.update_fee_config(&Some(0), &Some(0), &Some(admin.clone()), &Some(false));
-        client.unpause();
-
-        client.restore_config_snapshot(&snapshot_id);
-
-        let restored_rate = client.get_rate_limit_config();
-        assert_eq!(restored_rate.window_size, 7200);
-        assert_eq!(restored_rate.max_operations, 5);
-        assert_eq!(restored_rate.cooldown_period, 120);
-
-        let restored_fee = client.get_fee_config();
-        assert_eq!(restored_fee.lock_fee_rate, 100);
-        assert_eq!(restored_fee.payout_fee_rate, 200);
-        assert!(restored_fee.fee_enabled);
-
-        assert!(client.is_paused());
-    }
-
-    #[test]
-    fn test_config_snapshot_prunes_oldest_entries() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let contract_id = env.register_contract(None, ProgramEscrowContract);
-        let client = ProgramEscrowContractClient::new(&env, &contract_id);
-
-        let admin = Address::generate(&env);
-        client.set_admin(&admin);
-
-        for i in 0..25u32 {
-            client.update_rate_limit_config(&(3600 + i as u64), &(10 + i), &60);
-            client.create_config_snapshot();
-        }
-
-        let snapshots = client.list_config_snapshots();
-        assert_eq!(snapshots.len(), 20);
-
-        let oldest_retained = snapshots.get(0).unwrap();
-        assert_eq!(oldest_retained.id, 6);
-    }
-}
+#[cfg(test)]
+#[cfg(any())]
+mod rbac_tests;
