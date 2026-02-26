@@ -365,15 +365,12 @@
                             },
                             {
                               "key": {
-<<<<<<< HEAD
-=======
                                 "symbol": "reference_hash"
                               },
                               "val": "void"
                             },
                             {
                               "key": {
->>>>>>> upstream/master
                                 "symbol": "remaining_balance"
                               },
                               "val": {
@@ -407,6 +404,14 @@
                       },
                       {
                         "key": {
+                          "symbol": "RcptID"
+                        },
+                        "val": {
+                          "u64": 2
+                        }
+                      },
+                      {
+                        "key": {
                           "symbol": "RelHist"
                         },
                         "val": {
@@ -431,6 +436,18 @@
                         },
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "MaintenanceMode"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "bool": false
                         }
                       },
                       {
@@ -483,21 +500,6 @@
                             }
                           ]
                         }
-<<<<<<< HEAD
-=======
-                      },
-                      {
-                        "key": {
-                          "vec": [
-                            {
-                              "symbol": "ReceiptCounter"
-                            }
-                          ]
-                        },
-                        "val": {
-                          "u64": 4
-                        }
->>>>>>> upstream/master
                       }
                     ]
                   }
@@ -1096,10 +1098,7 @@
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                 },
-<<<<<<< HEAD
-=======
                 "void",
->>>>>>> upstream/master
                 "void"
               ]
             }
@@ -1140,23 +1139,6 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 1
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
-                },
-                {
-                  "key": {
->>>>>>> upstream/master
                     "symbol": "token_address"
                   },
                   "val": {
@@ -1243,15 +1225,12 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
                     "symbol": "reference_hash"
                   },
                   "val": "void"
                 },
                 {
                   "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1532,23 +1511,9 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
                     "symbol": "remaining_balance"
                   },
                   "val": {
-=======
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 2
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "remaining_balance"
-                  },
-                  "val": {
->>>>>>> upstream/master
                     "i128": {
                       "hi": 0,
                       "lo": 500
@@ -1624,15 +1589,12 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
                     "symbol": "reference_hash"
                   },
                   "val": "void"
                 },
                 {
                   "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1714,21 +1676,32 @@
               }
             ],
             "data": {
-              "vec": [
+              "map": [
                 {
-                  "symbol": "lock"
+                  "key": {
+                    "symbol": "admin"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  }
                 },
                 {
-                  "bool": true
+                  "key": {
+                    "symbol": "operation"
+                  },
+                  "val": {
+                    "symbol": "lock"
+                  }
                 },
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  "key": {
+                    "symbol": "paused"
+                  },
+                  "val": {
+                    "bool": true
+                  }
                 },
-                "void",
                 {
-<<<<<<< HEAD
-                  "u64": 54321
-=======
                   "key": {
                     "symbol": "reason"
                   },
@@ -1739,7 +1712,7 @@
                     "symbol": "receipt_id"
                   },
                   "val": {
-                    "u64": 3
+                    "u64": 1
                   }
                 },
                 {
@@ -1749,7 +1722,6 @@
                   "val": {
                     "u64": 54321
                   }
->>>>>>> upstream/master
                 }
               ]
             }
@@ -1962,23 +1934,16 @@
               }
             ],
             "data": {
-              "vec": [
+              "map": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                },
-                {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
-                },
-                {
-                  "i128": {
-                    "hi": 0,
-                    "lo": 500
+                  "key": {
+                    "symbol": "admin"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                   }
                 },
                 {
-<<<<<<< HEAD
-                  "u64": 54321
-=======
                   "key": {
                     "symbol": "amount"
                   },
@@ -1994,7 +1959,7 @@
                     "symbol": "receipt_id"
                   },
                   "val": {
-                    "u64": 4
+                    "u64": 2
                   }
                 },
                 {
@@ -2012,7 +1977,6 @@
                   "val": {
                     "u64": 54321
                   }
->>>>>>> upstream/master
                 }
               ]
             }

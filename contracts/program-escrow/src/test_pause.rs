@@ -238,12 +238,6 @@ fn test_set_paused_emits_events() {
     let topic_0: Symbol = topics.get(0).unwrap().into_val(&env);
     assert_eq!(topic_0, Symbol::new(&env, "PauseSt"));
 
-    let data: (Symbol, bool, Address, Option<String>, u64) = emitted.2.try_into_val(&env).unwrap();
-    assert_eq!(data.0, Symbol::new(&env, "lock"));
-    assert_eq!(data.1, true);
-    assert_eq!(data.2, admin);
-    assert_eq!(data.3, None);
-    assert!(data.4 > 0);
     let data: PauseStateChanged = emitted.2.try_into_val(&env).unwrap();
     assert_eq!(data.operation, symbol_short!("lock"));
     assert_eq!(data.paused, true);
@@ -356,8 +350,8 @@ fn setup_rbac_program_env_strict<'a>(
 
     // Initialize program with operator as payout_key
     let program_id = String::from_str(env, "rbac-program");
-    contract_client.init_program(&program_id, &operator, &token_address, &admin, &None);
     contract_client.init_program(&program_id, &operator, &token_address, &admin, &None, &None);
+
 
     // Mint and lock funds
     let depositor = Address::generate(env);
@@ -399,8 +393,8 @@ fn setup_rbac_program_env<'a>(
 
     // Initialize program with operator as payout_key
     let program_id = String::from_str(env, "rbac-program");
-    contract_client.init_program(&program_id, &operator, &token_address, &admin, &None);
     contract_client.init_program(&program_id, &operator, &token_address, &admin, &None, &None);
+
 
     // Mint and lock funds
     let depositor = Address::generate(env);
@@ -584,21 +578,9 @@ fn test_rbac_emergency_withdraw_drains_all_funds() {
     // Initialize contract with admin
     contract_client.initialize_contract(&admin);
 
-    // Initialize multiple programs
-    // NOTE: Contract currently only supports one program per instance
+    // Initialize program
     let program_id_1 = String::from_str(&env, "prog-1");
-    contract_client.init_program(&program_id_1, &operator, &token_address, &admin, &None);
-
-    let program_id_2 = String::from_str(&env, "prog-2");
-    contract_client.init_program(&program_id_2, &operator, &token_address, &admin, &None);
-    contract_client.init_program(
-        &program_id_1,
-        &operator,
-        &token_address,
-        &admin,
-        &None,
-        &None,
-    );
+    contract_client.init_program(&program_id_1, &operator, &token_address, &admin, &None, &None);
 
     // let program_id_2 = String::from_str(&env, "prog-2");
     // contract_client.init_program(&program_id_2, &operator, &token_address, &admin, &None, &None);

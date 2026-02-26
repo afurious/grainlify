@@ -47,7 +47,6 @@ fn test_complex_multi_program_lifecycle_integration() {
 
     // ── Phase 1: Registration (Multi-tenant) ───────────────────────────
     // Init Program A
-    client.init_program(&prog_id_a, &admin_a, &token_id, &creator, &None);
     client.init_program(&prog_id_a, &admin_a, &token_id, &creator, &None, &None);
 
     // Init Program B
@@ -133,6 +132,7 @@ fn test_lifecycle_with_pausing_and_topup() {
     let admin = Address::generate(&env);
     let creator = Address::generate(&env);
     let prog_id = String::from_str(&env, "lifecycle-test");
+    client.initialize_contract(&admin);
 
     // 1. Init and Fund
     client.init_program(&prog_id, &admin, &token_id, &creator, &None, &None);
@@ -140,7 +140,6 @@ fn test_lifecycle_with_pausing_and_topup() {
     client.lock_program_funds(&100_000);
 
     // 2. Pause the contract
-    client.initialize_contract(&admin); // Initialize global contract states
     client.set_paused(&None, &Some(true), &None, &None); // Pause releases
 
     // 3. Try payout while paused -> Should fail

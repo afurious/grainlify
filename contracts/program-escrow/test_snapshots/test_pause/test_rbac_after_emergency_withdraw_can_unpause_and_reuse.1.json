@@ -1,10 +1,6 @@
 {
   "generators": {
-<<<<<<< HEAD
-    "address": 7,
-=======
     "address": 8,
->>>>>>> upstream/master
     "nonce": 0
   },
   "auth": [
@@ -148,8 +144,6 @@
       ]
     ],
     [],
-<<<<<<< HEAD
-=======
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
@@ -175,7 +169,6 @@
         }
       ]
     ],
->>>>>>> upstream/master
     [],
     []
   ],
@@ -385,8 +378,6 @@
       [
         {
           "contract_data": {
-<<<<<<< HEAD
-=======
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
             "key": {
               "ledger_key_nonce": {
@@ -420,7 +411,6 @@
       [
         {
           "contract_data": {
->>>>>>> upstream/master
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
             "key": "ledger_key_contract_instance",
             "durability": "persistent"
@@ -492,15 +482,12 @@
                             },
                             {
                               "key": {
-<<<<<<< HEAD
-=======
                                 "symbol": "reference_hash"
                               },
                               "val": "void"
                             },
                             {
                               "key": {
->>>>>>> upstream/master
                                 "symbol": "remaining_balance"
                               },
                               "val": {
@@ -534,6 +521,14 @@
                       },
                       {
                         "key": {
+                          "symbol": "RcptID"
+                        },
+                        "val": {
+                          "u64": 3
+                        }
+                      },
+                      {
+                        "key": {
                           "symbol": "RelHist"
                         },
                         "val": {
@@ -558,6 +553,18 @@
                         },
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "MaintenanceMode"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "bool": false
                         }
                       },
                       {
@@ -610,21 +617,6 @@
                             }
                           ]
                         }
-<<<<<<< HEAD
-=======
-                      },
-                      {
-                        "key": {
-                          "vec": [
-                            {
-                              "symbol": "ReceiptCounter"
-                            }
-                          ]
-                        },
-                        "val": {
-                          "u64": 6
-                        }
->>>>>>> upstream/master
                       }
                     ]
                   }
@@ -713,11 +705,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-<<<<<<< HEAD
-                          "lo": 0
-=======
                           "lo": 200
->>>>>>> upstream/master
                         }
                       }
                     },
@@ -1227,10 +1215,7 @@
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                 },
-<<<<<<< HEAD
-=======
                 "void",
->>>>>>> upstream/master
                 "void"
               ]
             }
@@ -1271,23 +1256,6 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 1
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
-                },
-                {
-                  "key": {
->>>>>>> upstream/master
                     "symbol": "token_address"
                   },
                   "val": {
@@ -1374,15 +1342,12 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
                     "symbol": "reference_hash"
                   },
                   "val": "void"
                 },
                 {
                   "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1663,17 +1628,6 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 2
-                  }
-                },
-                {
-                  "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1752,15 +1706,12 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
                     "symbol": "reference_hash"
                   },
                   "val": "void"
                 },
                 {
                   "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1842,21 +1793,6 @@
               }
             ],
             "data": {
-<<<<<<< HEAD
-              "vec": [
-                {
-                  "symbol": "lock"
-                },
-                {
-                  "bool": true
-                },
-                {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                },
-                "void",
-                {
-                  "u64": 0
-=======
               "map": [
                 {
                   "key": {
@@ -1893,7 +1829,7 @@
                     "symbol": "receipt_id"
                   },
                   "val": {
-                    "u64": 3
+                    "u64": 1
                   }
                 },
                 {
@@ -1903,7 +1839,6 @@
                   "val": {
                     "u64": 0
                   }
->>>>>>> upstream/master
                 }
               ]
             }
@@ -2116,23 +2051,6 @@
               }
             ],
             "data": {
-<<<<<<< HEAD
-              "vec": [
-                {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                },
-                {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
-                },
-                {
-                  "i128": {
-                    "hi": 0,
-                    "lo": 500
-                  }
-                },
-                {
-                  "u64": 0
-=======
               "map": [
                 {
                   "key": {
@@ -2158,7 +2076,7 @@
                     "symbol": "receipt_id"
                   },
                   "val": {
-                    "u64": 4
+                    "u64": 2
                   }
                 },
                 {
@@ -2176,7 +2094,6 @@
                   "val": {
                     "u64": 0
                   }
->>>>>>> upstream/master
                 }
               ]
             }
@@ -2338,21 +2255,6 @@
               }
             ],
             "data": {
-<<<<<<< HEAD
-              "vec": [
-                {
-                  "symbol": "lock"
-                },
-                {
-                  "bool": false
-                },
-                {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                },
-                "void",
-                {
-                  "u64": 0
-=======
               "map": [
                 {
                   "key": {
@@ -2389,7 +2291,7 @@
                     "symbol": "receipt_id"
                   },
                   "val": {
-                    "u64": 5
+                    "u64": 3
                   }
                 },
                 {
@@ -2399,7 +2301,6 @@
                   "val": {
                     "u64": 0
                   }
->>>>>>> upstream/master
                 }
               ]
             }
@@ -2527,8 +2428,6 @@
                 "symbol": "fn_call"
               },
               {
-<<<<<<< HEAD
-=======
                 "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
               },
               {
@@ -2618,7 +2517,6 @@
                 "symbol": "fn_call"
               },
               {
->>>>>>> upstream/master
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
               },
               {
@@ -2671,17 +2569,6 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 6
-                  }
-                },
-                {
-                  "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -2760,15 +2647,12 @@
                 },
                 {
                   "key": {
-<<<<<<< HEAD
-=======
                     "symbol": "reference_hash"
                   },
                   "val": "void"
                 },
                 {
                   "key": {
->>>>>>> upstream/master
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -2848,11 +2732,7 @@
             "data": {
               "i128": {
                 "hi": 0,
-<<<<<<< HEAD
-                "lo": 0
-=======
                 "lo": 200
->>>>>>> upstream/master
               }
             }
           }
