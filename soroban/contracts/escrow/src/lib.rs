@@ -24,6 +24,7 @@ pub enum Error {
     DeadlineNotPassed = 6,
     Unauthorized = 7,
     InsufficientBalance = 8,
+    ContractDeprecated = 9,
     // Identity-related errors
     InvalidSignature = 100,
     ClaimExpired = 101,
@@ -57,6 +58,14 @@ pub struct EscrowJurisdictionConfig {
     pub max_lock_amount: Option<i128>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum OptionalJurisdiction {
+    None,
+    Some(EscrowJurisdictionConfig),
+}
+
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Escrow {
@@ -65,7 +74,7 @@ pub struct Escrow {
     pub remaining_amount: i128,
     pub status: EscrowStatus,
     pub deadline: u64,
-    pub jurisdiction: Option<EscrowJurisdictionConfig>,
+    pub jurisdiction: OptionalJurisdiction,
 }
 
 #[contracttype]
@@ -84,11 +93,20 @@ pub struct EscrowJurisdictionEvent {
     pub timestamp: u64,
 }
 
+/// Kill-switch state: when deprecated is true, new escrows are blocked; existing can complete or migrate.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationState {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+}
+
 #[contracttype]
 pub enum DataKey {
     Admin,
     Token,
     Escrow(u64),
+    DeprecationState,
     // Identity-related storage keys
     AddressIdentity(Address),
     AuthorizedIssuer(Address),
@@ -106,7 +124,7 @@ impl EscrowContract {
         env: &Env,
         bounty_id: u64,
         operation: Symbol,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) {
         let (
             jurisdiction_tag,
@@ -116,7 +134,7 @@ impl EscrowContract {
             release_paused,
             refund_paused,
             max_lock_amount,
-        ) = if let Some(cfg) = jurisdiction {
+        ) = if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             (
                 cfg.tag.clone(),
                 cfg.requires_kyc,
@@ -152,9 +170,9 @@ impl EscrowContract {
         env: &Env,
         depositor: &Address,
         amount: i128,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) -> Result<(), Error> {
-        if let Some(cfg) = jurisdiction {
+        if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             if cfg.lock_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -179,9 +197,9 @@ impl EscrowContract {
         env: &Env,
         contributor: &Address,
         amount: i128,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) -> Result<(), Error> {
-        if let Some(cfg) = jurisdiction {
+        if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             if cfg.release_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -200,9 +218,9 @@ impl EscrowContract {
     fn enforce_refund_jurisdiction(
         env: &Env,
         depositor: &Address,
-        jurisdiction: &Option<EscrowJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) -> Result<(), Error> {
-        if let Some(cfg) = jurisdiction {
+        if let OptionalJurisdiction::Some(cfg) = jurisdiction {
             if cfg.refund_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -460,6 +478,7 @@ impl EscrowContract {
     }
 
     /// Lock funds: depositor must be authorized; tokens transferred from depositor to contract.
+    /// Fails with ContractDeprecated when the contract has been deprecated (kill switch).
     ///
     /// # Reentrancy
     /// Protected by reentrancy guard. Escrow state is written before the
@@ -471,7 +490,7 @@ impl EscrowContract {
         amount: i128,
         deadline: u64,
     ) -> Result<(), Error> {
-        Self::lock_funds_with_jurisdiction(env, depositor, bounty_id, amount, deadline, None)
+        Self::lock_funds_with_jurisdiction(env, depositor, bounty_id, amount, deadline, OptionalJurisdiction::None)
     }
 
     /// Lock funds with optional jurisdiction controls.
@@ -481,7 +500,7 @@ impl EscrowContract {
         bounty_id: u64,
         amount: i128,
         deadline: u64,
-        jurisdiction: Option<EscrowJurisdictionConfig>,
+        jurisdiction: OptionalJurisdiction,
     ) -> Result<(), Error> {
         // GUARD: acquire reentrancy lock
         reentrancy_guard::acquire(&env);
@@ -662,11 +681,51 @@ impl EscrowContract {
             .ok_or(Error::BountyNotFound)
     }
 
+    fn get_deprecation_state(env: &Env) -> DeprecationState {
+        env.storage()
+            .instance()
+            .get(&DataKey::DeprecationState)
+            .unwrap_or(DeprecationState {
+                deprecated: false,
+                migration_target: None,
+            })
+    }
+
+    /// Set deprecation (kill switch) and optional migration target. Admin only.
+    /// When deprecated is true, new lock_funds are blocked; release and refund remain allowed.
+    pub fn set_deprecated(
+        env: Env,
+        deprecated: bool,
+        migration_target: Option<Address>,
+    ) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        let state = DeprecationState {
+            deprecated,
+            migration_target: migration_target.clone(),
+        };
+        env.storage().instance().set(&DataKey::DeprecationState, &state);
+        env.events().publish(
+            (symbol_short!("deprec"),),
+            (state.deprecated, state.migration_target, admin, env.ledger().timestamp()),
+        );
+        Ok(())
+    }
+
+    /// View: returns whether the contract is deprecated and the optional migration target.
+    pub fn get_deprecation_status(env: Env) -> DeprecationState {
+        Self::get_deprecation_state(&env)
+    }
+
     /// Read jurisdiction configuration for an escrow.
     pub fn get_escrow_jurisdiction(
         env: Env,
         bounty_id: u64,
-    ) -> Result<Option<EscrowJurisdictionConfig>, Error> {
+    ) -> Result<OptionalJurisdiction, Error> {
         let escrow = Self::get_escrow(env, bounty_id)?;
         Ok(escrow.jurisdiction)
     }
