@@ -4,7 +4,7 @@
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, BytesN, Env,
-    String, Symbol,
+    String, Symbol, Vec,
 };
 
 mod identity;
@@ -74,6 +74,40 @@ pub struct Escrow {
     pub remaining_amount: i128,
     pub status: EscrowStatus,
     pub deadline: u64,
+}
+
+/// Search criteria for paginated escrow queries.
+/// Status is a u32 code: 0=any, 1=Locked, 2=Released, 3=Refunded.
+/// Depositor is optional; `None` means "match any".
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EscrowSearchCriteria {
+    pub status_filter: u32,
+    pub depositor: Option<Address>,
+}
+
+/// A single escrow record in search results (flattened).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EscrowRecord {
+    pub bounty_id: u64,
+    pub depositor: Address,
+    pub amount: i128,
+    pub remaining_amount: i128,
+    pub status: EscrowStatus,
+    pub deadline: u64,
+}
+
+/// A single page of escrow search results.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EscrowPage {
+    /// Matched escrow records.
+    pub records: Vec<EscrowRecord>,
+    /// Cursor for the next page (`None` if this is the last page).
+    pub next_cursor: Option<u64>,
+    /// Whether more results exist beyond this page.
+    pub has_more: bool,
     pub jurisdiction: OptionalJurisdiction,
 }
 
@@ -93,6 +127,8 @@ pub struct EscrowJurisdictionEvent {
     pub timestamp: u64,
 }
 
+/// Maximum page size for paginated queries.
+const MAX_PAGE_SIZE: u32 = 20;
 /// Kill-switch state: when deprecated is true, new escrows are blocked; existing can complete or migrate.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -106,6 +142,10 @@ pub enum DataKey {
     Admin,
     Token,
     Escrow(u64),
+    /// Jurisdiction config stored separately (avoids Option<ContractType> XDR issue).
+    EscrowJurisdiction(u64),
+    /// Persistent Vec<u64> index of all bounty IDs.
+    EscrowIndex,
     DeprecationState,
     // Identity-related storage keys
     AddressIdentity(Address),
@@ -525,11 +565,28 @@ impl EscrowContract {
             remaining_amount: amount,
             status: EscrowStatus::Locked,
             deadline,
-            jurisdiction: jurisdiction.clone(),
         };
         env.storage()
             .persistent()
             .set(&DataKey::Escrow(bounty_id), &escrow);
+
+        // Store jurisdiction config separately (avoids Option<ContractType> XDR issue)
+        if let Some(ref juris) = jurisdiction {
+            env.storage()
+                .persistent()
+                .set(&DataKey::EscrowJurisdiction(bounty_id), juris);
+        }
+
+        // Append bounty_id to the global index for paginated queries
+        let mut index: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowIndex)
+            .unwrap_or_else(|| Vec::new(&env));
+        index.push_back(bounty_id);
+        env.storage()
+            .persistent()
+            .set(&DataKey::EscrowIndex, &index);
 
         // INTERACTION: external token transfer is last
         let token = env
@@ -575,11 +632,16 @@ impl EscrowContract {
             return Err(Error::InsufficientBalance);
         }
 
+        let jurisdiction: Option<EscrowJurisdictionConfig> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowJurisdiction(bounty_id));
+
         Self::enforce_release_jurisdiction(
             &env,
             &contributor,
             escrow.remaining_amount,
-            &escrow.jurisdiction,
+            &jurisdiction,
         )?;
 
         // EFFECTS: update state before external call (CEI)
@@ -604,7 +666,7 @@ impl EscrowContract {
             &env,
             bounty_id,
             symbol_short!("release"),
-            &escrow.jurisdiction,
+            &jurisdiction,
         );
 
         // GUARD: release reentrancy lock
@@ -640,7 +702,11 @@ impl EscrowContract {
         if escrow.remaining_amount <= 0 {
             return Err(Error::InsufficientBalance);
         }
-        Self::enforce_refund_jurisdiction(&env, &escrow.depositor, &escrow.jurisdiction)?;
+        let jurisdiction: Option<EscrowJurisdictionConfig> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowJurisdiction(bounty_id));
+        Self::enforce_refund_jurisdiction(&env, &escrow.depositor, &jurisdiction)?;
 
         // EFFECTS: update state before external call (CEI)
         let amount = escrow.remaining_amount;
@@ -665,7 +731,7 @@ impl EscrowContract {
             &env,
             bounty_id,
             symbol_short!("refund"),
-            &escrow.jurisdiction,
+            &jurisdiction,
         );
 
         // GUARD: release reentrancy lock
@@ -725,6 +791,128 @@ impl EscrowContract {
     pub fn get_escrow_jurisdiction(
         env: Env,
         bounty_id: u64,
+    ) -> Result<Option<EscrowJurisdictionConfig>, Error> {
+        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return Err(Error::BountyNotFound);
+        }
+        Ok(env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowJurisdiction(bounty_id)))
+    }
+
+    /// Return the total number of escrows tracked in the index.
+    pub fn get_escrow_count(env: Env) -> u32 {
+        let index: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowIndex)
+            .unwrap_or_else(|| Vec::new(&env));
+        index.len()
+    }
+
+    /// Paginated search over escrows.
+    ///
+    /// * `criteria` – `status_filter`: 0=any, 1=Locked, 2=Released, 3=Refunded.
+    ///                `depositor`: optional address filter.
+    /// * `cursor`   – pass the `next_cursor` from a previous `EscrowPage` to continue;
+    ///                `None` starts from the beginning.
+    /// * `limit`    – max results per page (capped at `MAX_PAGE_SIZE`).
+    ///
+    /// Returns an `EscrowPage` with matching records, the next cursor, and a
+    /// `has_more` flag.
+    pub fn get_escrows(
+        env: Env,
+        criteria: EscrowSearchCriteria,
+        cursor: Option<u64>,
+        limit: u32,
+    ) -> EscrowPage {
+        let effective_limit = if limit == 0 || limit > MAX_PAGE_SIZE {
+            MAX_PAGE_SIZE
+        } else {
+            limit
+        };
+
+        // Convert u32 status code to EscrowStatus for matching
+        let status_match = match criteria.status_filter {
+            1 => Some(EscrowStatus::Locked),
+            2 => Some(EscrowStatus::Released),
+            3 => Some(EscrowStatus::Refunded),
+            _ => None, // 0 or anything else = match any
+        };
+
+        let index: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowIndex)
+            .unwrap_or_else(|| Vec::new(&env));
+
+        let mut records: Vec<EscrowRecord> = Vec::new(&env);
+        let mut past_cursor = cursor.is_none();
+        let mut next_cursor: Option<u64> = None;
+        let mut has_more = false;
+
+        for i in 0..index.len() {
+            let id = index.get(i).unwrap();
+
+            // Skip until we pass the cursor
+            if !past_cursor {
+                if Some(id) == cursor {
+                    past_cursor = true;
+                }
+                continue;
+            }
+
+            // Fetch the escrow record
+            let escrow_opt: Option<Escrow> = env
+                .storage()
+                .persistent()
+                .get(&DataKey::Escrow(id));
+            if escrow_opt.is_none() {
+                continue;
+            }
+            let escrow = escrow_opt.unwrap();
+
+            // Apply status filter
+            if let Some(ref status) = status_match {
+                if escrow.status != *status {
+                    continue;
+                }
+            }
+
+            // Apply depositor filter
+            if let Some(ref depositor) = criteria.depositor {
+                if escrow.depositor != *depositor {
+                    continue;
+                }
+            }
+
+            // Check if we already have enough results
+            if records.len() >= effective_limit {
+                has_more = true;
+                break;
+            }
+
+            next_cursor = Some(id);
+            records.push_back(EscrowRecord {
+                bounty_id: id,
+                depositor: escrow.depositor,
+                amount: escrow.amount,
+                remaining_amount: escrow.remaining_amount,
+                status: escrow.status,
+                deadline: escrow.deadline,
+            });
+        }
+
+        if !has_more {
+            next_cursor = None;
+        }
+
+        EscrowPage {
+            records,
+            next_cursor,
+            has_more,
+        }
     ) -> Result<OptionalJurisdiction, Error> {
         let escrow = Self::get_escrow(env, bounty_id)?;
         Ok(escrow.jurisdiction)
@@ -733,3 +921,4 @@ impl EscrowContract {
 
 mod identity_test;
 mod test;
+mod test_search;
