@@ -1,16 +1,28 @@
 {
   "generators": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
     "address": 6,
+========
+    "address": 7,
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
     "nonce": 0
   },
   "auth": [
     [
       [
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
         {
           "function": {
             "contract_fn": {
               "contract_address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+========
+        "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               "function_name": "set_admin",
               "args": [
                 {
@@ -23,22 +35,63 @@
         }
       ]
     ],
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+========
+    [],
+    [],
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
         {
           "function": {
             "contract_fn": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               "contract_address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+========
+              "contract_address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               "function_name": "mint",
               "args": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
                   "i128": {
                     "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "lo": 500000
+========
+                    "lo": 1000
+                  }
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+              "function_name": "transfer",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 500
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
                 }
               ]
@@ -52,6 +105,7 @@
     [],
     [
       [
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
         {
           "function": {
@@ -78,13 +132,18 @@
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+========
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         {
           "function": {
             "contract_fn": {
-              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-              "function_name": "create_program_release_schedule",
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "function_name": "set_paused",
               "args": [
+                "void",
                 {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
@@ -102,6 +161,14 @@
                   "u64": 50
                 }
 >>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+========
+                  "bool": true
+                },
+                {
+                  "bool": true
+                },
+                "void"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               ]
             }
           },
@@ -109,6 +176,7 @@
         }
       ]
     ],
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
@@ -147,12 +215,14 @@
         }
       ]
     ],
+========
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
     []
   ],
   "ledger": {
     "protocol_version": 21,
     "sequence_number": 0,
-    "timestamp": 100,
+    "timestamp": 0,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
     "min_persistent_entry_ttl": 4096,
@@ -162,7 +232,11 @@
       [
         {
           "account": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+========
+            "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
           }
         },
         [
@@ -170,7 +244,11 @@
             "last_modified_ledger_seq": 0,
             "data": {
               "account": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+========
+                "account_id": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                 "balance": 0,
                 "seq_num": 0,
                 "num_sub_entries": 0,
@@ -190,7 +268,11 @@
       [
         {
           "contract_data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+========
+            "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
             "key": {
               "ledger_key_nonce": {
                 "nonce": 801925984706572462
@@ -205,7 +287,11 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V",
+========
+                "contract": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                 "key": {
                   "ledger_key_nonce": {
                     "nonce": 801925984706572462
@@ -224,6 +310,7 @@
         {
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": "ledger_key_contract_instance",
             "durability": "persistent"
           }
@@ -544,6 +631,43 @@
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
             "key": {
               "ledger_key_nonce": {
+========
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 4837995959683129791
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": 4837995959683129791
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+            "key": {
+              "ledger_key_nonce": {
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                 "nonce": 5541220902715666415
               }
             },
@@ -575,6 +699,7 @@
         {
           "contract_data": {
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
             "key": {
               "ledger_key_nonce": {
                 "nonce": 1033654523790656264
@@ -893,6 +1018,8 @@
         {
           "contract_data": {
             "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+========
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
             "key": "ledger_key_contract_instance",
             "durability": "persistent"
           }
@@ -903,7 +1030,402 @@
             "data": {
               "contract_data": {
                 "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "contract": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF",
+========
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+                "key": "ledger_key_contract_instance",
+                "durability": "persistent",
+                "val": {
+                  "contract_instance": {
+                    "executable": {
+                      "wasm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    },
+                    "storage": [
+                      {
+                        "key": {
+                          "symbol": "NxtSched"
+                        },
+                        "val": {
+                          "u64": 1
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "ProgData"
+                        },
+                        "val": {
+                          "map": [
+                            {
+                              "key": {
+                                "symbol": "authorized_payout_key"
+                              },
+                              "val": {
+                                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "initial_liquidity"
+                              },
+                              "val": {
+                                "i128": {
+                                  "hi": 0,
+                                  "lo": 0
+                                }
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "payout_history"
+                              },
+                              "val": {
+                                "vec": []
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "program_id"
+                              },
+                              "val": {
+                                "string": "rbac-program"
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "reference_hash"
+                              },
+                              "val": "void"
+                            },
+                            {
+                              "key": {
+                                "symbol": "remaining_balance"
+                              },
+                              "val": {
+                                "i128": {
+                                  "hi": 0,
+                                  "lo": 500
+                                }
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "token_address"
+                              },
+                              "val": {
+                                "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "total_funds"
+                              },
+                              "val": {
+                                "i128": {
+                                  "hi": 0,
+                                  "lo": 500
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "RelHist"
+                        },
+                        "val": {
+                          "vec": []
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "Scheds"
+                        },
+                        "val": {
+                          "vec": []
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "Admin"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "PauseFlags"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "map": [
+                            {
+                              "key": {
+                                "symbol": "lock_paused"
+                              },
+                              "val": {
+                                "bool": false
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "pause_reason"
+                              },
+                              "val": "void"
+                            },
+                            {
+                              "key": {
+                                "symbol": "paused_at"
+                              },
+                              "val": {
+                                "u64": 0
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "refund_paused"
+                              },
+                              "val": {
+                                "bool": true
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "release_paused"
+                              },
+                              "val": {
+                                "bool": true
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "ReceiptCounter"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "u64": 4
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+            "key": {
+              "ledger_key_nonce": {
+                "nonce": 1033654523790656264
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": 1033654523790656264
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "Balance"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "Balance"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "amount"
+                      },
+                      "val": {
+                        "i128": {
+                          "hi": 0,
+                          "lo": 500
+                        }
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "authorized"
+                      },
+                      "val": {
+                        "bool": true
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "clawback"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          518400
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "Balance"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "Balance"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "amount"
+                      },
+                      "val": {
+                        "i128": {
+                          "hi": 0,
+                          "lo": 500
+                        }
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "authorized"
+                      },
+                      "val": {
+                        "bool": true
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "clawback"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          518400
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+            "key": "ledger_key_contract_instance",
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                 "key": "ledger_key_contract_instance",
                 "durability": "persistent",
                 "val": {
@@ -929,7 +1451,11 @@
                                 "symbol": "name"
                               },
                               "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                 "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+========
+                                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                               }
                             },
                             {
@@ -983,7 +1509,11 @@
                                     "symbol": "issuer"
                                   },
                                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                                     "bytes": "0000000000000000000000000000000000000000000000000000000000000003"
+========
+                                    "bytes": "0000000000000000000000000000000000000000000000000000000000000005"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                                   }
                                 }
                               ]
@@ -1037,14 +1567,22 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+========
+                "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               },
               {
                 "symbol": "init_asset"
               }
             ],
             "data": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
               "bytes": "0000000161616100000000000000000000000000000000000000000000000000000000000000000000000003"
+========
+              "bytes": "0000000161616100000000000000000000000000000000000000000000000000000000000000000000000005"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
             }
           }
         }
@@ -1054,7 +1592,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+========
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1084,7 +1626,11 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+========
+                "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               },
               {
                 "symbol": "set_admin"
@@ -1101,7 +1647,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+========
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "contract",
         "body": {
           "v0": {
@@ -1110,10 +1660,17 @@
                 "symbol": "set_admin"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
               },
               {
                 "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGO6V"
+========
+                "address": "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               }
             ],
             "data": {
@@ -1127,7 +1684,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+========
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1157,6 +1718,7 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
               },
               {
@@ -1175,6 +1737,16 @@
                   }
                 }
               ]
+========
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
+              },
+              {
+                "symbol": "initialize_contract"
+              }
+            ],
+            "data": {
+              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
             }
           }
         }
@@ -1184,6 +1756,7 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
         "type_": "contract",
         "body": {
@@ -1217,6 +1790,350 @@
       "event": {
         "ext": "v0",
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+========
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                "symbol": "mint"
+========
+                "symbol": "initialize_contract"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+              }
+            ],
+            "data": "void"
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+========
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+              },
+              {
+                "symbol": "init_program"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                  "string": "rep-test"
+========
+                  "string": "rbac-program"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                },
+                {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                  "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+========
+                  "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+                },
+                "void",
+                "void"
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "PrgInit"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "authorized_payout_key"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "program_id"
+                  },
+                  "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                    "string": "rep-test"
+========
+                    "string": "rbac-program"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "token_address"
+                  },
+                  "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+========
+                    "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "total_funds"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 0
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "version"
+                  },
+                  "val": {
+                    "u32": 2
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+                "symbol": "init_program"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "authorized_payout_key"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "initial_liquidity"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 0
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "payout_history"
+                  },
+                  "val": {
+                    "vec": []
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "program_id"
+                  },
+                  "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                    "string": "rep-test"
+========
+                    "string": "rbac-program"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "remaining_balance"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 0
+                    }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "token_address"
+                  },
+                  "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+========
+                    "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "total_funds"
+                  },
+                  "val": {
+                    "i128": {
+                      "hi": 0,
+                      "lo": 0
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+========
+                "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
+              },
+              {
+                "symbol": "mint"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 1000
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "mint"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+              }
+            ],
+            "data": {
+              "i128": {
+                "hi": 0,
+                "lo": 1000
+              }
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1246,89 +2163,25 @@
                 "symbol": "fn_call"
               },
               {
-                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+                "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               },
               {
-                "symbol": "init_program"
+                "symbol": "transfer"
               }
             ],
             "data": {
               "vec": [
                 {
-                  "string": "rep-test"
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                 },
                 {
-                  "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
-                },
-                {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
-                },
-                "void"
-              ]
-            }
-          }
-        }
-      },
-      "failed_call": false
-    },
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
-        "type_": "contract",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "PrgInit"
-              }
-            ],
-            "data": {
-              "map": [
-                {
-                  "key": {
-                    "symbol": "authorized_payout_key"
-                  },
-                  "val": {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "program_id"
-                  },
-                  "val": {
-                    "string": "rep-test"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "token_address"
-                  },
-                  "val": {
-                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "total_funds"
-                  },
-                  "val": {
-                    "i128": {
-                      "hi": 0,
-                      "lo": 0
-                    }
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "version"
-                  },
-                  "val": {
-                    "u32": 2
+                  "i128": {
+                    "hi": 0,
+                    "lo": 500
                   }
                 }
               ]
@@ -1341,7 +2194,43 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "transfer"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL7NV"
+              }
+            ],
+            "data": {
+              "i128": {
+                "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
+                "lo": 500000
+========
+                "lo": 500
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
+              }
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73",
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1350,78 +2239,10 @@
                 "symbol": "fn_return"
               },
               {
-                "symbol": "init_program"
+                "symbol": "transfer"
               }
             ],
-            "data": {
-              "map": [
-                {
-                  "key": {
-                    "symbol": "authorized_payout_key"
-                  },
-                  "val": {
-                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "initial_liquidity"
-                  },
-                  "val": {
-                    "i128": {
-                      "hi": 0,
-                      "lo": 0
-                    }
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "payout_history"
-                  },
-                  "val": {
-                    "vec": []
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "program_id"
-                  },
-                  "val": {
-                    "string": "rep-test"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "remaining_balance"
-                  },
-                  "val": {
-                    "i128": {
-                      "hi": 0,
-                      "lo": 0
-                    }
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "token_address"
-                  },
-                  "val": {
-                    "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "total_funds"
-                  },
-                  "val": {
-                    "i128": {
-                      "hi": 0,
-                      "lo": 0
-                    }
-                  }
-                }
-              ]
-            }
+            "data": "void"
           }
         }
       },
@@ -1439,7 +2260,7 @@
                 "symbol": "fn_call"
               },
               {
-                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
               },
               {
                 "symbol": "lock_program_funds"
@@ -1448,7 +2269,7 @@
             "data": {
               "i128": {
                 "hi": 0,
-                "lo": 500000
+                "lo": 500
               }
             }
           }
@@ -1459,7 +2280,7 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
         "type_": "contract",
         "body": {
           "v0": {
@@ -1477,7 +2298,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                       "lo": 500000
+========
+                      "lo": 500
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                     }
                   }
                 },
@@ -1486,7 +2311,19 @@
                     "symbol": "program_id"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "string": "rep-test"
+========
+                    "string": "rbac-program"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 2
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
                 },
                 {
@@ -1496,7 +2333,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                       "lo": 500000
+========
+                      "lo": 500
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                     }
                   }
                 },
@@ -1518,7 +2359,7 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1564,8 +2405,18 @@
                     "symbol": "program_id"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "string": "rep-test"
+========
+                    "string": "rbac-program"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
+                },
+                {
+                  "key": {
+                    "symbol": "reference_hash"
+                  },
+                  "val": "void"
                 },
                 {
                   "key": {
@@ -1574,7 +2425,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                       "lo": 500000
+========
+                      "lo": 500
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                     }
                   }
                 },
@@ -1583,7 +2438,11 @@
                     "symbol": "token_address"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "address": "CBUSYNQKASUYFWYC3M2GUEDMX4AIVWPALDBYJPNK6554BREHTGZ2IUNF"
+========
+                    "address": "CDLDVFKHEZ2RVB3NG4UQA4VPD3TSHV6XMHXMHP2BSGCJ2IIWVTOHGDSG"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
                 },
                 {
@@ -1593,6 +2452,7 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                       "lo": 500000
                     }
                   }
@@ -2561,6 +3421,9 @@
                     "i128": {
                       "hi": 0,
                       "lo": 500000
+========
+                      "lo": 500
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                     }
                   }
                 }
@@ -2583,15 +3446,17 @@
                 "symbol": "fn_call"
               },
               {
-                "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
               },
               {
-                "symbol": "create_program_release_schedule"
+                "symbol": "set_paused"
               }
             ],
             "data": {
               "vec": [
+                "void",
                 {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
@@ -2603,6 +3468,14 @@
                 {
                   "u64": 50
                 }
+========
+                  "bool": true
+                },
+                {
+                  "bool": true
+                },
+                "void"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               ]
             }
           }
@@ -2613,73 +3486,76 @@
     {
       "event": {
         "ext": "v0",
-        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
-        "type_": "diagnostic",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "type_": "contract",
         "body": {
           "v0": {
             "topics": [
               {
-                "symbol": "fn_return"
-              },
-              {
-                "symbol": "create_program_release_schedule"
+                "symbol": "PauseSt"
               }
             ],
             "data": {
               "map": [
                 {
                   "key": {
-                    "symbol": "amount"
+                    "symbol": "admin"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "i128": {
                       "hi": 0,
                       "lo": 100000
                     }
+========
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
                 },
                 {
                   "key": {
-                    "symbol": "recipient"
+                    "symbol": "operation"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+========
+                    "symbol": "release"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
                 },
                 {
                   "key": {
-                    "symbol": "release_timestamp"
+                    "symbol": "paused"
                   },
                   "val": {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                     "u64": 50
+========
+                    "bool": true
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                   }
                 },
                 {
                   "key": {
-                    "symbol": "released"
-                  },
-                  "val": {
-                    "bool": false
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "released_at"
+                    "symbol": "reason"
                   },
                   "val": "void"
                 },
                 {
                   "key": {
-                    "symbol": "released_by"
+                    "symbol": "receipt_id"
                   },
-                  "val": "void"
+                  "val": {
+                    "u64": 3
+                  }
                 },
                 {
                   "key": {
-                    "symbol": "schedule_id"
+                    "symbol": "timestamp"
                   },
                   "val": {
-                    "u64": 1
+                    "u64": 0
                   }
                 }
               ]
@@ -2692,6 +3568,7 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": null,
         "type_": "diagnostic",
         "body": {
@@ -2756,11 +3633,15 @@
       "event": {
         "ext": "v0",
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+========
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "contract",
         "body": {
           "v0": {
             "topics": [
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "symbol": "transfer"
               },
               {
@@ -2778,6 +3659,60 @@
                 "hi": 0,
                 "lo": 100000
               }
+========
+                "symbol": "PauseSt"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "admin"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "operation"
+                  },
+                  "val": {
+                    "symbol": "refund"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "paused"
+                  },
+                  "val": {
+                    "bool": true
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reason"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "receipt_id"
+                  },
+                  "val": {
+                    "u64": 4
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": 0
+                  }
+                }
+              ]
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
             }
           }
         }
@@ -2787,7 +3722,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+========
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -2796,7 +3735,11 @@
                 "symbol": "fn_return"
               },
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "symbol": "transfer"
+========
+                "symbol": "set_paused"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
               }
             ],
             "data": "void"
@@ -2808,12 +3751,17 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+========
+        "contract_id": null,
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
             "topics": [
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "symbol": "fn_return"
               },
               {
@@ -2822,6 +3770,19 @@
             ],
             "data": {
               "u32": 1
+========
+                "symbol": "fn_call"
+              },
+              {
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
+              },
+              {
+                "symbol": "emergency_withdraw"
+              }
+            ],
+            "data": {
+              "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
             }
           }
         }
@@ -2831,12 +3792,17 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
         "contract_id": null,
+========
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
             "topics": [
               {
+<<<<<<<< HEAD:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_mixed_payouts_and_schedules.1.json
                 "symbol": "fn_call"
               },
               {
@@ -2941,6 +3907,80 @@
                     "i128": {
                       "hi": 0,
                       "lo": 300000
+========
+                "symbol": "log"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "string": "caught panic 'Not paused' from contract function 'Symbol(obj#519)'"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "string": "caught error from function"
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "string": "contract call failed"
+                },
+                {
+                  "symbol": "emergency_withdraw"
+                },
+                {
+                  "vec": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"
+>>>>>>>> upstream/master:contracts/program-escrow/test_snapshots/test_pause/test_rbac_emergency_withdraw_ignores_release_and_refund_pause.1.json
                     }
                   }
                 },
@@ -2972,6 +4012,31 @@
                   }
                 }
               ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "string": "escalating error to panic"
             }
           }
         }

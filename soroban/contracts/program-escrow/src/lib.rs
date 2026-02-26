@@ -1,6 +1,7 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String,
+    contract, contracterror, contractimpl, contracttype, symbol_short, symbol_short, token, Address, Env,
+    String,
     Vec,
 };
 
@@ -20,6 +21,7 @@ pub enum Error {
     DuplicateProgramId = 7,
     InvalidAmount = 8,
     InvalidName = 9,
+    ContractDeprecated = 10,
     JurisdictionKycRequired = 10,
     JurisdictionFundingLimitExceeded = 11,
     JurisdictionPaused = 12,
@@ -35,21 +37,29 @@ pub enum ProgramStatus {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Program {
-    pub admin: Address,
-    pub name: String,
-    pub total_funding: i128,
-    pub status: ProgramStatus,
-    pub jurisdiction: Option<ProgramJurisdictionConfig>,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgramJurisdictionConfig {
     pub tag: Option<String>,
     pub requires_kyc: bool,
     pub max_funding: Option<i128>,
     pub registration_paused: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum OptionalJurisdiction {
+    None,
+    Some(ProgramJurisdictionConfig),
+}
+
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Program {
+    pub admin: Address,
+    pub name: String,
+    pub total_funding: i128,
+    pub status: ProgramStatus,
+    pub jurisdiction: OptionalJurisdiction,
 }
 
 #[contracttype]
@@ -61,6 +71,14 @@ pub struct ProgramRegistrationItem {
     pub total_funding: i128,
 }
 
+/// Kill-switch state: when deprecated is true, new program registrations are blocked.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationState {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgramRegistrationWithJurisdictionItem {
@@ -68,9 +86,9 @@ pub struct ProgramRegistrationWithJurisdictionItem {
     pub admin: Address,
     pub name: String,
     pub total_funding: i128,
-    pub jurisdiction: Option<ProgramJurisdictionConfig>,
+    pub jurisdiction: OptionalJurisdiction,
     pub kyc_attested: Option<bool>,
-}
+} 
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -91,6 +109,7 @@ pub enum DataKey {
     Admin,
     Token,
     Program(u64),
+    DeprecationState,
 }
 
 #[contract]
@@ -109,11 +128,11 @@ impl ProgramEscrowContract {
     }
 
     fn enforce_jurisdiction_rules(
-        jurisdiction: &Option<ProgramJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
         total_funding: i128,
         kyc_attested: Option<bool>,
     ) -> Result<(), Error> {
-        if let Some(config) = jurisdiction {
+        if let OptionalJurisdiction::Some(config) = jurisdiction {
             if config.registration_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -136,10 +155,10 @@ impl ProgramEscrowContract {
         program_id: u64,
         admin: Address,
         total_funding: i128,
-        jurisdiction: &Option<ProgramJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) {
         let (jurisdiction_tag, requires_kyc, max_funding, registration_paused) =
-            if let Some(config) = jurisdiction {
+            if let OptionalJurisdiction::Some(config) = jurisdiction {
                 (
                     config.tag.clone(),
                     config.requires_kyc,
@@ -176,7 +195,7 @@ impl ProgramEscrowContract {
         Ok(())
     }
 
-    /// Register a single program.
+    /// Register a single program. Fails with ContractDeprecated when the contract has been deprecated.
     pub fn register_program(
         env: Env,
         program_id: u64,
@@ -184,29 +203,32 @@ impl ProgramEscrowContract {
         name: String,
         total_funding: i128,
     ) -> Result<(), Error> {
-        Self::register_program_with_jurisdiction(
+        Self::register_prog_w_juris(
             env,
             program_id,
             admin,
             name,
             total_funding,
-            None,
+            OptionalJurisdiction::None,
             None,
         )
     }
 
     /// Register a single program with optional jurisdiction controls.
-    pub fn register_program_with_jurisdiction(
+    pub fn register_prog_w_juris(
         env: Env,
         program_id: u64,
         admin: Address,
         name: String,
         total_funding: i128,
-        jurisdiction: Option<ProgramJurisdictionConfig>,
+        jurisdiction: OptionalJurisdiction,
         kyc_attested: Option<bool>,
     ) -> Result<(), Error> {
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
+        }
+        if Self::get_deprecation_state(&env).deprecated {
+            return Err(Error::ContractDeprecated);
         }
         let contract_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         contract_admin.require_auth();
@@ -267,6 +289,9 @@ impl ProgramEscrowContract {
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
         }
+        if Self::get_deprecation_state(&env).deprecated {
+            return Err(Error::ContractDeprecated);
+        }
         let contract_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         contract_admin.require_auth();
 
@@ -323,7 +348,7 @@ impl ProgramEscrowContract {
                 name: item.name.clone(),
                 total_funding: item.total_funding,
                 status: ProgramStatus::Active,
-                jurisdiction: None,
+                jurisdiction: OptionalJurisdiction::None,
             };
             env.storage()
                 .persistent()
@@ -334,7 +359,7 @@ impl ProgramEscrowContract {
                 item.program_id,
                 item.admin.clone(),
                 item.total_funding,
-                &None,
+                &OptionalJurisdiction::None,
             );
             registered_count += 1;
         }
@@ -343,7 +368,7 @@ impl ProgramEscrowContract {
     }
 
     /// Batch register programs with optional jurisdiction controls.
-    pub fn batch_register_programs_with_jurisdiction(
+    pub fn batch_reg_progs_w_juris(
         env: Env,
         items: Vec<ProgramRegistrationWithJurisdictionItem>,
     ) -> Result<u32, Error> {
@@ -440,11 +465,51 @@ impl ProgramEscrowContract {
             .ok_or(Error::ProgramNotFound)
     }
 
+    fn get_deprecation_state(env: &Env) -> DeprecationState {
+        env.storage()
+            .instance()
+            .get(&DataKey::DeprecationState)
+            .unwrap_or(DeprecationState {
+                deprecated: false,
+                migration_target: None,
+            })
+    }
+
+    /// Set deprecation (kill switch) and optional migration target. Admin only.
+    /// When deprecated is true, new register_program and batch_register_programs are blocked.
+    pub fn set_deprecated(
+        env: Env,
+        deprecated: bool,
+        migration_target: Option<Address>,
+    ) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        let state = DeprecationState {
+            deprecated,
+            migration_target: migration_target.clone(),
+        };
+        env.storage().instance().set(&DataKey::DeprecationState, &state);
+        env.events().publish(
+            (symbol_short!("deprec"),),
+            (state.deprecated, state.migration_target, admin, env.ledger().timestamp()),
+        );
+        Ok(())
+    }
+
+    /// View: returns whether the contract is deprecated and the optional migration target.
+    pub fn get_deprecation_status(env: Env) -> DeprecationState {
+        Self::get_deprecation_state(&env)
+    }
+
     /// Read jurisdiction configuration for a program.
     pub fn get_program_jurisdiction(
         env: Env,
         program_id: u64,
-    ) -> Result<Option<ProgramJurisdictionConfig>, Error> {
+    ) -> Result<OptionalJurisdiction, Error> {
         let program = Self::get_program(env, program_id)?;
         Ok(program.jurisdiction)
     }

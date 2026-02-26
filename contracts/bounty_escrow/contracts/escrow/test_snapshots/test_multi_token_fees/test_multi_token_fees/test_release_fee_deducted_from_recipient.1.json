@@ -33,6 +33,7 @@
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
               "function_name": "update_fee_config",
               "args": [
+<<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_release_fee_deducted_from_recipient.1.json
                 {
                   "i128": {
                     "hi": 0,
@@ -43,6 +44,13 @@
                   "i128": {
                     "hi": 0,
                     "lo": 200
+========
+                "void",
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 500
+>>>>>>>> upstream/master:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_fee_charged_in_escrow_token_single_contract.1.json
                   }
                 },
                 {
@@ -592,7 +600,11 @@
                               "val": {
                                 "i128": {
                                   "hi": 0,
+<<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_release_fee_deducted_from_recipient.1.json
                                   "lo": 200
+========
+                                  "lo": 500
+>>>>>>>> upstream/master:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_fee_charged_in_escrow_token_single_contract.1.json
                                 }
                               }
                             }
@@ -1355,6 +1367,7 @@
             ],
             "data": {
               "vec": [
+<<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_release_fee_deducted_from_recipient.1.json
                 {
                   "i128": {
                     "hi": 0,
@@ -1365,6 +1378,13 @@
                   "i128": {
                     "hi": 0,
                     "lo": 200
+========
+                "void",
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 500
+>>>>>>>> upstream/master:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_fee_charged_in_escrow_token_single_contract.1.json
                   }
                 },
                 {
@@ -1428,7 +1448,11 @@
                   "val": {
                     "i128": {
                       "hi": 0,
+<<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_release_fee_deducted_from_recipient.1.json
                       "lo": 200
+========
+                      "lo": 500
+>>>>>>>> upstream/master:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_fee_charged_in_escrow_token_single_contract.1.json
                     }
                   }
                 },
