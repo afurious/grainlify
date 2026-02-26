@@ -28,7 +28,9 @@ impl<'a> RbacSetup<'a> {
         let outsider = Address::generate(&env);
 
         let token_admin = Address::generate(&env);
-        let token_id = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
+        let token_id = env
+            .register_stellar_asset_contract_v2(token_admin.clone())
+            .address();
 
         let program_id = String::from_str(&env, "RBAC-Test");
 
@@ -37,7 +39,7 @@ impl<'a> RbacSetup<'a> {
 
         // Initialize program with operator
         // Note: Currently init_program doesn't have auth, so we can just call it
-        client.init_program(&program_id, &operator, &token_id);
+        client.init_program(&program_id, &operator, &token_id, &admin.clone(, &None, &None), &None, &None);
 
         // Initialize circuit breaker with pauser
         // caller is None for first setting
@@ -141,7 +143,9 @@ fn test_pauser_can_reset_and_configure_circuit_breaker() {
     setup.env.mock_all_auths();
     setup.client.reset_circuit_breaker(&setup.pauser);
 
-    setup.client.configure_circuit_breaker(&setup.pauser, &5, &2, &20);
+    setup
+        .client
+        .configure_circuit_breaker(&setup.pauser, &5, &2, &20);
 }
 
 #[test]

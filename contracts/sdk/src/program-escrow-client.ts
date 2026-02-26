@@ -28,6 +28,8 @@ export interface ProgramData {
   payout_history: PayoutRecord[];
   token_address: string;
   risk_flags: number;
+  /** Initial liquidity provided by the program creator. */
+  initial_liquidity: bigint;
 }
 
 export interface PayoutRecord {
@@ -42,6 +44,10 @@ export interface ProgramReleaseSchedule {
   amount: bigint;
   release_timestamp: number;
   released: boolean;
+  /** Timestamp when the schedule was released (undefined if not yet released). */
+  released_at?: number;
+  /** Address that triggered the release (undefined if not yet released). */
+  released_by?: string;
 }
 
 /**

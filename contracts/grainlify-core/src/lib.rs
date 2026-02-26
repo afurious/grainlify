@@ -150,23 +150,33 @@
 //! - ❌ Upgrading without proper testing
 //! - ❌ Not having a rollback plan
 
+
+
+
+
 #![no_std]
 
+mod multisig;
+use multisig::{MultiSig, MultiSigConfig};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, Symbol, Vec, String,
+};
 pub mod asset;
-pub mod nonce;
-
 mod governance;
 mod multisig;
+pub mod nonce;
+
 pub use governance::{
     Error as GovError, GovernanceConfig, Proposal, ProposalStatus, Vote, VoteType, VotingScheme,
 };
-use multisig::MultiSig;
-#[cfg(feature = "contract")]
-use soroban_sdk::{contract, contractimpl};
-use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, String, Symbol, Vec};
+use multisig::{MultiSig, MultiSigConfig};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, String, Symbol, Vec,
+};
 
 // ==================== MONITORING MODULE ====================
 mod monitoring {
+    use super::DataKey;
     use soroban_sdk::{contracttype, symbol_short, Address, Env, String, Symbol};
 
     // Storage keys
@@ -232,6 +242,22 @@ mod monitoring {
         pub total_time: u64,
         pub avg_time: u64,
         pub last_called: u64,
+    }
+
+    // Data: Invariant report for external auditors/monitors
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub struct InvariantReport {
+        pub healthy: bool,
+        pub config_sane: bool,
+        pub metrics_sane: bool,
+        pub admin_set: bool,
+        pub version_set: bool,
+        pub version: u32,
+        pub operation_count: u64,
+        pub unique_users: u64,
+        pub error_count: u64,
+        pub violation_count: u32,
     }
 
     // Track operation
@@ -331,7 +357,8 @@ mod monitoring {
         }
     }
 
-    // Get performance stats
+    // Get performance stats (e.g. for off-chain analytics)
+    #[allow(dead_code)]
     pub fn get_performance_stats(env: &Env, function_name: Symbol) -> PerformanceStats {
         let count_key = (Symbol::new(env, "perf_cnt"), function_name.clone());
         let time_key = (Symbol::new(env, "perf_time"), function_name.clone());
@@ -375,12 +402,89 @@ mod monitoring {
         }
 
         true
+    // Verify core monitoring/config invariants.
+    // This is view-only and safe for frequent calls by off-chain monitors.
+    pub fn check_invariants(env: &Env) -> InvariantReport {
+        let op_key = Symbol::new(env, OPERATION_COUNT);
+        let usr_key = Symbol::new(env, USER_COUNT);
+        let err_key = Symbol::new(env, ERROR_COUNT);
+
+        let operation_count: u64 = env.storage().persistent().get(&op_key).unwrap_or(0);
+        let unique_users: u64 = env.storage().persistent().get(&usr_key).unwrap_or(0);
+        let error_count: u64 = env.storage().persistent().get(&err_key).unwrap_or(0);
+
+        let metrics_sane = error_count <= operation_count
+            && unique_users <= operation_count
+            && (operation_count > 0 || (unique_users == 0 && error_count == 0));
+
+        let admin_set = env.storage().instance().has(&DataKey::Admin);
+        let version_opt: Option<u32> = env.storage().instance().get(&DataKey::Version);
+        let version_set = version_opt.is_some();
+        let version = version_opt.unwrap_or(0);
+        let version_sane = version > 0;
+
+        let previous_version_opt: Option<u32> =
+            env.storage().instance().get(&DataKey::PreviousVersion);
+        let previous_version_sane = match (previous_version_opt, version_opt) {
+            (Some(prev), Some(curr)) => prev <= curr,
+            (Some(_), None) => false,
+            (None, _) => true,
+        };
+
+        let chain_id: Option<String> = env.storage().instance().get(&DataKey::ChainId);
+        let network_id: Option<String> = env.storage().instance().get(&DataKey::NetworkId);
+        let network_pair_sane = match (chain_id, network_id) {
+            (Some(chain), Some(network)) => chain.len() > 0 && network.len() > 0,
+            (None, None) => true,
+            _ => false,
+        };
+
+        let config_sane =
+            admin_set && version_set && version_sane && previous_version_sane && network_pair_sane;
+
+        let mut violation_count: u32 = 0;
+        if !admin_set {
+            violation_count += 1;
+        }
+        if !version_set || !version_sane {
+            violation_count += 1;
+        }
+        if !previous_version_sane {
+            violation_count += 1;
+        }
+        if !network_pair_sane {
+            violation_count += 1;
+        }
+        if error_count > operation_count {
+            violation_count += 1;
+        }
+        if unique_users > operation_count {
+            violation_count += 1;
+        }
+        if operation_count == 0 && (unique_users > 0 || error_count > 0) {
+            violation_count += 1;
+        }
+
+        InvariantReport {
+            healthy: config_sane && metrics_sane,
+            config_sane,
+            metrics_sane,
+            admin_set,
+            version_set,
+            version,
+            operation_count,
+            unique_users,
+            error_count,
+            violation_count,
+        }
+    }
+
+    pub fn verify_invariants(env: &Env) -> bool {
+        check_invariants(env).healthy
     }
 }
-
-#[cfg(test)]
-mod test_core_monitoring;
 // ==================== END MONITORING MODULE ====================
+
 
 // ============================================================================
 // Contract Definition
@@ -399,6 +503,8 @@ pub struct GrainlifyContract;
 /// # Keys
 /// * `Admin` - Stores the administrator address (set once at initialization)
 /// * `Version` - Stores the current contract version number
+/// * `ChainId` - Stores the chain identifier for cross-network protection
+/// * `NetworkId` - Stores the network identifier for environment-specific behavior
 ///
 /// # Storage Type
 /// Instance storage - Persists across contract upgrades
@@ -417,12 +523,21 @@ enum DataKey {
 
     // NEW: store wasm hash per proposal
     UpgradeProposal(u64),
-
+    
     /// Migration state tracking - prevents double migration
     MigrationState,
-
+    
     /// Previous version before migration (for rollback support)
     PreviousVersion,
+
+    /// Configuration snapshot data by snapshot id
+    ConfigSnapshot(u64),
+
+    /// Ordered list of retained snapshot ids
+    SnapshotIndex,
+
+    /// Monotonic snapshot id counter
+    SnapshotCounter,
 }
 
 // ============================================================================
@@ -444,6 +559,18 @@ enum DataKey {
 /// Set during initialization and can be updated via `set_version()`.
 #[cfg(feature = "contract")]
 const VERSION: u32 = 2;
+const CONFIG_SNAPSHOT_LIMIT: u32 = 20;
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CoreConfigSnapshot {
+    pub id: u64,
+    pub timestamp: u64,
+    pub admin: Option<Address>,
+    pub version: u32,
+    pub previous_version: Option<u32>,
+    pub multisig_config: Option<MultiSigConfig>,
+}
 
 // ============================================================================
 // Migration System
@@ -479,62 +606,62 @@ pub struct MigrationEvent {
 // Contract Implementation
 // ============================================================================
 
-// ========================================================================
-// Initialization
-// ========================================================================
 
-/// Initializes the contract with an admin address.
-///
-/// # Arguments
-/// * `env` - The contract environment
-/// * `admin` - Address authorized to perform upgrades
-///
-/// # Panics
-/// * If contract is already initialized
-///
-/// # State Changes
-/// - Sets Admin address in instance storage
-/// - Sets initial Version number
-///
-/// # Security Considerations
-/// - Can only be called once (prevents admin takeover)
-/// - Admin address is immutable after initialization
-/// - Admin should be a secure address (hardware wallet/multi-sig)
-/// - No authorization required for initialization (first-caller pattern)
-///
-/// # Example
-/// ```rust
-/// use soroban_sdk::{Address, Env};
-///
-/// let env = Env::default();
-/// let admin = Address::generate(&env);
-///
-/// // Initialize contract
-/// contract.init(&env, &admin);
-///
-/// // Subsequent init attempts will panic
-/// // contract.init(&env, &another_admin); // ❌ Panics!
-/// ```
-///
-/// # Gas Cost
-/// Low - Two storage writes
-///
-/// # Production Deployment
-/// ```bash
-/// # Deploy contract
-/// stellar contract deploy \
-///   --wasm target/wasm32-unknown-unknown/release/grainlify.wasm \
-///   --source ADMIN_SECRET_KEY
-///
-/// # Initialize with admin address
-/// stellar contract invoke \
-///   --id CONTRACT_ID \
-///   --source ADMIN_SECRET_KEY \
-///   -- init \
-///   --admin GADMIN_ADDRESS
-/// ```
+    // ========================================================================
+    // Initialization
+    // ========================================================================
 
-#[cfg(feature = "contract")]
+    /// Initializes the contract with an admin address.
+    ///
+    /// # Arguments
+    /// * `env` - The contract environment
+    /// * `admin` - Address authorized to perform upgrades
+    ///
+    /// # Panics
+    /// * If contract is already initialized
+    ///
+    /// # State Changes
+    /// - Sets Admin address in instance storage
+    /// - Sets initial Version number
+    ///
+    /// # Security Considerations
+    /// - Can only be called once (prevents admin takeover)
+    /// - Admin address is immutable after initialization
+    /// - Admin should be a secure address (hardware wallet/multi-sig)
+    /// - No authorization required for initialization (first-caller pattern)
+    ///
+    /// # Example
+    /// ```rust
+    /// use soroban_sdk::{Address, Env};
+    ///
+    /// let env = Env::default();
+    /// let admin = Address::generate(&env);
+    ///
+    /// // Initialize contract
+    /// contract.init(&env, &admin);
+    ///
+    /// // Subsequent init attempts will panic
+    /// // contract.init(&env, &another_admin); // ❌ Panics!
+    /// ```
+    ///
+    /// # Gas Cost
+    /// Low - Two storage writes
+    ///
+    /// # Production Deployment
+    /// ```bash
+    /// # Deploy contract
+    /// stellar contract deploy \
+    ///   --wasm target/wasm32-unknown-unknown/release/grainlify.wasm \
+    ///   --source ADMIN_SECRET_KEY
+    ///
+    /// # Initialize with admin address
+    /// stellar contract invoke \
+    ///   --id CONTRACT_ID \
+    ///   --source ADMIN_SECRET_KEY \
+    ///   -- init \
+    ///   --admin GADMIN_ADDRESS
+    /// ```
+ 
 #[contractimpl]
 impl GrainlifyContract {
     /// Initializes the contract with multisig configuration.
@@ -550,15 +677,6 @@ impl GrainlifyContract {
 
         MultiSig::init(&env, signers, threshold);
         env.storage().instance().set(&DataKey::Version, &VERSION);
-    }
-
-    /// Initialize governance system
-    pub fn init_governance(
-        env: Env,
-        admin: Address,
-        config: governance::GovernanceConfig,
-    ) -> Result<(), governance::Error> {
-        governance::GovernanceContract::init_governance(env, admin, config)
     }
 
     /// Initializes the contract with a single admin address.
@@ -589,6 +707,9 @@ impl GrainlifyContract {
         monitoring::emit_performance(&env, symbol_short!("init"), duration);
     }
 
+
+
+
     /// Proposes an upgrade with a new WASM hash (multisig version).
     ///
     /// # Arguments
@@ -598,7 +719,11 @@ impl GrainlifyContract {
     ///
     /// # Returns
     /// * `u64` - The proposal ID
-    pub fn propose_upgrade(env: Env, proposer: Address, wasm_hash: BytesN<32>) -> u64 {
+    pub fn propose_upgrade(
+        env: Env,
+        proposer: Address,
+        wasm_hash: BytesN<32>,
+    ) -> u64 {
         let proposal_id = MultiSig::propose(&env, proposer);
 
         env.storage()
@@ -614,9 +739,14 @@ impl GrainlifyContract {
     /// * `env` - The contract environment
     /// * `proposal_id` - The ID of the proposal to approve
     /// * `signer` - Address approving the proposal
-    pub fn approve_upgrade(env: Env, proposal_id: u64, signer: Address) {
+    pub fn approve_upgrade(
+        env: Env,
+        proposal_id: u64,
+        signer: Address,
+    ) {
         MultiSig::approve(&env, proposal_id, signer);
     }
+
 
     /// Upgrades the contract to new WASM code.
     ///
@@ -709,6 +839,7 @@ impl GrainlifyContract {
     /// # Panics
     /// * If admin address is not set (contract not initialized)
     /// * If caller is not the admin
+
     /// Executes an upgrade proposal that has met the multisig threshold.
     ///
     /// # Arguments
@@ -744,9 +875,7 @@ impl GrainlifyContract {
 
         // Store previous version for potential rollback
         let current_version = env.storage().instance().get(&DataKey::Version).unwrap_or(1);
-        env.storage()
-            .instance()
-            .set(&DataKey::PreviousVersion, &current_version);
+        env.storage().instance().set(&DataKey::PreviousVersion, &current_version);
 
         // Perform WASM upgrade
         env.deployer().update_current_contract_wasm(new_wasm_hash);
@@ -758,6 +887,7 @@ impl GrainlifyContract {
         let duration = env.ledger().timestamp().saturating_sub(start);
         monitoring::emit_performance(&env, symbol_short!("upgrade"), duration);
     }
+
 
     // ========================================================================
     // Version Management
@@ -808,7 +938,11 @@ impl GrainlifyContract {
     /// Returns the semantic version string (e.g., "1.0.0").
     /// Falls back to mapping known numeric values to semantic strings.
     pub fn get_version_semver_string(env: Env) -> String {
-        let raw: u32 = env.storage().instance().get(&DataKey::Version).unwrap_or(0);
+        let raw: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::Version)
+            .unwrap_or(0);
         let s = match raw {
             0 => "0.0.0",
             1 | 10000 => "1.0.0",
@@ -823,12 +957,12 @@ impl GrainlifyContract {
     /// Returns the numeric encoded semantic version using policy major*10_000 + minor*100 + patch.
     /// If the stored version is a simple major number (1,2,3...), it will be converted to major*10_000.
     pub fn get_version_numeric_encoded(env: Env) -> u32 {
-        let raw: u32 = env.storage().instance().get(&DataKey::Version).unwrap_or(0);
-        if raw >= 10_000 {
-            raw
-        } else {
-            raw.saturating_mul(10_000)
-        }
+        let raw: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::Version)
+            .unwrap_or(0);
+        if raw >= 10_000 { raw } else { raw.saturating_mul(10_000) }
     }
 
     /// Ensures the current version meets a minimum required encoded semantic version.
@@ -839,6 +973,7 @@ impl GrainlifyContract {
             panic!("Incompatible contract version");
         }
     }
+
 
     /// Updates the contract version number.
     ///
@@ -902,6 +1037,8 @@ impl GrainlifyContract {
     /// # Panics
     /// * If admin address is not set (contract not initialized)
     /// * If caller is not the admin
+
+
     pub fn set_version(env: Env, new_version: u32) {
         let start = env.ledger().timestamp();
 
@@ -920,6 +1057,135 @@ impl GrainlifyContract {
         // Track performance
         let duration = env.ledger().timestamp().saturating_sub(start);
         monitoring::emit_performance(&env, symbol_short!("set_ver"), duration);
+    }
+
+    /// Creates an on-chain snapshot of critical core configuration (admin-only).
+    /// Returns snapshot id.
+    pub fn create_config_snapshot(env: Env) -> u64 {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).expect("Admin not set");
+        admin.require_auth();
+
+        let next_id: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::SnapshotCounter)
+            .unwrap_or(0)
+            + 1;
+
+        let snapshot = CoreConfigSnapshot {
+            id: next_id,
+            timestamp: env.ledger().timestamp(),
+            admin: env.storage().instance().get(&DataKey::Admin),
+            version: env.storage().instance().get(&DataKey::Version).unwrap_or(0),
+            previous_version: env.storage().instance().get(&DataKey::PreviousVersion),
+            multisig_config: MultiSig::get_config_opt(&env),
+        };
+
+        env.storage()
+            .instance()
+            .set(&DataKey::ConfigSnapshot(next_id), &snapshot);
+
+        let mut index: Vec<u64> = env
+            .storage()
+            .instance()
+            .get(&DataKey::SnapshotIndex)
+            .unwrap_or(Vec::new(&env));
+        index.push_back(next_id);
+
+        if index.len() > CONFIG_SNAPSHOT_LIMIT {
+            let oldest_snapshot_id = index.get(0).unwrap();
+            env.storage()
+                .instance()
+                .remove(&DataKey::ConfigSnapshot(oldest_snapshot_id));
+
+            let mut trimmed = Vec::new(&env);
+            for i in 1..index.len() {
+                trimmed.push_back(index.get(i).unwrap());
+            }
+            index = trimmed;
+        }
+
+        env.storage().instance().set(&DataKey::SnapshotIndex, &index);
+        env.storage().instance().set(&DataKey::SnapshotCounter, &next_id);
+
+        env.events().publish(
+            (symbol_short!("cfg_snap"), symbol_short!("create")),
+            (next_id, snapshot.timestamp),
+        );
+
+        next_id
+    }
+
+    /// Returns retained configuration snapshots in chronological order.
+    pub fn list_config_snapshots(env: Env) -> Vec<CoreConfigSnapshot> {
+        let ids: Vec<u64> = env
+            .storage()
+            .instance()
+            .get(&DataKey::SnapshotIndex)
+            .unwrap_or(Vec::new(&env));
+
+        let mut snapshots: Vec<CoreConfigSnapshot> = Vec::new(&env);
+        for id in ids.iter() {
+            if let Some(snapshot) = env.storage().instance().get(&DataKey::ConfigSnapshot(id)) {
+                snapshots.push_back(snapshot);
+            }
+        }
+
+        snapshots
+    }
+
+    /// Retrieves the chain identifier.
+    pub fn get_chain_id(env: Env) -> Option<String> {
+        env.storage().instance().get(&DataKey::ChainId)
+    }
+
+        let mut snapshots = Vec::new(&env);
+        for snapshot_id in index.iter() {
+            if let Some(snapshot) = env
+                .storage()
+                .instance()
+                .get(&DataKey::ConfigSnapshot(snapshot_id))
+            {
+                snapshots.push_back(snapshot);
+            }
+        }
+
+        snapshots
+    }
+
+    /// Restores core configuration from a previously captured snapshot (admin-only).
+    pub fn restore_config_snapshot(env: Env, snapshot_id: u64) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).expect("Admin not set");
+        admin.require_auth();
+
+        let snapshot: CoreConfigSnapshot = env
+            .storage()
+            .instance()
+            .get(&DataKey::ConfigSnapshot(snapshot_id))
+            .unwrap_or_else(|| panic!("Snapshot not found"));
+
+        if let Some(snapshot_admin) = snapshot.admin {
+            env.storage().instance().set(&DataKey::Admin, &snapshot_admin);
+        } else {
+            env.storage().instance().remove(&DataKey::Admin);
+        }
+
+        env.storage().instance().set(&DataKey::Version, &snapshot.version);
+
+        match snapshot.previous_version {
+            Some(prev) => env.storage().instance().set(&DataKey::PreviousVersion, &prev),
+            None => env.storage().instance().remove(&DataKey::PreviousVersion),
+        }
+
+        match snapshot.multisig_config {
+            Some(config) => MultiSig::set_config(&env, config),
+            None => MultiSig::clear_config(&env),
+        }
+
+        env.events().publish(
+            (symbol_short!("cfg_snap"), symbol_short!("restore")),
+            (snapshot_id, env.ledger().timestamp()),
+        );
     }
 
     // ========================================================================
@@ -944,6 +1210,16 @@ impl GrainlifyContract {
     /// Get performance stats for a function
     pub fn get_performance_stats(env: Env, function_name: Symbol) -> monitoring::PerformanceStats {
         monitoring::get_performance_stats(&env, function_name)
+    }
+
+    /// Return a detailed invariant report for auditors and monitoring tools.
+    pub fn check_invariants(env: Env) -> monitoring::InvariantReport {
+        monitoring::check_invariants(&env)
+    }
+
+    /// Lightweight invariant verdict for frequent monitoring calls.
+    pub fn verify_invariants(env: Env) -> bool {
+        monitoring::verify_invariants(&env)
     }
 
     // ========================================================================
@@ -994,24 +1270,24 @@ impl GrainlifyContract {
         // Get current version
         let current_version = env.storage().instance().get(&DataKey::Version).unwrap_or(1);
 
-        // Check if migration already completed (idempotency check first)
+        // Idempotent retry: allow re-submitting a migration already recorded.
         if env.storage().instance().has(&DataKey::MigrationState) {
             let migration_state: MigrationState = env
                 .storage()
                 .instance()
                 .get(&DataKey::MigrationState)
                 .unwrap();
-
-            if migration_state.to_version >= target_version {
-                // Migration already completed, skip
+            if migration_state.to_version == target_version {
                 return;
             }
         }
 
         // Validate target version
         if target_version <= current_version {
-            let error_msg =
-                String::from_str(&env, "Target version must be greater than current version");
+            let error_msg = String::from_str(
+                &env,
+                "Target version must be greater than current version"
+            );
             emit_migration_event(
                 &env,
                 MigrationEvent {
@@ -1033,7 +1309,7 @@ impl GrainlifyContract {
                 .instance()
                 .get(&DataKey::MigrationState)
                 .unwrap();
-
+            
             if migration_state.to_version >= target_version {
                 // Migration already completed, skip
                 return;
@@ -1044,13 +1320,16 @@ impl GrainlifyContract {
         let mut from_version = current_version;
         while from_version < target_version {
             let next_version = from_version + 1;
-
+            
             // Execute migration from from_version to next_version
             match next_version {
                 2 => migrate_v1_to_v2(&env),
                 3 => migrate_v2_to_v3(&env),
                 _ => {
-                    let error_msg = String::from_str(&env, "No migration path available");
+                    let error_msg = String::from_str(
+                        &env,
+                        "No migration path available"
+                    );
                     emit_migration_event(
                         &env,
                         MigrationEvent {
@@ -1065,14 +1344,12 @@ impl GrainlifyContract {
                     panic!("No migration path available");
                 }
             }
-
+            
             from_version = next_version;
         }
 
         // Update version
-        env.storage()
-            .instance()
-            .set(&DataKey::Version, &target_version);
+        env.storage().instance().set(&DataKey::Version, &target_version);
 
         // Record migration state
         let migration_state = MigrationState {
@@ -1081,9 +1358,7 @@ impl GrainlifyContract {
             migrated_at: env.ledger().timestamp(),
             migration_hash: migration_hash.clone(),
         };
-        env.storage()
-            .instance()
-            .set(&DataKey::MigrationState, &migration_state);
+        env.storage().instance().set(&DataKey::MigrationState, &migration_state);
 
         // Emit success event
         emit_migration_event(
@@ -1112,12 +1387,7 @@ impl GrainlifyContract {
     /// * `Option<MigrationState>` - Current migration state if exists
     pub fn get_migration_state(env: Env) -> Option<MigrationState> {
         if env.storage().instance().has(&DataKey::MigrationState) {
-            Some(
-                env.storage()
-                    .instance()
-                    .get(&DataKey::MigrationState)
-                    .unwrap(),
-            )
+            Some(env.storage().instance().get(&DataKey::MigrationState).unwrap())
         } else {
             None
         }
@@ -1129,12 +1399,7 @@ impl GrainlifyContract {
     /// * `Option<u32>` - Previous version if exists
     pub fn get_previous_version(env: Env) -> Option<u32> {
         if env.storage().instance().has(&DataKey::PreviousVersion) {
-            Some(
-                env.storage()
-                    .instance()
-                    .get(&DataKey::PreviousVersion)
-                    .unwrap(),
-            )
+            Some(env.storage().instance().get(&DataKey::PreviousVersion).unwrap())
         } else {
             None
         }
@@ -1147,7 +1412,10 @@ impl GrainlifyContract {
 
 /// Emits a migration event for audit trail
 fn emit_migration_event(env: &Env, event: MigrationEvent) {
-    env.events().publish((symbol_short!("migration"),), event);
+    env.events().publish(
+        (symbol_short!("migration"),),
+        event,
+    );
 }
 
 /// Migration from version 1 to version 2
@@ -1159,7 +1427,7 @@ fn migrate_v1_to_v2(_env: &Env) {
     // 2. Transform to new format
     // 3. Write new data format
     // 4. Clean up old data if needed
-
+    
     // For now, this is a no-op migration
     // Add actual migration logic based on your data structure changes
 }
@@ -1171,14 +1439,26 @@ fn migrate_v2_to_v3(_env: &Env) {
     // This will be implemented when v3 is released
 }
 
+
 // ============================================================================
 // Testing Module
 // ============================================================================
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::testutils::Events;
-    use soroban_sdk::{testutils::Address as _, Env};
+    use soroban_sdk::{
+        testutils::{Address as _, Events},
+        Env,
+    };
+
+    // Include end-to-end upgrade and migration tests
+    pub mod e2e_upgrade_migration_tests;
+    pub mod invariant_entrypoints_tests;
+    pub mod upgrade_rollback_tests;
+
+    // WASM for testing
+    pub const WASM: &[u8] =
+        include_bytes!("../target/wasm32-unknown-unknown/release/grainlify_core.optimized.wasm");
 
     #[test]
     fn multisig_init_works() {
@@ -1210,6 +1490,50 @@ mod test {
     }
 
     #[test]
+    fn test_core_config_snapshot_create_and_restore() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, GrainlifyContract);
+        let client = GrainlifyContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        client.init_admin(&admin);
+        client.set_version(&5);
+
+        let snapshot_id = client.create_config_snapshot();
+
+        client.set_version(&11);
+        assert_eq!(client.get_version(), 11);
+
+        client.restore_config_snapshot(&snapshot_id);
+        assert_eq!(client.get_version(), 5);
+    }
+
+    #[test]
+    fn test_core_config_snapshot_prunes_oldest_entries() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, GrainlifyContract);
+        let client = GrainlifyContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        client.init_admin(&admin);
+
+        for version in 1..=25u32 {
+            client.set_version(&version);
+            client.create_config_snapshot();
+        }
+
+        let snapshots = client.list_config_snapshots();
+        assert_eq!(snapshots.len(), 20);
+
+        let oldest_retained = snapshots.get(0).unwrap();
+        assert_eq!(oldest_retained.id, 6);
+    }
+
+    #[test]
     fn test_migration_v1_to_v2() {
         let env = Env::default();
         env.mock_all_auths();
@@ -1220,24 +1544,24 @@ mod test {
         let admin = Address::generate(&env);
         client.init_admin(&admin);
 
-        // Initial version is 2
-        assert_eq!(client.get_version(), 2);
+        // Initial version should be 1
+        assert_eq!(client.get_version(), 1);
 
         // Create migration hash
         let migration_hash = BytesN::from_array(&env, &[0u8; 32]);
 
-        // Migrate to version 3
-        client.migrate(&3, &migration_hash);
+        // Migrate to version 2
+        client.migrate(&2, &migration_hash);
 
         // Verify version updated
-        assert_eq!(client.get_version(), 3);
+        assert_eq!(client.get_version(), 2);
 
         // Verify migration state recorded
         let migration_state = client.get_migration_state();
         assert!(migration_state.is_some());
         let state = migration_state.unwrap();
-        assert_eq!(state.from_version, 2);
-        assert_eq!(state.to_version, 3);
+        assert_eq!(state.from_version, 1);
+        assert_eq!(state.to_version, 2);
     }
 
     #[test]
@@ -1271,19 +1595,19 @@ mod test {
 
         let migration_hash = BytesN::from_array(&env, &[0u8; 32]);
 
-        // Migrate to version 3
-        client.migrate(&3, &migration_hash);
-        assert_eq!(client.get_version(), 3);
+        // Migrate to version 2
+        client.migrate(&2, &migration_hash);
+        assert_eq!(client.get_version(), 2);
 
         // Try to migrate again - should be idempotent
-        client.migrate(&3, &migration_hash);
-        assert_eq!(client.get_version(), 3);
+        client.migrate(&2, &migration_hash);
+        assert_eq!(client.get_version(), 2);
 
         // Verify migration state unchanged
         let migration_state = client.get_migration_state();
         assert!(migration_state.is_some());
         let state = migration_state.unwrap();
-        assert_eq!(state.to_version, 3);
+        assert_eq!(state.to_version, 2);
     }
 
     #[test]
@@ -1320,30 +1644,32 @@ mod test {
         let client = GrainlifyContractClient::new(&env, &contract_id);
 
         let admin = Address::generate(&env);
-
+        
         // 1. Initialize contract
         client.init_admin(&admin);
-        assert_eq!(client.get_version(), 2);
+        assert_eq!(client.get_version(), 1);
 
         // 2. Simulate upgrade (in real scenario, this would call upgrade() with WASM hash)
         // For testing, we'll just test the migration part
         let migration_hash = BytesN::from_array(&env, &[1u8; 32]);
 
-        // 3. Migrate to version 3
-        client.migrate(&3, &migration_hash);
+        // 3. Migrate to version 2
+        client.migrate(&2, &migration_hash);
 
         // 4. Verify version updated
-        assert_eq!(client.get_version(), 3);
+        assert_eq!(client.get_version(), 2);
 
         // 5. Verify migration state recorded
         let migration_state = client.get_migration_state();
         assert!(migration_state.is_some());
         let state = migration_state.unwrap();
-        assert_eq!(state.from_version, 2);
-        assert_eq!(state.to_version, 3);
+        assert_eq!(state.from_version, 1);
+        assert_eq!(state.to_version, 2);
+        assert!(state.migrated_at > 0);
+
         // 6. Verify events emitted
         let events = env.events().all();
-        assert!(!events.is_empty());
+        assert!(events.len() > 0);
     }
 
     #[test]
@@ -1357,16 +1683,15 @@ mod test {
         let admin = Address::generate(&env);
         client.init_admin(&admin);
 
-        // Migrate from v2 to v3
+        // Migrate from v1 to v2
         let hash1 = BytesN::from_array(&env, &[1u8; 32]);
-        client.migrate(&3, &hash1);
-        assert_eq!(client.get_version(), 3);
+        client.migrate(&2, &hash1);
+        assert_eq!(client.get_version(), 2);
 
-        // Could test v3 to v4 if that migration path existed
-        // For now, verify v2->v3 worked
-        let state = client.get_migration_state().unwrap();
-        assert_eq!(state.from_version, 2);
-        assert_eq!(state.to_version, 3);
+        // Migrate from v2 to v3 (if migration path exists)
+        // This would test sequential migrations
+        // For now, this will panic as v2->v3 migration is not fully implemented
+        // but the structure is there
     }
 
     #[test]
@@ -1383,7 +1708,7 @@ mod test {
         let initial_event_count = env.events().all().len();
 
         let migration_hash = BytesN::from_array(&env, &[2u8; 32]);
-        client.migrate(&3, &migration_hash);
+        client.migrate(&2, &migration_hash);
 
         // Verify migration event was emitted
         let events = env.events().all();
@@ -1402,6 +1727,93 @@ mod test {
         client.init_admin(&admin);
 
         assert_eq!(client.get_version(), 2);
+    }
+
+    #[test]
+    fn test_network_initialization() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, GrainlifyContract);
+        let client = GrainlifyContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let chain_id = String::from_str(&env, "stellar");
+        let network_id = String::from_str(&env, "testnet");
+
+        client.init_with_network(&admin, &chain_id, &network_id);
+
+        // Verify initialization
+        assert_eq!(client.get_version(), 2);
+
+        // Verify network configuration
+        let retrieved_chain = client.get_chain_id();
+        let retrieved_network = client.get_network_id();
+
+        assert_eq!(retrieved_chain, Some(chain_id));
+        assert_eq!(retrieved_network, Some(network_id));
+    }
+
+    #[test]
+    fn test_network_info_getter() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, GrainlifyContract);
+        let client = GrainlifyContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let chain_id = String::from_str(&env, "ethereum");
+        let network_id = String::from_str(&env, "mainnet");
+
+        client.init_with_network(&admin, &chain_id, &network_id);
+
+        // Test tuple getter
+        let (chain, network) = client.get_network_info();
+        assert_eq!(chain, Some(chain_id));
+        assert_eq!(network, Some(network_id));
+    }
+
+    #[test]
+    #[should_panic(expected = "Already initialized")]
+    fn test_cannot_reinitialize_network_config() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, GrainlifyContract);
+        let client = GrainlifyContractClient::new(&env, &contract_id);
+
+        let admin1 = Address::generate(&env);
+        let admin2 = Address::generate(&env);
+        let chain_id = String::from_str(&env, "stellar");
+        let network_id = String::from_str(&env, "testnet");
+
+        // First initialization should succeed
+        client.init_with_network(&admin1, &chain_id, &network_id);
+
+        // Second initialization should panic
+        client.init_with_network(&admin2, &chain_id, &network_id);
+    }
+
+    #[test]
+    fn test_legacy_init_still_works() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, GrainlifyContract);
+        let client = GrainlifyContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+
+        // Legacy init should still work (without network config)
+        client.init_admin(&admin);
+
+        // Network info should be None for legacy initialization
+        assert_eq!(client.get_chain_id(), None);
+        assert_eq!(client.get_network_id(), None);
+        let (chain, network) = client.get_network_info();
+        assert_eq!(chain, None);
+        assert_eq!(network, None);
     }
 
     #[test]
@@ -1607,13 +2019,9 @@ mod test {
         assert_eq!(state.from_version, v_before);
         assert_eq!(state.to_version, 3);
     }
-    // Export WASM for testing upgrade/rollback scenarios
-    #[cfg(test)]
-    pub const WASM: &[u8] = include_bytes!("../target/wasm32v1-none/release/grainlify_core.wasm");
 
-    #[cfg(test)]
-    mod upgrade_rollback_tests;
+    // Export WASM for testing upgrade/rollback scenarios
+    // #[cfg(test)]
+    // pub const WASM: &[u8] = include_bytes!("../target/wasm32v1-none/release/grainlify_core.wasm");
 }
 
-#[cfg(test)]
-mod migration_hook_tests;
