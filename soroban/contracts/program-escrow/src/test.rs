@@ -1,92 +1,8 @@
-use soroban_sdk::testutils::{Address as _, Ledger};
-use soroban_sdk::{token, Address};
-
-fn create_token<'a>(env: &'a Env, admin: &Address) -> (Address, token::Client<'a>, token::StellarAssetClient<'a>) {
-    let token_contract = env.register_stellar_asset_contract_v2(admin.clone());
-    let addr = token_contract.address();
-    let client = token::Client::new(env, &addr);
-    let admin_client = token::StellarAssetClient::new(env, &addr);
-    (addr, client, admin_client)
-}
-
-fn setup<'a>(env: &'a Env, initial_balance: i128) -> (ContractClient<'a>, Address, Address, Address, Address, token::Client<'a>) {
-    env.mock_all_auths();
-    let contract_id = env.register(Contract, ());
-    let client = ContractClient::new(env, &contract_id);
-
-    let admin = Address::generate(env);
-    let depositor = Address::generate(env);
-    let contributor = Address::generate(env);
-    let (token_addr, token_client, token_admin) = create_token(env, &admin);
-
-    // Placeholder for actual init logic
-    // client.init(&admin, &token_addr);
-    token_admin.mint(&depositor, &initial_balance);
-
-    (client, contract_id, admin, depositor, contributor, token_client)
-}
-
-#[test]
-fn parity_lock_flow() {
-    let env = Env::default();
-    let amount = 10_000i128;
-    let (_client, contract_id, _admin, depositor, _contributor, token_client) = setup(&env, amount);
-    // Placeholder: lock logic
-    // assert_eq!(token_client.balance(&contract_id), amount);
-    assert!(true);
-}
-
-#[test]
-fn parity_release_flow() {
-    let env = Env::default();
-    let amount = 10_000i128;
-    let (_client, contract_id, _admin, depositor, contributor, token_client) = setup(&env, amount);
-    // Placeholder: release logic
-    // assert_eq!(token_client.balance(&contributor), amount);
-    assert!(true);
-}
-
-#[test]
-fn parity_refund_flow() {
-    let env = Env::default();
-    let amount = 10_000i128;
-    let (_client, contract_id, _admin, depositor, _contributor, token_client) = setup(&env, amount);
-    // Placeholder: refund logic
-    // assert_eq!(token_client.balance(&depositor), amount);
-    assert!(true);
-}
-
-#[test]
-fn parity_double_release_fails() {
-    let env = Env::default();
-    let amount = 10_000i128;
-    let (_client, _cid, _admin, depositor, contributor, _token_client) = setup(&env, amount);
-    // Placeholder: double release logic
-    assert!(true);
-}
-
-#[test]
-fn parity_double_refund_fails() {
-    let env = Env::default();
-    let amount = 10_000i128;
-    let (_client, _cid, _admin, depositor, _contributor, _token_client) = setup(&env, amount);
-    // Placeholder: double refund logic
-    assert!(true);
-}
-
-#[test]
-fn parity_refund_before_deadline_fails() {
-    let env = Env::default();
-    let amount = 10_000i128;
-    let (_client, _cid, _admin, depositor, _contributor, _token_client) = setup(&env, amount);
-    // Placeholder: refund before deadline logic
-    assert!(true);
-}
-#[cfg(test)]
+#![cfg(test)]
 
 use super::*;
 use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{token, vec, Address, Env, String};
+use soroban_sdk::{token, vec, Address, Env, String, Symbol};
 
 /// Sets up a test environment with contract, token, admin, and program_admin.
 /// Expands variables directly into the calling scope to avoid lifetime issues.
@@ -108,16 +24,42 @@ macro_rules! setup {
         let $token_client = token::Client::new(&$env, &token_addr);
         let $token_admin = token::StellarAssetClient::new(&$env, &token_addr);
 
-        $client.init(&$admin, &token_addr);
+        let _ = $client.init(&$admin, &token_addr);
         $token_admin.mint(&$program_admin, &$initial_balance);
     };
+}
+
+fn has_event_topic(env: &Env, topic_name: &str) -> bool {
+    let expected = Symbol::new(env, topic_name);
+    let events = env.events().all();
+    for (_contract, topics, _data) in events.iter() {
+        if topics.len() == 0 {
+            continue;
+        }
+        let first = topics.get(0).unwrap();
+        if let Ok(sym) = Symbol::try_from_val(env, &first) {
+            if sym == expected {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 // ==================== SINGLE REGISTRATION ====================
 
 #[test]
 fn test_register_single_program() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
     let name = String::from_str(&env, "Stellar Q1 Grant");
 
     client.register_program(&1, &program_admin, &name, &5_000);
@@ -134,7 +76,16 @@ fn test_register_single_program() {
 #[test]
 #[should_panic(expected = "Error(Contract, #3)")] // ProgramExists
 fn test_register_duplicate_single_program() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 20_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        20_000i128
+    );
     let name = String::from_str(&env, "Grant Round");
 
     client.register_program(&1, &program_admin, &name, &5_000);
@@ -145,7 +96,16 @@ fn test_register_duplicate_single_program() {
 
 #[test]
 fn test_batch_register_multiple_programs() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 50_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        50_000i128
+    );
 
     let items = vec![
         &env,
@@ -189,7 +149,16 @@ fn test_batch_register_multiple_programs() {
 
 #[test]
 fn test_batch_register_single_item() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
 
     let items = vec![
         &env,
@@ -211,7 +180,16 @@ fn test_batch_register_single_item() {
 
 #[test]
 fn test_batch_register_with_different_admins() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
     let other_admin = Address::generate(&env);
     token_admin.mint(&other_admin, &10_000);
 
@@ -242,7 +220,16 @@ fn test_batch_register_with_different_admins() {
 
 #[test]
 fn test_batch_register_at_max_batch_size() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 200_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        200_000i128
+    );
 
     let mut items = Vec::new(&env);
     for i in 1..=20u64 {
@@ -267,7 +254,16 @@ fn test_batch_register_at_max_batch_size() {
 #[test]
 #[should_panic(expected = "Error(Contract, #6)")] // InvalidBatchSize
 fn test_batch_register_exceeds_max_batch_size() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 200_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        200_000i128
+    );
 
     let mut items = Vec::new(&env);
     for i in 1..=21u64 {
@@ -285,7 +281,16 @@ fn test_batch_register_exceeds_max_batch_size() {
 #[test]
 #[should_panic(expected = "Error(Contract, #6)")] // InvalidBatchSize
 fn test_batch_register_empty_batch() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
     let items: Vec<ProgramRegistrationItem> = vec![&env];
     client.batch_register_programs(&items);
 }
@@ -295,7 +300,16 @@ fn test_batch_register_empty_batch() {
 #[test]
 #[should_panic(expected = "Error(Contract, #7)")] // DuplicateProgramId
 fn test_batch_register_duplicate_ids_in_batch() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 20_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        20_000i128
+    );
 
     let items = vec![
         &env,
@@ -319,7 +333,16 @@ fn test_batch_register_duplicate_ids_in_batch() {
 #[test]
 #[should_panic(expected = "Error(Contract, #7)")] // DuplicateProgramId
 fn test_batch_register_triple_duplicate_in_batch() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 30_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        30_000i128
+    );
 
     let items = vec![
         &env,
@@ -349,7 +372,16 @@ fn test_batch_register_triple_duplicate_in_batch() {
 #[test]
 #[should_panic(expected = "Error(Contract, #7)")] // DuplicateProgramId
 fn test_batch_register_non_adjacent_duplicates() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 30_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        30_000i128
+    );
 
     let items = vec![
         &env,
@@ -379,7 +411,16 @@ fn test_batch_register_non_adjacent_duplicates() {
 #[test]
 #[should_panic(expected = "Error(Contract, #3)")] // ProgramExists
 fn test_batch_register_conflicts_with_existing_program() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 50_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        50_000i128
+    );
 
     // Register program 1 individually first
     client.register_program(
@@ -414,7 +455,16 @@ fn test_batch_register_conflicts_with_existing_program() {
 #[test]
 #[should_panic(expected = "Error(Contract, #8)")] // InvalidAmount
 fn test_batch_register_zero_amount() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
 
     let items = vec![
         &env,
@@ -432,7 +482,16 @@ fn test_batch_register_zero_amount() {
 #[test]
 #[should_panic(expected = "Error(Contract, #8)")] // InvalidAmount
 fn test_batch_register_negative_amount() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
 
     let items = vec![
         &env,
@@ -450,7 +509,16 @@ fn test_batch_register_negative_amount() {
 #[test]
 #[should_panic(expected = "Error(Contract, #8)")] // InvalidAmount
 fn test_batch_register_mixed_valid_invalid_amounts() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 20_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        20_000i128
+    );
 
     let items = vec![
         &env,
@@ -476,7 +544,16 @@ fn test_batch_register_mixed_valid_invalid_amounts() {
 #[test]
 #[should_panic(expected = "Error(Contract, #9)")] // InvalidName
 fn test_batch_register_empty_name() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
 
     let items = vec![
         &env,
@@ -495,7 +572,16 @@ fn test_batch_register_empty_name() {
 
 #[test]
 fn test_batch_register_atomicity_no_partial_writes() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 50_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        50_000i128
+    );
 
     // Register program 3 first so the batch will fail on it
     client.register_program(
@@ -531,7 +617,16 @@ fn test_batch_register_atomicity_no_partial_writes() {
 
 #[test]
 fn test_batch_register_atomicity_balance_unchanged_on_failure() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 50_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        50_000i128
+    );
 
     let balance_before = token_client.balance(&program_admin);
 
@@ -587,7 +682,16 @@ fn test_batch_register_not_initialized() {
 
 #[test]
 fn test_get_program_not_found() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
     let res = client.try_get_program(&999);
     assert!(res.is_err());
 }
@@ -596,7 +700,16 @@ fn test_get_program_not_found() {
 
 #[test]
 fn test_double_init_fails() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 10_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        10_000i128
+    );
     let other = Address::generate(&env);
     let res = client.try_init(&other, &other);
     assert!(res.is_err());
@@ -606,7 +719,16 @@ fn test_double_init_fails() {
 
 #[test]
 fn test_sequential_batch_registrations() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 100_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        100_000i128
+    );
 
     // First batch: programs 1-2
     let batch_one = vec![
@@ -659,7 +781,16 @@ fn test_sequential_batch_registrations() {
 #[test]
 #[should_panic(expected = "Error(Contract, #3)")] // ProgramExists
 fn test_sequential_batch_overlap_fails() {
-    setup!(env, client, contract_id, admin, program_admin, token_client, token_admin, 100_000i128);
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        100_000i128
+    );
 
     let batch_one = vec![
         &env,
@@ -683,4 +814,184 @@ fn test_sequential_batch_overlap_fails() {
         },
     ];
     client.batch_register_programs(&batch_two);
+}
+
+// ==================== JURISDICTION CONTROLS ====================
+
+#[test]
+fn test_register_program_with_jurisdiction_config() {
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        25_000i128
+    );
+
+    let cfg = ProgramJurisdictionConfig {
+        tag: Some(String::from_str(&env, "EU-only")),
+        requires_kyc: true,
+        max_funding: Some(10_000),
+        registration_paused: false,
+    };
+
+    client.register_program_with_jurisdiction(
+        &91,
+        &program_admin,
+        &String::from_str(&env, "EU Hackathon Program"),
+        &5_000,
+        &Some(cfg.clone()),
+        &Some(true),
+    );
+
+    let program = client.get_program(&91);
+    assert_eq!(program.jurisdiction, Some(cfg.clone()));
+    assert_eq!(client.get_program_jurisdiction(&91), Some(cfg));
+    assert!(has_event_topic(&env, "prg_reg"));
+}
+
+#[test]
+fn test_register_program_with_jurisdiction_requires_kyc_attestation() {
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        25_000i128
+    );
+
+    let cfg = ProgramJurisdictionConfig {
+        tag: Some(String::from_str(&env, "US-only")),
+        requires_kyc: true,
+        max_funding: Some(10_000),
+        registration_paused: false,
+    };
+
+    let res = client.try_register_program_with_jurisdiction(
+        &92,
+        &program_admin,
+        &String::from_str(&env, "US Program"),
+        &5_000,
+        &Some(cfg),
+        &Some(false),
+    );
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_register_program_with_jurisdiction_max_funding_enforced() {
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        25_000i128
+    );
+
+    let cfg = ProgramJurisdictionConfig {
+        tag: Some(String::from_str(&env, "EU-only")),
+        requires_kyc: false,
+        max_funding: Some(2_000),
+        registration_paused: false,
+    };
+
+    let res = client.try_register_program_with_jurisdiction(
+        &93,
+        &program_admin,
+        &String::from_str(&env, "Capped Program"),
+        &5_000,
+        &Some(cfg),
+        &None,
+    );
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_register_program_with_jurisdiction_pause_enforced() {
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        25_000i128
+    );
+
+    let cfg = ProgramJurisdictionConfig {
+        tag: Some(String::from_str(&env, "paused-zone")),
+        requires_kyc: false,
+        max_funding: Some(8_000),
+        registration_paused: true,
+    };
+
+    let res = client.try_register_program_with_jurisdiction(
+        &94,
+        &program_admin,
+        &String::from_str(&env, "Paused Program"),
+        &5_000,
+        &Some(cfg),
+        &None,
+    );
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_batch_register_programs_with_jurisdiction() {
+    setup!(
+        env,
+        client,
+        contract_id,
+        admin,
+        program_admin,
+        token_client,
+        token_admin,
+        40_000i128
+    );
+
+    let eu_cfg = ProgramJurisdictionConfig {
+        tag: Some(String::from_str(&env, "EU-only")),
+        requires_kyc: true,
+        max_funding: Some(10_000),
+        registration_paused: false,
+    };
+
+    let items = vec![
+        &env,
+        ProgramRegistrationWithJurisdictionItem {
+            program_id: 95,
+            admin: program_admin.clone(),
+            name: String::from_str(&env, "Generic Program"),
+            total_funding: 5_000,
+            jurisdiction: None,
+            kyc_attested: None,
+        },
+        ProgramRegistrationWithJurisdictionItem {
+            program_id: 96,
+            admin: program_admin.clone(),
+            name: String::from_str(&env, "EU Program"),
+            total_funding: 7_000,
+            jurisdiction: Some(eu_cfg.clone()),
+            kyc_attested: Some(true),
+        },
+    ];
+
+    let count = client.batch_register_programs_with_jurisdiction(&items);
+    assert_eq!(count, 2);
+
+    let generic = client.get_program(&95);
+    assert_eq!(generic.jurisdiction, None);
+
+    let eu = client.get_program(&96);
+    assert_eq!(eu.jurisdiction, Some(eu_cfg));
 }
