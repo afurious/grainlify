@@ -2504,6 +2504,15 @@ impl BountyEscrowContract {
             return Err(Error::BountyNotFound);
         }
 
+        // INTERACTION: external token transfer (CEI — state updated above)
+        let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let client = token::Client::new(&env, &token_addr);
+        client.transfer(
+            &env.current_contract_address(),
+            &contributor,
+            &payout_amount,
+        );
+
         events::emit_funds_released(
             &env,
             FundsReleased {
@@ -2661,6 +2670,26 @@ impl BountyEscrowContract {
 
         // GUARD: release reentrancy lock
         reentrancy_guard::release(&env);
+        Ok(())
+    }
+
+    /// Sets or clears the anonymous resolver address.
+    /// Only the admin can call this. The resolver is the trusted entity that
+    /// resolves anonymous escrow refunds via `refund_resolved`.
+    pub fn set_anonymous_resolver(env: Env, resolver: Option<Address>) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        match resolver {
+            Some(addr) => env
+                .storage()
+                .instance()
+                .set(&DataKey::AnonymousResolver, &addr),
+            None => env.storage().instance().remove(&DataKey::AnonymousResolver),
+        }
         Ok(())
     }
 
