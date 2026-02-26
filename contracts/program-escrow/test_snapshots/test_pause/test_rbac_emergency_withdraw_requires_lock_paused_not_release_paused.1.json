@@ -353,6 +353,14 @@
                       },
                       {
                         "key": {
+                          "symbol": "RcptID"
+                        },
+                        "val": {
+                          "u64": 1
+                        }
+                      },
+                      {
+                        "key": {
                           "symbol": "RelHist"
                         },
                         "val": {
@@ -377,6 +385,18 @@
                         },
                         "val": {
                           "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "MaintenanceMode"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "bool": false
                         }
                       },
                       {
@@ -428,18 +448,6 @@
                               }
                             }
                           ]
-                        }
-                      },
-                      {
-                        "key": {
-                          "vec": [
-                            {
-                              "symbol": "ReceiptCounter"
-                            }
-                          ]
-                        },
-                        "val": {
-                          "u64": 3
                         }
                       }
                     ]
@@ -1007,20 +1015,6 @@
                 },
                 {
                   "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 1
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
-                },
-                {
-                  "key": {
                     "symbol": "token_address"
                   },
                   "val": {
@@ -1393,14 +1387,6 @@
                 },
                 {
                   "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 2
-                  }
-                },
-                {
-                  "key": {
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -1602,7 +1588,7 @@
                     "symbol": "receipt_id"
                   },
                   "val": {
-                    "u64": 3
+                    "u64": 1
                   }
                 },
                 {
@@ -1682,7 +1668,7 @@
             "data": {
               "vec": [
                 {
-                  "string": "caught panic 'Not paused' from contract function 'Symbol(obj#503)'"
+                  "string": "caught panic 'Not paused' from contract function 'Symbol(obj#551)'"
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOLZM"

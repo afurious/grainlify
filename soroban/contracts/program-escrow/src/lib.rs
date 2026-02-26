@@ -35,21 +35,29 @@ pub enum ProgramStatus {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Program {
-    pub admin: Address,
-    pub name: String,
-    pub total_funding: i128,
-    pub status: ProgramStatus,
-    pub jurisdiction: Option<ProgramJurisdictionConfig>,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgramJurisdictionConfig {
     pub tag: Option<String>,
     pub requires_kyc: bool,
     pub max_funding: Option<i128>,
     pub registration_paused: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum OptionalJurisdiction {
+    None,
+    Some(ProgramJurisdictionConfig),
+}
+
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Program {
+    pub admin: Address,
+    pub name: String,
+    pub total_funding: i128,
+    pub status: ProgramStatus,
+    pub jurisdiction: OptionalJurisdiction,
 }
 
 #[contracttype]
@@ -68,9 +76,9 @@ pub struct ProgramRegistrationWithJurisdictionItem {
     pub admin: Address,
     pub name: String,
     pub total_funding: i128,
-    pub jurisdiction: Option<ProgramJurisdictionConfig>,
+    pub jurisdiction: OptionalJurisdiction,
     pub kyc_attested: Option<bool>,
-}
+} 
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -109,11 +117,11 @@ impl ProgramEscrowContract {
     }
 
     fn enforce_jurisdiction_rules(
-        jurisdiction: &Option<ProgramJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
         total_funding: i128,
         kyc_attested: Option<bool>,
     ) -> Result<(), Error> {
-        if let Some(config) = jurisdiction {
+        if let OptionalJurisdiction::Some(config) = jurisdiction {
             if config.registration_paused {
                 return Err(Error::JurisdictionPaused);
             }
@@ -136,10 +144,10 @@ impl ProgramEscrowContract {
         program_id: u64,
         admin: Address,
         total_funding: i128,
-        jurisdiction: &Option<ProgramJurisdictionConfig>,
+        jurisdiction: &OptionalJurisdiction,
     ) {
         let (jurisdiction_tag, requires_kyc, max_funding, registration_paused) =
-            if let Some(config) = jurisdiction {
+            if let OptionalJurisdiction::Some(config) = jurisdiction {
                 (
                     config.tag.clone(),
                     config.requires_kyc,
@@ -184,25 +192,25 @@ impl ProgramEscrowContract {
         name: String,
         total_funding: i128,
     ) -> Result<(), Error> {
-        Self::register_program_with_jurisdiction(
+        Self::register_prog_w_juris(
             env,
             program_id,
             admin,
             name,
             total_funding,
-            None,
+            OptionalJurisdiction::None,
             None,
         )
     }
 
     /// Register a single program with optional jurisdiction controls.
-    pub fn register_program_with_jurisdiction(
+    pub fn register_prog_w_juris(
         env: Env,
         program_id: u64,
         admin: Address,
         name: String,
         total_funding: i128,
-        jurisdiction: Option<ProgramJurisdictionConfig>,
+        jurisdiction: OptionalJurisdiction,
         kyc_attested: Option<bool>,
     ) -> Result<(), Error> {
         if !env.storage().instance().has(&DataKey::Admin) {
@@ -323,7 +331,7 @@ impl ProgramEscrowContract {
                 name: item.name.clone(),
                 total_funding: item.total_funding,
                 status: ProgramStatus::Active,
-                jurisdiction: None,
+                jurisdiction: OptionalJurisdiction::None,
             };
             env.storage()
                 .persistent()
@@ -334,7 +342,7 @@ impl ProgramEscrowContract {
                 item.program_id,
                 item.admin.clone(),
                 item.total_funding,
-                &None,
+                &OptionalJurisdiction::None,
             );
             registered_count += 1;
         }
@@ -343,7 +351,7 @@ impl ProgramEscrowContract {
     }
 
     /// Batch register programs with optional jurisdiction controls.
-    pub fn batch_register_programs_with_jurisdiction(
+    pub fn batch_reg_progs_w_juris(
         env: Env,
         items: Vec<ProgramRegistrationWithJurisdictionItem>,
     ) -> Result<u32, Error> {
@@ -444,7 +452,7 @@ impl ProgramEscrowContract {
     pub fn get_program_jurisdiction(
         env: Env,
         program_id: u64,
-    ) -> Result<Option<ProgramJurisdictionConfig>, Error> {
+    ) -> Result<OptionalJurisdiction, Error> {
         let program = Self::get_program(env, program_id)?;
         Ok(program.jurisdiction)
     }

@@ -1,5 +1,5 @@
-use crate::{CapabilityAction, DisputeOutcome, DisputeReason};
-use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env};
+use crate::{CapabilityAction, DisputeOutcome, DisputeReason, ReleaseType};
+use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol, String, Vec};
 
 pub const EVENT_VERSION_V2: u32 = 2;
 
@@ -216,7 +216,20 @@ pub struct TreasuryDistributionUpdated {
 }
 
 pub fn emit_treasury_distribution_updated(env: &Env, event: TreasuryDistributionUpdated) {
-    let topics = (symbol_short!("treasury_cfg"),);
+    let topics = (Symbol::new(env, "treasury_cfg"),);
+    env.events().publish(topics, event.clone());
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct MaintenanceModeChanged {
+    pub enabled: bool,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_maintenance_mode_changed(env: &Env, event: MaintenanceModeChanged) {
+    let topics = (symbol_short!("MaintSt"),);
     env.events().publish(topics, event.clone());
 }
 
@@ -242,7 +255,7 @@ pub struct TreasuryDistributionDetail {
 }
 
 pub fn emit_treasury_distribution(env: &Env, event: TreasuryDistribution) {
-    let topics = (symbol_short!("treasury_dist"),);
+    let topics = (Symbol::new(env, "treasury_dist"),);
     env.events().publish(topics, event.clone());
 }
 
@@ -702,6 +715,6 @@ pub struct SettlementCompleted {
 }
 
 pub fn emit_settlement_completed(env: &Env, event: SettlementCompleted) {
-    let topics = (symbol_short!("settle_done"), event.bounty_id);
+    let topics = (Symbol::new(env, "settle_done"), event.bounty_id);
     env.events().publish(topics, event.clone());
 }

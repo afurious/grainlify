@@ -822,12 +822,75 @@
                         "key": {
                           "vec": [
                             {
-                              "symbol": "ReceiptCounter"
+                              "symbol": "Admin"
                             }
                           ]
                         },
                         "val": {
-                          "u64": 12
+                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "MaintenanceMode"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "bool": false
+                        }
+                      },
+                      {
+                        "key": {
+                          "vec": [
+                            {
+                              "symbol": "PauseFlags"
+                            }
+                          ]
+                        },
+                        "val": {
+                          "map": [
+                            {
+                              "key": {
+                                "symbol": "lock_paused"
+                              },
+                              "val": {
+                                "bool": false
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "pause_reason"
+                              },
+                              "val": "void"
+                            },
+                            {
+                              "key": {
+                                "symbol": "paused_at"
+                              },
+                              "val": {
+                                "u64": 0
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "refund_paused"
+                              },
+                              "val": {
+                                "bool": false
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "release_paused"
+                              },
+                              "val": {
+                                "bool": false
+                              }
+                            }
+                          ]
                         }
                       }
                     ]
@@ -2335,20 +2398,6 @@
                 },
                 {
                   "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 1
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "reference_hash"
-                  },
-                  "val": "void"
-                },
-                {
-                  "key": {
                     "symbol": "token_address"
                   },
                   "val": {
@@ -2625,14 +2674,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 2
                   }
                 },
                 {
@@ -2915,14 +2956,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 3
                   }
                 },
                 {
@@ -3245,14 +3278,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 4
                   }
                 },
                 {
@@ -3606,14 +3631,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 5
                   }
                 },
                 {
@@ -3998,14 +4015,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 6
                   }
                 },
                 {
@@ -4421,14 +4430,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 7
                   }
                 },
                 {
@@ -4875,14 +4876,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 8
                   }
                 },
                 {
@@ -5360,14 +5353,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 9
                   }
                 },
                 {
@@ -5876,14 +5861,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 10
                   }
                 },
                 {
@@ -6423,14 +6400,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 11
                   }
                 },
                 {
@@ -7001,14 +6970,6 @@
                   },
                   "val": {
                     "string": "hack-2026"
-                  }
-                },
-                {
-                  "key": {
-                    "symbol": "receipt_id"
-                  },
-                  "val": {
-                    "u64": 12
                   }
                 },
                 {

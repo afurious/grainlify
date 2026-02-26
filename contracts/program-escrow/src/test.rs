@@ -745,13 +745,19 @@ fn test_batch_initialize_programs_success() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "prog-2"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     let count = client
         .try_batch_initialize_programs(&items)
         .unwrap()
@@ -784,13 +790,19 @@ fn test_batch_initialize_programs_duplicate_id_err() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: pid,
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     let res = client.try_batch_initialize_programs(&items);
     assert!(matches!(res, Err(Ok(BatchError::DuplicateProgramId))));
 }
@@ -830,6 +842,9 @@ fn test_batch_register_happy_path_five_programs() {
             authorized_payout_key: admin.clone(),
             token_address: token.clone(),
             reference_hash: None,
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
         });
     }
 
@@ -858,7 +873,10 @@ fn test_batch_register_single_item() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
 
     let count = client
         .try_batch_initialize_programs(&items)
@@ -883,6 +901,9 @@ fn test_batch_register_exceeds_max_batch_size() {
             authorized_payout_key: admin.clone(),
             token_address: token.clone(),
             reference_hash: None,
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
         });
     }
 
@@ -905,6 +926,9 @@ fn test_batch_register_at_exact_max_batch_size() {
             authorized_payout_key: admin.clone(),
             token_address: token.clone(),
             reference_hash: None,
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
         });
     }
 
@@ -935,7 +959,10 @@ fn test_batch_register_program_already_exists_error() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     client
         .try_batch_initialize_programs(&first)
         .unwrap()
@@ -948,13 +975,19 @@ fn test_batch_register_program_already_exists_error() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     second.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "existing"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
 
     let res = client.try_batch_initialize_programs(&second);
     assert!(matches!(res, Err(Ok(BatchError::ProgramAlreadyExists))));
@@ -978,19 +1011,28 @@ fn test_batch_register_all_or_nothing_on_duplicate() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "beta"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "alpha"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
 
     let res = client.try_batch_initialize_programs(&items);
     assert!(matches!(res, Err(Ok(BatchError::DuplicateProgramId))));
@@ -1014,19 +1056,28 @@ fn test_batch_register_duplicate_at_tail() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "dup-tail"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "dup-tail"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
 
     let res = client.try_batch_initialize_programs(&items);
     assert!(matches!(res, Err(Ok(BatchError::DuplicateProgramId))));
@@ -1049,13 +1100,19 @@ fn test_batch_register_different_auth_keys_and_tokens() {
         authorized_payout_key: admin_a.clone(),
         token_address: token_a.clone(),
         reference_hash: None,
-    });
+            creator: admin_a.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "prog-b"),
         authorized_payout_key: admin_b.clone(),
         token_address: token_b.clone(),
         reference_hash: None,
-    });
+            creator: admin_b.clone(),
+            initial_liquidity: None,
+        
+        });
 
     let count = client
         .try_batch_initialize_programs(&items)
@@ -1082,19 +1139,28 @@ fn test_batch_register_events_emitted_per_program() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "evt-2"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     items.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "evt-3"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
 
     client
         .try_batch_initialize_programs(&items)
@@ -1127,13 +1193,19 @@ fn test_batch_register_sequential_batches_no_conflict() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     batch1.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "b1-b"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     let c1 = client
         .try_batch_initialize_programs(&batch1)
         .unwrap()
@@ -1147,13 +1219,19 @@ fn test_batch_register_sequential_batches_no_conflict() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     batch2.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "b2-b"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     let c2 = client
         .try_batch_initialize_programs(&batch2)
         .unwrap()
@@ -1182,7 +1260,10 @@ fn test_batch_register_second_batch_conflicts_with_first() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     client
         .try_batch_initialize_programs(&batch1)
         .unwrap()
@@ -1195,13 +1276,19 @@ fn test_batch_register_second_batch_conflicts_with_first() {
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
     batch2.push_back(ProgramInitItem {
         program_id: String::from_str(&env, "shared"),
         authorized_payout_key: admin.clone(),
         token_address: token.clone(),
         reference_hash: None,
-    });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
 
     let res = client.try_batch_initialize_programs(&batch2);
     assert!(matches!(res, Err(Ok(BatchError::ProgramAlreadyExists))));
@@ -1238,7 +1325,10 @@ fn test_max_program_count_sequential_batches_queries_accurate() {
                 authorized_payout_key: admin.clone(),
                 token_address: token.clone(),
                 reference_hash: None,
-            });
+            creator: admin.clone(),
+            initial_liquidity: None,
+        
+        });
         }
         let count = client
             .try_batch_initialize_programs(&items)
