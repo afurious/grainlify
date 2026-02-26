@@ -141,7 +141,8 @@
 
 // ── Step 1: Add module declarations near the top of lib.rs ──────────────
 // (after `mod anti_abuse;` and before the contract struct)
-
+mod payout_splits;
+pub use payout_splits::{BeneficiarySplit, SplitConfig, SplitPayoutResult};
 mod claim_period;
 pub use claim_period::{ClaimRecord, ClaimStatus};
 #[cfg(test)]
@@ -373,7 +374,8 @@ pub enum DataKey {
     PendingClaim(String, u64),       // (program_id, schedule_id) -> ClaimRecord
     ClaimWindow,                     // u64 seconds (global config)
     PauseFlags,                      // PauseFlags struct
-    RateLimitConfig,                 // RateLimitConfig struct
+    RateLimitConfig,    
+    SplitConfig(String),              // RateLimitConfig struct
 }
 
 #[contracttype]
@@ -1882,12 +1884,53 @@ impl ProgramEscrowContract {
         claim_period::get_claim_window(&env)
     }
 }
+pub fn set_split_config(
+    env: Env,
+    program_id: String,
+    beneficiaries: soroban_sdk::Vec<payout_splits::BeneficiarySplit>,
+) -> payout_splits::SplitConfig {
+    payout_splits::set_split_config(&env, &program_id, beneficiaries)
+}
+
+/// Return the current split configuration, or `None` if not set.
+pub fn get_split_config(env: Env, program_id: String) -> Option<payout_splits::SplitConfig> {
+    payout_splits::get_split_config(&env, &program_id)
+}
+
+/// Deactivate the split configuration (does not erase it).
+///
+/// Only the `authorized_payout_key` may call this function.
+pub fn disable_split_config(env: Env, program_id: String) {
+    payout_splits::disable_split_config(&env, &program_id);
+}
+
+/// Distribute `total_amount` from the escrow according to the stored split ratios.
+///
+/// Dust (remainder after integer division) is awarded to the first beneficiary.
+/// Returns a `SplitPayoutResult` with totals and the updated remaining balance.
+
+
+/// Preview how `total_amount` would be distributed without executing any transfer.
+///
+/// Returns a Vec of `BeneficiarySplit` where `share_bps` holds the **computed
+/// token amount** (not the ratio), so callers can inspect exact distributions
+/// before committing.
+pub fn preview_split_payout(
+    env: Env,
+    program_id: String,
+    total_amount: i128,
+) -> soroban_sdk::Vec<payout_splits::BeneficiarySplit> {
+    payout_splits::preview_split(&env, &program_id, total_amount)
+}
+
 
 #[cfg(test)]
 mod test;
 
 #[cfg(test)]
 mod test_pause;
+
+#[cfg(test)] mod test_payout_splits;
 
 #[cfg(test)]
 #[cfg(any())]
