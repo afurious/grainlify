@@ -34,7 +34,6 @@
 ///                                         ▼
 ///                                       Active
 /// ```
-
 use super::*;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
@@ -86,7 +85,7 @@ fn setup_active_program(
     let (token_client, token_id) = fund_contract(env, &contract_id, amount);
     let admin = Address::generate(env);
     let program_id = String::from_str(env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     if amount > 0 {
         client.lock_program_funds(&amount);
     }
@@ -175,7 +174,7 @@ fn test_initialized_state_balance_is_zero() {
     let token_id = Address::generate(&env);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     let info = client.get_program_info();
     assert_eq!(info.total_funds, 0);
@@ -194,9 +193,9 @@ fn test_initialized_double_init_rejected() {
     let token_id = Address::generate(&env);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     // Second call must panic
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 }
 
 /// Payout from a zero-balance (Initialized) program must be rejected.
@@ -209,7 +208,7 @@ fn test_initialized_single_payout_zero_balance_rejected() {
     let token_id = Address::generate(&env);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     let r = Address::generate(&env);
     client.single_payout(&r, &100);
 }
@@ -224,7 +223,7 @@ fn test_initialized_batch_payout_zero_balance_rejected() {
     let token_id = Address::generate(&env);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     let r = Address::generate(&env);
     client.batch_payout(&vec![&env, r], &vec![&env, 100i128]);
 }
@@ -238,7 +237,7 @@ fn test_initialized_to_active_via_lock_funds() {
     let (_, token_id) = fund_contract(&env, &contract_id, 50_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     // Before lock: Initialized — balance is 0
     assert_eq!(client.get_remaining_balance(), 0);
@@ -294,7 +293,7 @@ fn test_active_top_up_lock_increases_balance() {
     let (_, token_id) = fund_contract(&env, &contract_id, 200_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     client.lock_program_funds(&80_000);
     assert_eq!(client.get_remaining_balance(), 80_000);
@@ -316,7 +315,7 @@ fn test_active_negative_lock_amount_rejected() {
     let token_id = Address::generate(&env);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&-1);
 }
 
@@ -339,10 +338,7 @@ fn test_active_batch_exceeds_balance_rejected() {
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
     // 30_000 + 30_000 = 60_000 > 50_000
-    client.batch_payout(
-        &vec![&env, r1, r2],
-        &vec![&env, 30_000i128, 30_000i128],
-    );
+    client.batch_payout(&vec![&env, r1, r2], &vec![&env, 30_000i128, 30_000i128]);
 }
 
 /// Zero-amount single payout must be rejected.
@@ -363,10 +359,7 @@ fn test_active_zero_amount_in_batch_rejected() {
     let (client, _admin, _cid, _token) = setup_active_program(&env, 50_000);
     let r1 = Address::generate(&env);
     let r2 = Address::generate(&env);
-    client.batch_payout(
-        &vec![&env, r1, r2],
-        &vec![&env, 100i128, 0i128],
-    );
+    client.batch_payout(&vec![&env, r1, r2], &vec![&env, 100i128, 0i128]);
 }
 
 /// Mismatched recipients/amounts vectors must be rejected.
@@ -399,7 +392,10 @@ fn test_active_payout_history_grows() {
     let r3 = Address::generate(&env);
 
     client.single_payout(&r1, &10_000);
-    client.batch_payout(&vec![&env, r2.clone(), r3.clone()], &vec![&env, 15_000i128, 5_000i128]);
+    client.batch_payout(
+        &vec![&env, r2.clone(), r3.clone()],
+        &vec![&env, 15_000i128, 5_000i128],
+    );
 
     let info = client.get_program_info();
     assert_eq!(info.payout_history.len(), 3);
@@ -422,7 +418,7 @@ fn test_paused_lock_operation_blocked() {
     let (_, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.initialize_contract(&admin);
     client.set_paused(&Some(true), &None, &None, &None::<soroban_sdk::String>);
 
@@ -440,7 +436,7 @@ fn test_paused_single_payout_blocked() {
     let (_, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
     client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
@@ -460,7 +456,7 @@ fn test_paused_batch_payout_blocked() {
     let (_, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
     client.set_paused(&None, &Some(true), &None, &None::<soroban_sdk::String>);
@@ -479,7 +475,7 @@ fn test_paused_to_active_resume_via_unpause() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
 
@@ -508,7 +504,7 @@ fn test_paused_lock_does_not_block_release() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
 
@@ -534,7 +530,7 @@ fn test_paused_release_does_not_block_lock() {
     let (_, token_id) = fund_contract(&env, &contract_id, 200_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
 
@@ -558,10 +554,15 @@ fn test_fully_paused_query_still_works() {
     let (_, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
-    client.set_paused(&Some(true), &Some(true), &Some(true), &None::<soroban_sdk::String>);
+    client.set_paused(
+        &Some(true),
+        &Some(true),
+        &Some(true),
+        &None::<soroban_sdk::String>,
+    );
 
     let flags = client.get_pause_flags();
     assert!(flags.lock_paused);
@@ -633,7 +634,7 @@ fn test_drained_further_payout_rejected() {
     let (client, _admin, _cid, _token) = setup_active_program(&env, 50_000);
     let r = Address::generate(&env);
     client.single_payout(&r, &50_000); // drains to 0
-    client.single_payout(&r, &1);     // must panic
+    client.single_payout(&r, &1); // must panic
 }
 
 /// Re-locking funds after drain transitions back to Active (Drained → Active).
@@ -646,7 +647,7 @@ fn test_drained_to_active_via_top_up() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 200_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
 
     // Drain
@@ -675,7 +676,7 @@ fn test_payout_history_preserved_across_states() {
     let (_, token_id) = fund_contract(&env, &contract_id, 300_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     // Active: first batch of payouts
     client.lock_program_funds(&200_000);
@@ -800,7 +801,7 @@ fn test_complete_lifecycle_all_transitions() {
     let program_id = String::from_str(&env, "hack-2026");
 
     // Uninitialized → Initialized
-    let data = client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    let data = client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     assert_eq!(data.total_funds, 0);
     assert_eq!(data.remaining_balance, 0);
 
@@ -881,7 +882,7 @@ fn test_initialized_with_initial_liquidity_becomes_active() {
     token_sac.mint(&creator, &75_000);
 
     let program_id = String::from_str(&env, "hack-2026");
-    let data = client.init_program(&program_id, &admin, &token_id, &creator, &Some(75_000));
+    let data = client.init_program(&program_id, &admin, &token_id, &creator, &Some(75_000), &None);
 
     // Program starts directly Active with funded balance
     assert_eq!(data.total_funds, 75_000);
@@ -909,7 +910,7 @@ fn test_initialized_with_zero_initial_liquidity_stays_initialized() {
     let token_id = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
 
-    let data = client.init_program(&program_id, &admin, &token_id, &creator, &Some(0));
+    let data = client.init_program(&program_id, &admin, &token_id, &creator, &Some(0), &None);
     assert_eq!(data.total_funds, 0);
     assert_eq!(data.remaining_balance, 0);
     assert_eq!(data.initial_liquidity, 0);
@@ -952,7 +953,7 @@ fn test_drained_double_init_still_rejected() {
     let new_admin = Address::generate(&env);
     let new_token = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026-v2");
-    client.init_program(&program_id, &new_admin, &new_token, &new_admin, &None);
+    client.init_program(&program_id, &new_admin, &new_token, &new_admin, &None, &None);
 }
 
 // ---------------------------------------------------------------------------
@@ -970,7 +971,7 @@ fn test_paused_release_allows_schedule_creation() {
     let (_, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
 
     // Set up admin and pause releases
@@ -1034,7 +1035,7 @@ fn test_paused_refund_does_not_block_lock_or_release() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 200_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
 
     client.initialize_contract(&admin);
@@ -1065,7 +1066,7 @@ fn test_emergency_withdraw_in_paused_state() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
 
     client.initialize_contract(&admin);
@@ -1088,7 +1089,7 @@ fn test_emergency_withdraw_rejected_when_not_paused() {
     let (_, token_id) = fund_contract(&env, &contract_id, 100_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
     client.initialize_contract(&admin);
 
@@ -1110,7 +1111,7 @@ fn test_multiple_drain_reactivate_cycles() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 500_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     let mut cumulative_total = 0i128;
     let mut payout_count = 0u32;
@@ -1175,7 +1176,7 @@ fn test_aggregate_stats_across_lifecycle() {
     let (_, token_id) = fund_contract(&env, &contract_id, 300_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     // Initialized: stats reflect empty program
     let stats = client.get_program_aggregate_stats();
@@ -1227,7 +1228,7 @@ fn test_initialized_schedule_creation_allowed() {
     let admin = Address::generate(&env);
     let token_id = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     let recipient = Address::generate(&env);
     let now = env.ledger().timestamp();
@@ -1246,7 +1247,7 @@ fn test_initialized_query_operations() {
     let admin = Address::generate(&env);
     let token_id = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
 
     // All query results should be empty / zero
     let info = client.get_program_info();
@@ -1315,7 +1316,7 @@ fn test_drained_reactivate_triggers_pending_schedule() {
     let (token_client, token_id) = fund_contract(&env, &contract_id, 200_000);
     let admin = Address::generate(&env);
     let program_id = String::from_str(&env, "hack-2026");
-    client.init_program(&program_id, &admin, &token_id, &admin, &None);
+    client.init_program(&program_id, &admin, &token_id, &admin, &None, &None);
     client.lock_program_funds(&100_000);
 
     // Create a future schedule then drain via payout
