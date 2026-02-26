@@ -131,3 +131,345 @@ pub const ERR_THRESHOLD_BREACHED: u32 = 2001;
 pub const ERR_INVALID_THRESHOLD_CONFIG: u32 = 2002;
 pub const ERR_COOLDOWN_ACTIVE: u32 = 2003;
 pub const ERR_WINDOW_NOT_EXPIRED: u32 = 2004;
+
+
+// ─────────────────────────────────────────────────────────
+// Configuration Management
+// ─────────────────────────────────────────────────────────
+
+/// Initialize threshold monitoring with default configuration
+pub fn init_threshold_monitor(env: &Env) {
+    let config = ThresholdConfig::default();
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::Config, &config);
+    
+    let metrics = WindowMetrics::new(env.ledger().timestamp());
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CurrentMetrics, &metrics);
+    
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CooldownMultiplier, &1u32);
+    
+    emit_config_event(env, symbol_short!("th_init"), &config);
+}
+
+/// Update threshold configuration (admin only - caller must enforce auth)
+pub fn set_threshold_config(env: &Env, config: ThresholdConfig) -> Result<(), u32> {
+    // Validate configuration
+    config.validate()
+        .map_err(|_| ERR_INVALID_THRESHOLD_CONFIG)?;
+    
+    // Get previous config for event
+    let prev_config = get_threshold_config(env);
+    
+    // Store new configuration
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::Config, &config);
+    
+    // Emit configuration update event
+    emit_config_update_event(env, &prev_config, &config);
+    
+    Ok(())
+}
+
+/// Get current threshold configuration
+pub fn get_threshold_config(env: &Env) -> ThresholdConfig {
+    env.storage()
+        .persistent()
+        .get(&ThresholdKey::Config)
+        .unwrap_or(ThresholdConfig::default())
+}
+
+
+// ─────────────────────────────────────────────────────────
+// Metrics Tracking and Window Management
+// ─────────────────────────────────────────────────────────
+
+/// Record a successful operation
+pub fn record_operation_success(env: &Env) {
+    rotate_window_if_needed(env);
+    
+    let mut metrics = get_current_metrics(env);
+    metrics.success_count += 1;
+    
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CurrentMetrics, &metrics);
+}
+
+/// Record a failed operation
+pub fn record_operation_failure(env: &Env) {
+    rotate_window_if_needed(env);
+    
+    let mut metrics = get_current_metrics(env);
+    metrics.failure_count += 1;
+    
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CurrentMetrics, &metrics);
+}
+
+/// Record an outflow transaction
+pub fn record_outflow(env: &Env, amount: i128) {
+    rotate_window_if_needed(env);
+    
+    let mut metrics = get_current_metrics(env);
+    metrics.total_outflow = metrics.total_outflow.saturating_add(amount);
+    
+    if amount > metrics.max_single_outflow {
+        metrics.max_single_outflow = amount;
+    }
+    
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CurrentMetrics, &metrics);
+}
+
+/// Get current window metrics
+pub fn get_current_metrics(env: &Env) -> WindowMetrics {
+    env.storage()
+        .persistent()
+        .get(&ThresholdKey::CurrentMetrics)
+        .unwrap_or_else(|| WindowMetrics::new(env.ledger().timestamp()))
+}
+
+/// Check if window has expired and rotate if needed
+fn rotate_window_if_needed(env: &Env) {
+    let config = get_threshold_config(env);
+    let metrics = get_current_metrics(env);
+    let now = env.ledger().timestamp();
+    
+    let window_end = metrics.window_start + config.time_window_secs;
+    
+    if now >= window_end {
+        // Archive current metrics
+        env.storage()
+            .persistent()
+            .set(&ThresholdKey::PreviousMetrics, &metrics);
+        
+        // Emit window rotation event
+        emit_window_rotation_event(env, &metrics);
+        
+        // Create new window
+        let new_metrics = WindowMetrics::new(now);
+        env.storage()
+            .persistent()
+            .set(&ThresholdKey::CurrentMetrics, &new_metrics);
+    }
+}
+
+
+// ─────────────────────────────────────────────────────────
+// Threshold Checking
+// ─────────────────────────────────────────────────────────
+
+/// Check if any thresholds are breached (call before operations)
+pub fn check_thresholds(env: &Env) -> Result<(), ThresholdBreach> {
+    rotate_window_if_needed(env);
+    
+    let config = get_threshold_config(env);
+    let metrics = get_current_metrics(env);
+    let now = env.ledger().timestamp();
+    
+    // Check failure rate threshold
+    if metrics.failure_count >= config.failure_rate_threshold {
+        let breach = ThresholdBreach {
+            metric_type: symbol_short!("failure"),
+            threshold_value: config.failure_rate_threshold as i128,
+            actual_value: metrics.failure_count as i128,
+            timestamp: now,
+            breach_count: metrics.breach_count + 1,
+        };
+        return Err(breach);
+    }
+    
+    // Check outflow volume threshold
+    if metrics.total_outflow >= config.outflow_volume_threshold {
+        let breach = ThresholdBreach {
+            metric_type: symbol_short!("outflow"),
+            threshold_value: config.outflow_volume_threshold,
+            actual_value: metrics.total_outflow,
+            timestamp: now,
+            breach_count: metrics.breach_count + 1,
+        };
+        return Err(breach);
+    }
+    
+    // Check max single payout threshold
+    if metrics.max_single_outflow >= config.max_single_payout {
+        let breach = ThresholdBreach {
+            metric_type: symbol_short!("single"),
+            threshold_value: config.max_single_payout,
+            actual_value: metrics.max_single_outflow,
+            timestamp: now,
+            breach_count: metrics.breach_count + 1,
+        };
+        return Err(breach);
+    }
+    
+    Ok(())
+}
+
+/// Check a single payout amount before execution
+pub fn check_single_payout_threshold(env: &Env, amount: i128) -> Result<(), ThresholdBreach> {
+    let config = get_threshold_config(env);
+    let now = env.ledger().timestamp();
+    let metrics = get_current_metrics(env);
+    
+    if amount >= config.max_single_payout {
+        let breach = ThresholdBreach {
+            metric_type: symbol_short!("single"),
+            threshold_value: config.max_single_payout,
+            actual_value: amount,
+            timestamp: now,
+            breach_count: metrics.breach_count + 1,
+        };
+        return Err(breach);
+    }
+    
+    Ok(())
+}
+
+
+// ─────────────────────────────────────────────────────────
+// Cooldown and Anti-Flapping Logic
+// ─────────────────────────────────────────────────────────
+
+/// Check if cooldown period is active
+pub fn is_cooldown_active(env: &Env) -> bool {
+    let last_cooldown_end: u64 = env
+        .storage()
+        .persistent()
+        .get(&ThresholdKey::LastCooldownEnd)
+        .unwrap_or(0);
+    
+    let now = env.ledger().timestamp();
+    now < last_cooldown_end
+}
+
+/// Get current cooldown multiplier
+pub fn get_cooldown_multiplier(env: &Env) -> u32 {
+    env.storage()
+        .persistent()
+        .get(&ThresholdKey::CooldownMultiplier)
+        .unwrap_or(1)
+}
+
+/// Apply cooldown after circuit opens
+pub fn apply_cooldown(env: &Env) {
+    let config = get_threshold_config(env);
+    let multiplier = get_cooldown_multiplier(env);
+    let now = env.ledger().timestamp();
+    
+    let cooldown_duration = config.cooldown_period_secs * (multiplier as u64);
+    let cooldown_end = now + cooldown_duration;
+    
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::LastCooldownEnd, &cooldown_end);
+}
+
+/// Increase cooldown multiplier for repeated breaches
+pub fn increase_cooldown_multiplier(env: &Env) {
+    let config = get_threshold_config(env);
+    let current_multiplier = get_cooldown_multiplier(env);
+    let new_multiplier = current_multiplier * config.cooldown_multiplier;
+    
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CooldownMultiplier, &new_multiplier);
+}
+
+/// Reset cooldown multiplier after stability period
+pub fn reset_cooldown_multiplier(env: &Env) {
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CooldownMultiplier, &1u32);
+}
+
+// ─────────────────────────────────────────────────────────
+// Manual Metrics Reset
+// ─────────────────────────────────────────────────────────
+
+/// Manually reset metrics (admin only - caller must enforce auth)
+pub fn reset_metrics(env: &Env, admin: &Address) {
+    let now = env.ledger().timestamp();
+    
+    // Create new window starting now
+    let new_metrics = WindowMetrics::new(now);
+    env.storage()
+        .persistent()
+        .set(&ThresholdKey::CurrentMetrics, &new_metrics);
+    
+    // Emit reset event
+    emit_metrics_reset_event(env, admin, now);
+}
+
+
+// ─────────────────────────────────────────────────────────
+// Event Emission
+// ─────────────────────────────────────────────────────────
+
+/// Emit threshold breach event
+pub fn emit_threshold_breach_event(env: &Env, breach: &ThresholdBreach) {
+    env.events().publish(
+        (symbol_short!("th_breach"), breach.metric_type.clone()),
+        (
+            breach.threshold_value,
+            breach.actual_value,
+            breach.timestamp,
+            breach.breach_count,
+        ),
+    );
+}
+
+/// Emit configuration initialization event
+fn emit_config_event(env: &Env, event_type: Symbol, config: &ThresholdConfig) {
+    env.events().publish(
+        (symbol_short!("th_cfg"), event_type),
+        (
+            config.failure_rate_threshold,
+            config.outflow_volume_threshold,
+            config.max_single_payout,
+            config.time_window_secs,
+        ),
+    );
+}
+
+/// Emit configuration update event
+fn emit_config_update_event(env: &Env, prev: &ThresholdConfig, new: &ThresholdConfig) {
+    env.events().publish(
+        (symbol_short!("th_cfg"), symbol_short!("update")),
+        (
+            prev.failure_rate_threshold,
+            new.failure_rate_threshold,
+            prev.outflow_volume_threshold,
+            new.outflow_volume_threshold,
+        ),
+    );
+}
+
+/// Emit window rotation event
+fn emit_window_rotation_event(env: &Env, metrics: &WindowMetrics) {
+    env.events().publish(
+        (symbol_short!("th_win"), symbol_short!("rotate")),
+        (
+            metrics.window_start,
+            metrics.failure_count,
+            metrics.success_count,
+            metrics.total_outflow,
+        ),
+    );
+}
+
+/// Emit metrics reset event
+fn emit_metrics_reset_event(env: &Env, admin: &Address, timestamp: u64) {
+    env.events().publish(
+        (symbol_short!("th_reset"),),
+        (admin.clone(), timestamp),
+    );
+}
