@@ -20,6 +20,10 @@ jobs:
     name: Format, Build, Test, and Stellar Build Check
     runs-on: macos-latest
 
+    defaults:
+      run:
+        working-directory: contracts/bounty_escrow
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,6 +103,8 @@ jobs:
           if [ ! -f "$wasm_file" ]; then
             echo "Error: WASM file not found"
             echo "Expected: $wasm_file"
+            echo "Available files in target directory:"
+            find . -name "*.wasm" -type f 2>/dev/null || echo "No WASM files found"
             exit 1
           fi
           echo "✓ Found WASM file"
@@ -108,8 +114,26 @@ jobs:
           fi
           echo "Contract built successfully for Stellar/Soroban deployment"
 
+      - name: Set up Stellar identity for tests
+        run: |
+          source $HOME/.cargo/env
+          # Create the grainlify-deployer identity needed by script tests
+          echo "Creating grainlify-deployer identity for tests..."
+          stellar keys generate grainlify-deployer || echo "Identity already exists"
+          stellar keys ls | grep grainlify-deployer || echo "Identity setup complete"
+
       - name: Run script tests
         run: |
+          chmod +x ../scripts/test_deploy_failures.sh
+          chmod +x ../scripts/test_upgrade_failures.sh
+          chmod +x ../scripts/test_all_script_failures.sh
+
+          echo "Running individual script tests..."
+          ../scripts/test_deploy_failures.sh
+          ../scripts/test_upgrade_failures.sh
+
+          echo "Running comprehensive script failure test suite..."
+          ../scripts/test_all_script_failures.sh
           chmod +x contracts/scripts/test_deploy_failures.sh
           chmod +x contracts/scripts/test_upgrade_failures.sh
           contracts/scripts/test_deploy_failures.sh
