@@ -4,7 +4,7 @@
 
 use super::*;
 use soroban_sdk::testutils::{Address as _, Ledger};
-use soroban_sdk::{token, Address, Env, String, Symbol};
+use soroban_sdk::{testutils::Events, TryFromVal, token, Address, Env, String, Symbol};
 
 fn create_token<'a>(
     env: &'a Env,
@@ -51,17 +51,12 @@ fn setup<'a>(
 }
 
 fn has_event_topic(env: &Env, topic_name: &str) -> bool {
-    let expected = Symbol::new(env, topic_name);
+    use soroban_sdk::IntoVal;
+    let expected: soroban_sdk::Val = Symbol::new(env, topic_name).into_val(env);
     let events = env.events().all();
     for (_contract, topics, _data) in events.iter() {
-        if topics.len() == 0 {
-            continue;
-        }
-        let first = topics.get(0).unwrap();
-        if let Ok(sym) = Symbol::try_from_val(env, &first) {
-            if sym == expected {
-                return true;
-            }
+        if topics.len() > 0 && topics.get(0).unwrap().get_payload() == expected.get_payload() {
+            return true;
         }
     }
     false
@@ -186,7 +181,7 @@ fn test_generic_escrow_has_no_jurisdiction_config() {
     client.lock_funds(&depositor, &bounty_id, &amount, &deadline);
 
     let cfg = client.get_escrow_jurisdiction(&bounty_id);
-    assert_eq!(cfg, None);
+    assert_eq!(cfg, OptionalJurisdiction::None);
 }
 
 // --- Jurisdiction: tagged escrows can override identity-limit enforcement ---
@@ -213,11 +208,11 @@ fn test_jurisdiction_tagged_escrow_can_skip_identity_limits() {
         &bounty_id,
         &amount,
         &deadline,
-        &Some(cfg.clone()),
+        &OptionalJurisdiction::Some(cfg.clone()),
     );
 
     let stored = client.get_escrow_jurisdiction(&bounty_id);
-    assert_eq!(stored, Some(cfg));
+    assert_eq!(stored, OptionalJurisdiction::Some(cfg));
 }
 
 #[test]
@@ -255,7 +250,7 @@ fn test_jurisdiction_lock_pause_blocks_new_locks() {
         &bounty_id,
         &amount,
         &deadline,
-        &Some(cfg),
+        &OptionalJurisdiction::Some(cfg),
     );
     assert!(res.is_err());
 }
@@ -278,7 +273,7 @@ fn test_jurisdiction_events_emitted() {
         max_lock_amount: Some(100_000),
     };
 
-    client.lock_funds_with_jurisdiction(&depositor, &bounty_id, &amount, &deadline, &Some(cfg));
+    client.lock_funds_with_jurisdiction(&depositor, &bounty_id, &amount, &deadline, &OptionalJurisdiction::Some(cfg));
     client.release_funds(&bounty_id, &contributor);
 
     assert!(has_event_topic(&env, "juris"));

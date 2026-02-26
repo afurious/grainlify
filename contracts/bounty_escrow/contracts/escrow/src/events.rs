@@ -1,5 +1,5 @@
-use crate::{CapabilityAction, DisputeOutcome, DisputeReason};
-use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env};
+use crate::{CapabilityAction, DisputeOutcome, DisputeReason, ReleaseType};
+use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol, String, Vec};
 
 pub const EVENT_VERSION_V2: u32 = 2;
 
@@ -216,7 +216,20 @@ pub struct TreasuryDistributionUpdated {
 }
 
 pub fn emit_treasury_distribution_updated(env: &Env, event: TreasuryDistributionUpdated) {
-    let topics = (symbol_short!("treasury_cfg"),);
+    let topics = (Symbol::new(env, "treasury_cfg"),);
+    env.events().publish(topics, event.clone());
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct MaintenanceModeChanged {
+    pub enabled: bool,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_maintenance_mode_changed(env: &Env, event: MaintenanceModeChanged) {
+    let topics = (symbol_short!("MaintSt"),);
     env.events().publish(topics, event.clone());
 }
 
@@ -242,7 +255,7 @@ pub struct TreasuryDistributionDetail {
 }
 
 pub fn emit_treasury_distribution(env: &Env, event: TreasuryDistribution) {
-    let topics = (symbol_short!("treasury_dist"),);
+    let topics = (Symbol::new(env, "treasury_dist"),);
     env.events().publish(topics, event.clone());
 }
 
@@ -257,6 +270,22 @@ pub struct BatchFundsReleased {
 
 pub fn emit_batch_funds_released(env: &Env, event: BatchFundsReleased) {
     let topics = (symbol_short!("b_rel"),);
+    env.events().publish(topics, event.clone());
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct RiskFlagsUpdated {
+    pub version: u32,
+    pub bounty_id: u64,
+    pub previous_flags: u32,
+    pub new_flags: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_risk_flags_updated(env: &Env, event: RiskFlagsUpdated) {
+    let topics = (symbol_short!("risk"), event.bounty_id);
     env.events().publish(topics, event.clone());
 }
 
@@ -466,6 +495,42 @@ pub fn emit_capability_revoked(env: &Env, event: CapabilityRevoked) {
     env.events().publish(topics, event);
 }
 
+/// Emitted when the contract is deprecated or un-deprecated (kill switch / migration path).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationStateChanged {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_deprecation_state_changed(env: &Env, event: DeprecationStateChanged) {
+    let topics = (symbol_short!("deprec"),);
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MetadataUpdated {
+    pub bounty_id: u64,
+    pub repo_id: u64,
+    pub issue_id: u64,
+    pub bounty_type: soroban_sdk::String,
+    pub reference_hash: Option<soroban_sdk::Bytes>,
+    pub timestamp: u64,
+}
+
+pub fn emit_metadata_updated(env: &Env, bounty_id: u64, metadata: crate::EscrowMetadata) {
+    let topics = (symbol_short!("meta_upd"), bounty_id);
+    let event = MetadataUpdated {
+        bounty_id,
+        repo_id: metadata.repo_id,
+        issue_id: metadata.issue_id,
+        bounty_type: metadata.bounty_type,
+        reference_hash: metadata.reference_hash,
+        timestamp: env.ledger().timestamp(),
+    };
+    env.events().publish(topics, event);
+}
+
 // ==================== Event Batching (Issue #676) ====================
 // Compact action summary for batch events. Indexers can decode a single
 // EventBatch instead of N individual events during high-volume periods.
@@ -641,5 +706,43 @@ pub struct AddressUnfrozenEvent {
 
 pub fn emit_address_unfrozen(env: &Env, event: AddressUnfrozenEvent) {
     let topics = (symbol_short!("addr_ufrz"),);
+    env.events().publish(topics, event.clone());
+}
+
+// ------------------------------------------------------------------------
+// Settlement Grace Period Events
+// ------------------------------------------------------------------------
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SettlementGracePeriodEntered {
+    pub version: u32,
+    pub bounty_id: u64,
+    pub grace_end_time: u64,
+    pub settlement_type: Symbol,
+    pub timestamp: u64,
+}
+
+pub fn emit_settlement_grace_period_entered(
+    env: &Env,
+    event: SettlementGracePeriodEntered,
+) {
+    let topics = (symbol_short!("grace_in"), event.bounty_id);
+    env.events().publish(topics, event.clone());
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SettlementCompleted {
+    pub version: u32,
+    pub bounty_id: u64,
+    pub amount: i128,
+    pub recipient: Address,
+    pub settlement_type: Symbol,
+    pub timestamp: u64,
+}
+
+pub fn emit_settlement_completed(env: &Env, event: SettlementCompleted) {
+    let topics = (Symbol::new(env, "settle_done"), event.bounty_id);
     env.events().publish(topics, event.clone());
 }
