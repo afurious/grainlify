@@ -14,6 +14,11 @@ mod traits;
 mod test_maintenance_mode;
 
 use events::{
+    emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized,
+    emit_deprecation_state_changed, emit_funds_locked, emit_funds_refunded, emit_funds_released,
+    BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
+    ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsRefunded, FundsReleased,
+    EVENT_VERSION_V2,
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
     emit_funds_refunded, emit_funds_released, emit_maintenance_mode_changed, BatchFundsLocked,
     BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
@@ -418,6 +423,28 @@ pub enum Error {
     /// Returned when refund is blocked by a pending claim/dispute
     NotPaused = 21,
     ClaimPending = 22,
+    /// Returned when claim ticket is not found
+    TicketNotFound = 23,
+    /// Returned when claim ticket has already been used (replay prevention)
+    TicketAlreadyUsed = 24,
+    /// Returned when claim ticket has expired
+    TicketExpired = 25,
+    CapabilityNotFound = 26,
+    CapabilityExpired = 27,
+    CapabilityRevoked = 28,
+    CapabilityActionMismatch = 29,
+    CapabilityAmountExceeded = 30,
+    CapabilityUsesExhausted = 31,
+    CapabilityExceedsAuthority = 32,
+    InvalidAssetId = 33,
+    /// Refund for anonymous escrow must go through refund_resolved (resolver provides recipient)
+    AnonymousRefundRequiresResolution = 34,
+    /// Anonymous resolver address not set in instance storage
+    AnonymousResolverNotSet = 35,
+    /// Bounty exists but is not an anonymous escrow (for refund_resolved)
+    NotAnonymousEscrow = 36,
+    /// Use get_escrow_info_v2 for anonymous escrows
+    UseGetEscrowInfoV2ForAnonymous = 37,
     CapabilityNotFound = 23,
     CapabilityExpired = 24,
     CapabilityRevoked = 25,
@@ -425,6 +452,9 @@ pub enum Error {
     CapabilityAmountExceeded = 27,
     CapabilityUsesExhausted = 28,
     CapabilityExceedsAuthority = 29,
+    InvalidAssetId = 30,
+    /// Returned when new locks/registrations are disabled (contract deprecated)
+    ContractDeprecated = 30,
 }
 
 #[contracttype]
@@ -459,6 +489,55 @@ pub struct Escrow {
     pub refund_history: Vec<RefundRecord>,
 }
 
+/// Kill-switch state: when deprecated is true, new escrows are blocked; existing escrows can complete or migrate.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationState {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+}
+
+/// View type for deprecation status (exposed to clients).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationStatus {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+}
+
+/// Anonymous escrow: only a 32-byte depositor commitment is stored on-chain.
+/// Refunds require the configured resolver to call `refund_resolved(bounty_id, recipient)`.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AnonymousEscrow {
+    pub depositor_commitment: BytesN<32>,
+    pub amount: i128,
+    pub remaining_amount: i128,
+    pub status: EscrowStatus,
+    pub deadline: u64,
+    pub refund_history: Vec<RefundRecord>,
+}
+
+/// Depositor identity: either a concrete address (non-anon) or a 32-byte commitment (anon).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AnonymousParty {
+    Address(Address),
+    Commitment(BytesN<32>),
+}
+
+/// Unified escrow view: exposes either address or commitment for depositor.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct EscrowInfo {
+    pub depositor: AnonymousParty,
+    pub amount: i128,
+    pub remaining_amount: i128,
+    pub status: EscrowStatus,
+    pub deadline: u64,
+    pub refund_history: Vec<RefundRecord>,
+}
+
 #[contracttype]
 pub enum DataKey {
     Admin,
@@ -478,6 +557,13 @@ pub enum DataKey {
     AmountPolicy, // Option<(i128, i128)> — (min_amount, max_amount) set by set_amount_policy
     CapabilityNonce, // monotonically increasing capability id
     Capability(u64), // capability_id -> Capability
+    /// Kill switch: when set, new escrows are blocked; existing escrows can complete or migrate
+    DeprecationState,
+
+    /// Address of the resolver that may authorize refunds for anonymous escrows
+    AnonymousResolver,
+
+    /// Chain identifier (e.g., "stellar", "ethereum") for cross-network protection
     ChainId,
     NetworkId,
     MaintenanceMode, // bool flag
@@ -890,6 +976,59 @@ impl BountyEscrowContract {
         }
 
         Ok(())
+    }
+
+    /// Returns current deprecation state (internal). When deprecated is true, new locks are blocked.
+    fn get_deprecation_state(env: &Env) -> DeprecationState {
+        env.storage()
+            .instance()
+            .get(&DataKey::DeprecationState)
+            .unwrap_or(DeprecationState {
+                deprecated: false,
+                migration_target: None,
+            })
+    }
+
+    /// Set deprecation (kill switch) and optional migration target. Admin only.
+    /// When deprecated is true: new lock_funds and batch_lock_funds are blocked; existing escrows
+    /// can still release, refund, or be migrated off-chain. Emits DeprecationStateChanged.
+    pub fn set_deprecated(
+        env: Env,
+        deprecated: bool,
+        migration_target: Option<Address>,
+    ) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        let state = DeprecationState {
+            deprecated,
+            migration_target: migration_target.clone(),
+        };
+        env.storage()
+            .instance()
+            .set(&DataKey::DeprecationState, &state);
+        emit_deprecation_state_changed(
+            &env,
+            DeprecationStateChanged {
+                deprecated: state.deprecated,
+                migration_target: state.migration_target,
+                admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+        Ok(())
+    }
+
+    /// View: returns whether the contract is deprecated and the optional migration target address.
+    pub fn get_deprecation_status(env: Env) -> DeprecationStatus {
+        let s = Self::get_deprecation_state(&env);
+        DeprecationStatus {
+            deprecated: s.deprecated,
+            migration_target: s.migration_target,
+        }
     }
 
     /// Get current pause flags
@@ -1414,6 +1553,9 @@ impl BountyEscrowContract {
 
         if Self::check_paused(&env, symbol_short!("lock")) {
             return Err(Error::FundsPaused);
+        }
+        if Self::get_deprecation_state(&env).deprecated {
+            return Err(Error::ContractDeprecated);
         }
         soroban_sdk::log!(&env, "check paused ok");
 
@@ -2720,6 +2862,13 @@ impl BountyEscrowContract {
         if Self::check_paused(&env, symbol_short!("lock")) {
             return Err(Error::FundsPaused);
         }
+
+        // GUARD: acquire reentrancy lock
+        reentrancy_guard::acquire(&env);
+
+        if Self::get_deprecation_state(&env).deprecated {
+            return Err(Error::ContractDeprecated);
+        }
         // Validate batch size
         let batch_size = items.len();
         if batch_size == 0 {
@@ -3058,6 +3207,8 @@ mod test_blacklist_and_whitelist;
 mod test_bounty_escrow;
 #[cfg(test)]
 mod test_capability_tokens;
+#[cfg(test)]
+mod test_deprecation;
 #[cfg(test)]
 mod test_dispute_resolution;
 #[cfg(test)]

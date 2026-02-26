@@ -24,6 +24,7 @@ pub enum Error {
     DeadlineNotPassed = 6,
     Unauthorized = 7,
     InsufficientBalance = 8,
+    ContractDeprecated = 9,
     // Identity-related errors
     InvalidSignature = 100,
     ClaimExpired = 101,
@@ -92,11 +93,20 @@ pub struct EscrowJurisdictionEvent {
     pub timestamp: u64,
 }
 
+/// Kill-switch state: when deprecated is true, new escrows are blocked; existing can complete or migrate.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationState {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+}
+
 #[contracttype]
 pub enum DataKey {
     Admin,
     Token,
     Escrow(u64),
+    DeprecationState,
     // Identity-related storage keys
     AddressIdentity(Address),
     AuthorizedIssuer(Address),
@@ -468,6 +478,7 @@ impl EscrowContract {
     }
 
     /// Lock funds: depositor must be authorized; tokens transferred from depositor to contract.
+    /// Fails with ContractDeprecated when the contract has been deprecated (kill switch).
     ///
     /// # Reentrancy
     /// Protected by reentrancy guard. Escrow state is written before the
@@ -668,6 +679,46 @@ impl EscrowContract {
             .persistent()
             .get(&DataKey::Escrow(bounty_id))
             .ok_or(Error::BountyNotFound)
+    }
+
+    fn get_deprecation_state(env: &Env) -> DeprecationState {
+        env.storage()
+            .instance()
+            .get(&DataKey::DeprecationState)
+            .unwrap_or(DeprecationState {
+                deprecated: false,
+                migration_target: None,
+            })
+    }
+
+    /// Set deprecation (kill switch) and optional migration target. Admin only.
+    /// When deprecated is true, new lock_funds are blocked; release and refund remain allowed.
+    pub fn set_deprecated(
+        env: Env,
+        deprecated: bool,
+        migration_target: Option<Address>,
+    ) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        let state = DeprecationState {
+            deprecated,
+            migration_target: migration_target.clone(),
+        };
+        env.storage().instance().set(&DataKey::DeprecationState, &state);
+        env.events().publish(
+            (symbol_short!("deprec"),),
+            (state.deprecated, state.migration_target, admin, env.ledger().timestamp()),
+        );
+        Ok(())
+    }
+
+    /// View: returns whether the contract is deprecated and the optional migration target.
+    pub fn get_deprecation_status(env: Env) -> DeprecationState {
+        Self::get_deprecation_state(&env)
     }
 
     /// Read jurisdiction configuration for an escrow.

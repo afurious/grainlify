@@ -479,6 +479,18 @@ pub fn emit_capability_revoked(env: &Env, event: CapabilityRevoked) {
     env.events().publish(topics, event);
 }
 
+/// Emitted when the contract is deprecated or un-deprecated (kill switch / migration path).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeprecationStateChanged {
+    pub deprecated: bool,
+    pub migration_target: Option<Address>,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_deprecation_state_changed(env: &Env, event: DeprecationStateChanged) {
+    let topics = (symbol_short!("deprec"),);
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MetadataUpdated {
