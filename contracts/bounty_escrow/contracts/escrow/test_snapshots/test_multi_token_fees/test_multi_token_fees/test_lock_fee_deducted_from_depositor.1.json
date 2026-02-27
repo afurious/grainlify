@@ -170,9 +170,15 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_bounty_escrow/test_events_emit_v2_version_tags_for_all_bounty_emitters.1.json
+                  "u64": 10
+                },
+                "void"
+=======
                   "u64": 1000
 >>>>>>> upstream/master
                 }
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_lock_fee_deducted_from_depositor.1.json
               ]
             }
           },
@@ -2054,9 +2060,15 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_bounty_escrow/test_events_emit_v2_version_tags_for_all_bounty_emitters.1.json
+                  "u64": 10
+                },
+                "void"
+=======
                   "u64": 1000
 >>>>>>> upstream/master
                 }
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_lock_fee_deducted_from_depositor.1.json
               ]
             }
           }
@@ -2263,6 +2275,14 @@
 =======
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
 >>>>>>> upstream/master
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {

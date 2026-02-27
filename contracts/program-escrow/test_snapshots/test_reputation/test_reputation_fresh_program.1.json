@@ -695,7 +695,30 @@
                 "symbol": "get_program_reputation"
               }
             ],
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_invariants/test_invariant_checker_ci_panics_when_disabled.1.json
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                },
+                {
+                  "u64": 7
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 5000
+                  }
+                },
+                {
+                  "u64": 500
+                },
+                "void"
+              ]
+            }
+=======
             "data": "void"
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_fresh_program.1.json
           }
         }
       },
@@ -727,12 +750,71 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_invariants/test_invariant_checker_ci_panics_when_disabled.1.json
+                  "u64": 500
+                },
+                "void"
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "string": "caught error from function"
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "wasm_vm": "invalid_action"
+                }
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "string": "contract call failed"
+=======
                   "key": {
                     "symbol": "completion_rate_bps"
                   },
                   "val": {
                     "u32": 10000
                   }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_fresh_program.1.json
                 },
                 {
                   "key": {
@@ -743,6 +825,26 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_invariants/test_invariant_checker_ci_panics_when_disabled.1.json
+                  "vec": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "u64": 7
+                    },
+                    {
+                      "i128": {
+                        "hi": 0,
+                        "lo": 5000
+                      }
+                    },
+                    {
+                      "u64": 500
+                    },
+                    "void"
+                  ]
+=======
                   "key": {
                     "symbol": "overall_score_bps"
                   },
@@ -819,6 +921,7 @@
                   "val": {
                     "u32": 0
                   }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_fresh_program.1.json
                 }
               ]
             }

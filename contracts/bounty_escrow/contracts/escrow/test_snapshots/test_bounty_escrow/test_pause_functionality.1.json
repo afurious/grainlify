@@ -1370,6 +1370,9 @@
                 }
               ]
             }
+=======
+            "data": "void"
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_bounty_escrow/test_pause_functionality.1.json
           }
         }
       },
@@ -1390,7 +1393,9 @@
                 "symbol": "unpause"
               }
             ],
-            "data": "void"
+            "data": {
+              "bool": false
+            }
           }
         }
       },
@@ -1424,7 +1429,7 @@
       "event": {
         "ext": "v0",
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
-        "type_": "diagnostic",
+        "type_": "contract",
         "body": {
           "v0": {
             "topics": [

@@ -20,6 +20,10 @@ mod test_maintenance_mode;
 use events::{
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized,
     emit_deprecation_state_changed, emit_funds_locked, emit_funds_refunded, emit_funds_released,
+    emit_maintenance_mode_changed, emit_risk_flags_updated, BatchFundsLocked, BatchFundsReleased,
+    BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted, DeprecationStateChanged,
+    FundsLocked, FundsRefunded, FundsReleased, MaintenanceModeChanged, RiskFlagsUpdated,
+    EVENT_VERSION_V2,
     emit_participant_filter_mode_changed, emit_ticket_claimed, emit_ticket_issued,
     BatchFundsLocked, BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated,
     ClaimExecuted, DeprecationStateChanged, FundsLocked, FundsRefunded, FundsReleased,
@@ -657,6 +661,11 @@ pub enum DataKey {
     AmountPolicy, // Option<(i128, i128)> — (min_amount, max_amount) set by set_amount_policy
     CapabilityNonce, // monotonically increasing capability id
     Capability(u64), // capability_id -> Capability
+
+    /// Marks a bounty escrow as using non-transferable (soulbound) reward tokens.
+    /// When set, the token is expected to disallow further transfers after claim.
+    NonTransferableRewards(u64), // bounty_id -> bool
+
     /// Kill switch: when set, new escrows are blocked; existing escrows can complete or migrate
     DeprecationState,
     /// Participant filter mode: Disabled | BlocklistOnly | AllowlistOnly (default Disabled)
@@ -668,6 +677,7 @@ pub enum DataKey {
     /// Chain identifier (e.g., "stellar", "ethereum") for cross-network protection
     ChainId,
     NetworkId,
+
     MaintenanceMode, // bool flag
 }
 
@@ -810,6 +820,9 @@ pub struct LockFundsItem {
     pub depositor: Address,
     pub amount: i128,
     pub deadline: u64,
+    /// When true, marks this escrow as using non-transferable (soulbound) reward tokens.
+    /// The token contract is expected to disallow further transfers after the recipient claims.
+    pub non_transferable_rewards: bool,
 }
 
 #[contracttype]
@@ -1669,12 +1682,17 @@ impl BountyEscrowContract {
     }
 
     /// Lock funds for a specific bounty.
+    /// Lock funds for a bounty. When `non_transferable_rewards` is true, the escrow is marked
+    /// as using soulbound/non-transferable tokens; the token contract must disallow further
+    /// transfers after the recipient claims. Claim and release still perform a single transfer
+    /// from the contract to the recipient; no further transfers are required.
     pub fn lock_funds(
         env: Env,
         depositor: Address,
         bounty_id: u64,
         amount: i128,
         deadline: u64,
+        non_transferable_rewards: Option<bool>,
     ) -> Result<(), Error> {
         let res =
             Self::lock_funds_logic(env.clone(), depositor.clone(), bounty_id, amount, deadline);
@@ -1763,6 +1781,12 @@ impl BountyEscrowContract {
             .persistent()
             .set(&DataKey::Escrow(bounty_id), &escrow);
 
+        if non_transferable_rewards == Some(true) {
+            env.storage()
+                .persistent()
+                .set(&DataKey::NonTransferableRewards(bounty_id), &true);
+        }
+
         // Update indexes
         let mut index: Vec<u64> = env
             .storage()
@@ -1786,6 +1810,7 @@ impl BountyEscrowContract {
         );
 
         // Emit value allows for off-chain indexing
+        let ntr = non_transferable_rewards.unwrap_or(false);
         emit_funds_locked(
             &env,
             FundsLocked {
@@ -1794,9 +1819,124 @@ impl BountyEscrowContract {
                 amount,
                 depositor: depositor.clone(),
                 deadline,
+                non_transferable_rewards: ntr,
             },
         );
 
+        // INV-2: Verify aggregate balance matches token balance after lock
+        multitoken_invariants::assert_after_lock(&env);
+
+        // GUARD: release reentrancy lock
+        reentrancy_guard::release(&env);
+        Ok(())
+    }
+
+    /// Returns whether the given bounty escrow is marked as using non-transferable (soulbound)
+    /// reward tokens. When true, the token is expected to disallow further transfers after claim.
+    pub fn get_non_transferable_rewards(env: Env, bounty_id: u64) -> Result<bool, Error> {
+        if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
+            return Err(Error::BountyNotFound);
+        }
+        Ok(env
+            .storage()
+            .persistent()
+            .get(&DataKey::NonTransferableRewards(bounty_id))
+            .unwrap_or(false))
+    }
+
+    /// Lock funds for a bounty in anonymous mode: only a 32-byte depositor commitment is stored.
+    /// The depositor must authorize and transfer; their address is used only for the transfer
+    /// in this call and is not stored on-chain. Refunds require the configured anonymous
+    /// resolver to call `refund_resolved(bounty_id, recipient)`.
+    pub fn lock_funds_anonymous(
+        env: Env,
+        depositor: Address,
+        depositor_commitment: BytesN<32>,
+        bounty_id: u64,
+        amount: i128,
+        deadline: u64,
+    ) -> Result<(), Error> {
+        reentrancy_guard::acquire(&env);
+
+        anti_abuse::check_rate_limit(&env, depositor.clone());
+
+        if Self::check_paused(&env, symbol_short!("lock")) {
+            reentrancy_guard::release(&env);
+            return Err(Error::FundsPaused);
+        }
+
+        depositor.require_auth();
+
+        if !env.storage().instance().has(&DataKey::Admin) {
+            reentrancy_guard::release(&env);
+            return Err(Error::NotInitialized);
+        }
+
+        if env.storage().persistent().has(&DataKey::Escrow(bounty_id))
+            || env
+                .storage()
+                .persistent()
+                .has(&DataKey::EscrowAnon(bounty_id))
+        {
+            reentrancy_guard::release(&env);
+            return Err(Error::BountyExists);
+        }
+
+        if let Some((min_amount, max_amount)) = env
+            .storage()
+            .instance()
+            .get::<DataKey, (i128, i128)>(&DataKey::AmountPolicy)
+        {
+            if amount < min_amount {
+                reentrancy_guard::release(&env);
+                return Err(Error::AmountBelowMinimum);
+            }
+            if amount > max_amount {
+                reentrancy_guard::release(&env);
+                return Err(Error::AmountAboveMaximum);
+            }
+        }
+
+        let escrow_anon = AnonymousEscrow {
+            depositor_commitment: depositor_commitment.clone(),
+            amount,
+            remaining_amount: amount,
+            status: EscrowStatus::Locked,
+            deadline,
+            refund_history: vec![&env],
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::EscrowAnon(bounty_id), &escrow_anon);
+
+        let mut index: Vec<u64> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowIndex)
+            .unwrap_or(Vec::new(&env));
+        index.push_back(bounty_id);
+        env.storage()
+            .persistent()
+            .set(&DataKey::EscrowIndex, &index);
+
+        let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let client = token::Client::new(&env, &token_addr);
+        client.transfer(&depositor, &env.current_contract_address(), &amount);
+
+        emit_funds_locked_anon(
+            &env,
+            FundsLockedAnon {
+                version: EVENT_VERSION_V2,
+                bounty_id,
+                amount,
+                depositor_commitment,
+                deadline,
+            },
+        );
+
+        multitoken_invariants::assert_after_lock(&env);
+        reentrancy_guard::release(&env);
         Ok(())
     }
 
@@ -2573,25 +2713,6 @@ impl BountyEscrowContract {
                 .set(&DataKey::AnonymousResolver, &addr),
             None => env.storage().instance().remove(&DataKey::AnonymousResolver),
         }
-    /// Set the anonymous resolver address (admin only).
-    /// The resolver is authorized to call `refund_resolved` for anonymous escrows.
-    /// Pass `None` to clear/unset the resolver.
-    pub fn set_anonymous_resolver(env: Env, resolver: Option<Address>) -> Result<(), Error> {
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::Admin)
-            .ok_or(Error::NotInitialized)?;
-        admin.require_auth();
-
-        if let Some(r) = resolver {
-            env.storage()
-                .instance()
-                .set(&DataKey::AnonymousResolver, &r);
-        } else {
-            env.storage().instance().remove(&DataKey::AnonymousResolver);
-        }
-
         Ok(())
     }
 
@@ -3415,11 +3536,9 @@ impl BountyEscrowContract {
         }
 
         // Process all items (atomic - all succeed or all fail)
+        // First loop: write all state (escrow, indices). Second loop: transfers + events.
         let mut locked_count = 0u32;
         for item in items.iter() {
-            // Transfer funds from depositor to contract
-            client.transfer(&item.depositor, &contract_address, &item.amount);
-
             // Create escrow record
             let escrow = Escrow {
                 depositor: item.depositor.clone(),
@@ -3435,6 +3554,41 @@ impl BountyEscrowContract {
                 .persistent()
                 .set(&DataKey::Escrow(item.bounty_id), &escrow);
 
+            if item.non_transferable_rewards {
+                env.storage().persistent().set(
+                    &DataKey::NonTransferableRewards(item.bounty_id),
+                    &true,
+                );
+            }
+
+            // Update EscrowIndex (same as lock_funds)
+            let mut index: Vec<u64> = env
+                .storage()
+                .persistent()
+                .get(&DataKey::EscrowIndex)
+                .unwrap_or(Vec::new(&env));
+            index.push_back(item.bounty_id);
+            env.storage()
+                .persistent()
+                .set(&DataKey::EscrowIndex, &index);
+
+            // Update DepositorIndex
+            let mut depositor_index: Vec<u64> = env
+                .storage()
+                .persistent()
+                .get(&DataKey::DepositorIndex(item.depositor.clone()))
+                .unwrap_or(Vec::new(&env));
+            depositor_index.push_back(item.bounty_id);
+            env.storage().persistent().set(
+                &DataKey::DepositorIndex(item.depositor.clone()),
+                &depositor_index,
+            );
+        }
+
+        // INTERACTION: all external token transfers happen after state is finalized
+        for item in items.iter() {
+            client.transfer(&item.depositor, &contract_address, &item.amount);
+
             // Emit individual event for each locked bounty
             emit_funds_locked(
                 &env,
@@ -3444,6 +3598,7 @@ impl BountyEscrowContract {
                     amount: item.amount,
                     depositor: item.depositor.clone(),
                     deadline: item.deadline,
+                    non_transferable_rewards: item.non_transferable_rewards,
                 },
             );
 
@@ -3734,7 +3889,7 @@ impl traits::EscrowInterface for BountyEscrowContract {
         amount: i128,
         deadline: u64,
     ) -> Result<(), crate::Error> {
-        BountyEscrowContract::lock_funds(env.clone(), depositor, bounty_id, amount, deadline)
+        BountyEscrowContract::lock_funds(env.clone(), depositor, bounty_id, amount, deadline, None)
     }
 
     /// Release funds to contributor through the trait interface
@@ -4006,6 +4161,7 @@ mod escrow_status_transition_tests {
                         &bounty_id,
                         &amount,
                         &deadline,
+                        &None,
                     );
                     assert!(
                         result.is_err(),
@@ -4117,7 +4273,7 @@ mod escrow_status_transition_tests {
         let deadline = setup.env.ledger().timestamp() + 1000;
         let result = setup
             .client
-            .try_lock_funds(&setup.depositor, &bounty_id, &amount, &deadline);
+            .try_lock_funds(&setup.depositor, &bounty_id, &amount, &deadline, &None);
         assert!(
             result.is_err(),
             "Expected locking an already released bounty to fail"
@@ -4224,6 +4380,7 @@ mod escrow_status_transition_tests {
         );
     }
 }
+
 #[cfg(test)]
 mod test_deadline_variants;
 #[cfg(test)]

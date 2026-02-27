@@ -946,22 +946,39 @@
                     "symbol": "amount"
                   },
                   "val": {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+=======
                     "i128": {
                       "hi": 0,
                       "lo": 500000
                     }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
                   }
                 },
                 {
                   "key": {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                    "symbol": "operation"
+                  },
+                  "val": {
+                    "symbol": "lock"
+=======
                     "symbol": "program_id"
                   },
                   "val": {
                     "string": "rep-test"
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
                   }
                 },
                 {
                   "key": {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                    "symbol": "paused"
+                  },
+                  "val": {
+                    "bool": true
+=======
                     "symbol": "remaining_balance"
                   },
                   "val": {
@@ -969,14 +986,28 @@
                       "hi": 0,
                       "lo": 500000
                     }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
                   }
                 },
                 {
                   "key": {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                    "symbol": "reason"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": 0
+=======
                     "symbol": "version"
                   },
                   "val": {
                     "u32": 2
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
                   }
                 }
               ]
@@ -989,7 +1020,135 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000005",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "pause"
+              },
+              {
+                "symbol": "release"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "admin"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "operation"
+                  },
+                  "val": {
+                    "symbol": "release"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "paused"
+                  },
+                  "val": {
+                    "bool": true
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reason"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": 0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000005",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "pause"
+              },
+              {
+                "symbol": "refund"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "admin"
+                  },
+                  "val": {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "operation"
+                  },
+                  "val": {
+                    "symbol": "refund"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "paused"
+                  },
+                  "val": {
+                    "bool": true
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "reason"
+                  },
+                  "val": "void"
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": 0
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000005",
+=======
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -998,6 +1157,12 @@
                 "symbol": "fn_return"
               },
               {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                "symbol": "set_paused"
+              }
+            ],
+            "data": "void"
+=======
                 "symbol": "lock_program_funds"
               }
             ],
@@ -1070,6 +1235,7 @@
                 }
               ]
             }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
           }
         }
       },
@@ -1087,6 +1253,34 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000005"
+              },
+              {
+                "symbol": "lock_funds"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                },
+                {
+                  "u64": 1
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 100
+                  }
+                },
+                {
+                  "u64": 1000
+                },
+                "void"
+              ]
+            }
+=======
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
               },
               {
@@ -1094,6 +1288,7 @@
               }
             ],
             "data": "void"
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
           }
         }
       },
@@ -1102,7 +1297,11 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000005",
+=======
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
         "type_": "diagnostic",
         "body": {
           "v0": {
@@ -1111,6 +1310,90 @@
                 "symbol": "fn_return"
               },
               {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_lock_blocked_when_all_paused.1.json
+                "symbol": "lock_funds"
+              }
+            ],
+            "data": {
+              "error": {
+                "contract": 18
+              }
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000005",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "contract": 18
+                }
+              }
+            ],
+            "data": {
+              "string": "escalating Ok(ScErrorType::Contract) frame-exit to Err"
+            }
+          }
+        }
+      },
+      "failed_call": true
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "error"
+              },
+              {
+                "error": {
+                  "contract": 18
+                }
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "string": "contract try_call failed"
+                },
+                {
+                  "symbol": "lock_funds"
+                },
+                {
+                  "vec": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "u64": 1
+                    },
+                    {
+                      "i128": {
+                        "hi": 0,
+                        "lo": 100
+                      }
+                    },
+                    {
+                      "u64": 1000
+                    },
+                    "void"
+                  ]
+=======
                 "symbol": "get_program_reputation"
               }
             ],
@@ -1217,6 +1500,7 @@
                   "val": {
                     "u32": 0
                   }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_funded_no_payouts.1.json
                 }
               ]
             }

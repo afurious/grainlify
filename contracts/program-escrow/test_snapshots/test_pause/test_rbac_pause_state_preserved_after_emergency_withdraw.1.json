@@ -70,7 +70,15 @@
                     "hi": 0,
                     "lo": 500
                   }
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
+                },
+                {
+                  "u64": 1000
+                },
+                "void"
+=======
                 }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
               ]
             }
           },
@@ -1368,6 +1376,52 @@
                 "symbol": "fn_call"
               },
               {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
+              },
+              {
+                "symbol": "lock_funds"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                },
+                {
+                  "u64": 1
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 500
+                  }
+                },
+                {
+                  "u64": 1000
+                },
+                "void"
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+=======
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
                 "bytes": "d63a954726751a876d37290072af1ee723d7d761eec3bf4191849d2116acdc73"
               },
               {
@@ -1519,6 +1573,14 @@
                       "hi": 0,
                       "lo": 500
                     }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {
@@ -2025,7 +2087,30 @@
                 "symbol": "get_pause_flags"
               }
             ],
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
+                },
+                {
+                  "u64": 99
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 100
+                  }
+                },
+                {
+                  "u64": 2000
+                },
+                "void"
+              ]
+            }
+=======
             "data": "void"
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
           }
         }
       },
@@ -2063,6 +2148,26 @@
                   "val": "void"
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
+                  "vec": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
+                    },
+                    {
+                      "u64": 99
+                    },
+                    {
+                      "i128": {
+                        "hi": 0,
+                        "lo": 100
+                      }
+                    },
+                    {
+                      "u64": 2000
+                    },
+                    "void"
+                  ]
+=======
                   "key": {
                     "symbol": "paused_at"
                   },
@@ -2085,6 +2190,7 @@
                   "val": {
                     "bool": false
                   }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_pause/test_rbac_pause_state_preserved_after_emergency_withdraw.1.json
                 }
               ]
             }

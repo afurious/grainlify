@@ -25,6 +25,8 @@ pub struct FundsLocked {
     pub amount: i128,
     pub depositor: Address,
     pub deadline: u64,
+    /// When true, this escrow uses non-transferable (soulbound) reward tokens.
+    pub non_transferable_rewards: bool,
 }
 
 pub fn emit_funds_locked(env: &Env, event: FundsLocked) {
@@ -507,6 +509,9 @@ pub struct DeprecationStateChanged {
 
 pub fn emit_deprecation_state_changed(env: &Env, event: DeprecationStateChanged) {
     let topics = (symbol_short!("deprec"),);
+    env.events().publish(topics, event);
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MetadataUpdated {

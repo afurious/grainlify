@@ -71,8 +71,14 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test/test_partial_release_exact_remaining_after_prior_release.1.json
+                  "u64": 1000
+                },
+                "void"
+=======
                   "u64": 100
                 }
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_compatibility/test_core_function_signatures_stable.1.json
               ]
             }
           },
@@ -1366,8 +1372,14 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test/test_partial_release_exact_remaining_after_prior_release.1.json
+                  "u64": 1000
+                },
+                "void"
+=======
                   "u64": 100
                 }
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_compatibility/test_core_function_signatures_stable.1.json
               ]
             }
           }
@@ -1517,6 +1529,14 @@
                   },
                   "val": {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {

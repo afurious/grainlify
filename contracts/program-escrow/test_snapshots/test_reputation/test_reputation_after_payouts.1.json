@@ -40,7 +40,15 @@
                     "hi": 0,
                     "lo": 100000
                   }
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_front_running_ordering/test_refund_vs_release_race_first_wins.1.json
+                },
+                {
+                  "u64": 100
+                },
+                "void"
+=======
                 }
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_after_payouts.1.json
               ]
             }
           },
@@ -1222,7 +1230,114 @@
     {
       "event": {
         "ext": "v0",
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_front_running_ordering/test_refund_vs_release_race_first_wins.1.json
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_return"
+              },
+              {
+                "symbol": "mint"
+              }
+            ],
+            "data": "void"
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": null,
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+                "bytes": "0000000000000000000000000000000000000000000000000000000000000004"
+              },
+              {
+                "symbol": "lock_funds"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                },
+                {
+                  "u64": 9106
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 75000
+                  }
+                },
+                {
+                  "u64": 100
+                },
+                "void"
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "type_": "diagnostic",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "fn_call"
+              },
+              {
+                "bytes": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4"
+              },
+              {
+                "symbol": "transfer"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                },
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                },
+                {
+                  "i128": {
+                    "hi": 0,
+                    "lo": 75000
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "692c360a04a982db02db346a106cbf008ad9e058c384bdaaf77bc0c48799b3a4",
+=======
         "contract_id": "0000000000000000000000000000000000000000000000000000000000000001",
+>>>>>>> upstream:contracts/program-escrow/test_snapshots/test_reputation/test_reputation_after_payouts.1.json
         "type_": "contract",
         "body": {
           "v0": {
@@ -1261,6 +1376,14 @@
                       "hi": 0,
                       "lo": 100000
                     }
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {

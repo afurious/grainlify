@@ -227,9 +227,15 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_release_allowed_when_only_lock_paused.1.json
+                  "u64": 10000
+                },
+                "void"
+=======
                   "u64": 1000
 >>>>>>> upstream/master
                 }
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_fee_charged_in_escrow_token_single_contract.1.json
               ]
             }
           },
@@ -2425,9 +2431,15 @@
                   }
                 },
                 {
+<<<<<<< HEAD:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_granular_pause/test_release_allowed_when_only_lock_paused.1.json
+                  "u64": 10000
+                },
+                "void"
+=======
                   "u64": 1000
 >>>>>>> upstream/master
                 }
+>>>>>>> upstream:contracts/bounty_escrow/contracts/escrow/test_snapshots/test_multi_token_fees/test_multi_token_fees/test_fee_charged_in_escrow_token_single_contract.1.json
               ]
             }
           }
@@ -2641,7 +2653,14 @@
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
 =======
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
->>>>>>> upstream/master
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "non_transferable_rewards"
+                  },
+                  "val": {
+                    "bool": false
                   }
                 },
                 {
