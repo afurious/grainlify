@@ -536,6 +536,23 @@ pub fn emit_metadata_updated(env: &Env, bounty_id: u64, metadata: crate::EscrowM
     env.events().publish(topics, event);
 }
 
+/// Emitted when participant filter mode is changed (Disabled / BlocklistOnly / AllowlistOnly).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ParticipantFilterModeChanged {
+    pub previous_mode: crate::ParticipantFilterMode,
+    pub new_mode: crate::ParticipantFilterMode,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+pub fn emit_participant_filter_mode_changed(env: &Env, event: ParticipantFilterModeChanged) {
+    let topics = (symbol_short!("p_filter"),);
+    env.events().publish(topics, event);
+}
+
+}
+
 // ==================== Event Batching (Issue #676) ====================
 // Compact action summary for batch events. Indexers can decode a single
 // EventBatch instead of N individual events during high-volume periods.
