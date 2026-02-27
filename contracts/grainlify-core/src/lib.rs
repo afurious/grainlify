@@ -153,7 +153,8 @@
 #![no_std]
 
 mod multisig;
-use multisig::{MultiSig, MultiSigConfig};
+pub use multisig::MultiSigConfig;
+use multisig::MultiSig;
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short, Address, BytesN, Env, String, Symbol, Vec,
 };
