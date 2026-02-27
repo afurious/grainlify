@@ -3,6 +3,9 @@
 //! Parity with main contracts/bounty_escrow where applicable; see soroban/PARITY.md.
 
 use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env,
+, BytesN};
+use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, BytesN, Env,
     String, Symbol, Vec,
 };
@@ -530,6 +533,7 @@ impl EscrowContract {
         amount: i128,
         deadline: u64,
     ) -> Result<(), Error> {
+        Self::lock_funds_with_jurisdiction(env, depositor, bounty_id, amount, deadline, None)
         Self::lock_funds_with_jurisdiction(env, depositor, bounty_id, amount, deadline, OptionalJurisdiction::None)
     }
 
