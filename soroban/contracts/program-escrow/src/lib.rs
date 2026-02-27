@@ -1,15 +1,7 @@
 #![no_std]
 use soroban_sdk::{
-<<<<<<< HEAD
     contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String,
     Vec,
-    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, Env, String,
-    Vec,
-=======
-    contract, contracterror, contractimpl, contracttype, symbol_short, symbol_short, token, Address, Env,
-    String,
-    Vec,
->>>>>>> upstream
 };
 
 const MAX_BATCH_SIZE: u32 = 20;
