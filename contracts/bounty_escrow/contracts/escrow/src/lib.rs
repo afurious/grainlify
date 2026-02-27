@@ -12,6 +12,8 @@ mod test_multi_token_fees;
 mod test_rbac;
 #[cfg(test)]
 mod test_risk_flags;
+#[cfg(test)]
+mod error_precedence_tests;
 mod traits;
 
 #[cfg(test)]
@@ -1718,6 +1720,7 @@ impl BountyEscrowContract {
         anti_abuse::check_rate_limit(&env, depositor.clone());
         soroban_sdk::log!(&env, "rate limit ok");
 
+        // Priority 1: Pause state
         if Self::check_paused(&env, symbol_short!("lock")) {
             return Err(Error::FundsPaused);
         }
@@ -1726,23 +1729,25 @@ impl BountyEscrowContract {
         }
         soroban_sdk::log!(&env, "check paused ok");
 
-        let _start = env.ledger().timestamp();
-        let _caller = depositor.clone();
-
-        // Verify depositor authorization
-        depositor.require_auth();
-        soroban_sdk::log!(&env, "auth ok");
-
+        // Priority 2: Initialization
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
         }
-        soroban_sdk::log!(&env, "admin ok");
 
+        let _start = env.ledger().timestamp();
+        let _caller = depositor.clone();
+
+        // Priority 3: Authorization
+        depositor.require_auth();
+        soroban_sdk::log!(&env, "auth ok");
+
+        // Priority 5: State conflicts (bounty already exists)
         if env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyExists);
         }
         soroban_sdk::log!(&env, "bounty exists ok");
 
+        // Priority 8: Business logic constraints (amount validation)
         // Enforce min/max amount policy if one has been configured (Issue #62).
         if let Some((min_amount, max_amount)) = env
             .storage()
@@ -1943,35 +1948,52 @@ impl BountyEscrowContract {
     /// Release funds to the contributor.
     /// Only the admin (backend) can authorize this.
     pub fn release_funds(env: Env, bounty_id: u64, contributor: Address) -> Result<(), Error> {
+        // Priority 1: Pause state
         if Self::check_paused(&env, symbol_short!("release")) {
             return Err(Error::FundsPaused);
         }
-        let _start = env.ledger().timestamp();
 
-        // Ensure contract is initialized
-        if env.storage().instance().has(&DataKey::ReentrancyGuard) {
-            panic!("Reentrancy detected");
-        }
-        env.storage()
-            .instance()
-            .set(&DataKey::ReentrancyGuard, &true);
+        // Priority 2: Initialization
         if !env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::NotInitialized);
         }
 
+        // Priority 3: Authorization
         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
 
+        // Priority 4: Resource existence
         if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyNotFound);
         }
 
+        // Priority 5: State conflicts (pending claim blocks release)
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::PendingClaim(bounty_id))
+        {
+            let claim: ClaimRecord = env
+                .storage()
+                .persistent()
+                .get(&DataKey::PendingClaim(bounty_id))
+                .unwrap();
+            if !claim.claimed {
+                return Err(Error::ClaimPending);
+            }
+        }
+
+        let _start = env.ledger().timestamp();
+
+        // GUARD: acquire reentrancy lock (replaces inline guard)
+        reentrancy_guard::acquire(&env);
         let mut escrow: Escrow = env
             .storage()
             .persistent()
             .get(&DataKey::Escrow(bounty_id))
             .unwrap();
 
+        // Priority 6: Resource state
         if escrow.status != EscrowStatus::Locked {
             return Err(Error::FundsNotLocked);
         }
@@ -2020,12 +2042,12 @@ impl BountyEscrowContract {
         holder: Address,
         capability_id: u64,
     ) -> Result<(), Error> {
+        // Priority 1: Pause state
         if Self::check_paused(&env, symbol_short!("release")) {
             return Err(Error::FundsPaused);
         }
-        if payout_amount <= 0 {
-            return Err(Error::InvalidAmount);
-        }
+        
+        // Priority 4: Resource existence
         if !env.storage().persistent().has(&DataKey::Escrow(bounty_id)) {
             return Err(Error::BountyNotFound);
         }
@@ -2035,13 +2057,13 @@ impl BountyEscrowContract {
             .persistent()
             .get(&DataKey::Escrow(bounty_id))
             .unwrap();
+        
+        // Priority 6: Resource state
         if escrow.status != EscrowStatus::Locked {
             return Err(Error::FundsNotLocked);
         }
-        if payout_amount > escrow.remaining_amount {
-            return Err(Error::InsufficientFunds);
-        }
-
+        
+        // Priority 7: Capability validation (includes all capability checks)
         Self::consume_capability(
             &env,
             &holder,
@@ -2050,6 +2072,16 @@ impl BountyEscrowContract {
             bounty_id,
             payout_amount,
         )?;
+        
+        // Priority 8: Business logic constraints
+        if payout_amount <= 0 {
+            return Err(Error::InvalidAmount);
+        }
+        
+        // Priority 10: Resource availability
+        if payout_amount > escrow.remaining_amount {
+            return Err(Error::InsufficientFunds);
+        }
 
         let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
         let client = token::Client::new(&env, &token_addr);
