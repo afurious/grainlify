@@ -30,6 +30,7 @@ macro_rules! setup {
     };
 }
 
+
 fn has_event_topic(env: &Env, topic_name: &str) -> bool {
     use soroban_sdk::IntoVal;
     let expected: soroban_sdk::Val = Symbol::new(env, topic_name).into_val(env);
@@ -820,6 +821,7 @@ fn test_sequential_batch_overlap_fails() {
 // ==================== JURISDICTION CONTROLS ====================
 
 #[test]
+fn test_register_program_juris_config() {
 fn test_register_prog_w_juris_config() {
     setup!(
         env,
@@ -839,16 +841,26 @@ fn test_register_prog_w_juris_config() {
         registration_paused: false,
     };
 
+    client.register_program_juris(
     client.register_prog_w_juris(
         &91,
         &program_admin,
         &String::from_str(&env, "EU Hackathon Program"),
         &5_000,
+        &cfg.tag.clone(),
+        &cfg.requires_kyc,
+        &cfg.max_funding.clone(),
+        &cfg.registration_paused,
         &OptionalJurisdiction::Some(cfg.clone()),
         &Some(true),
     );
 
     let program = client.get_program(&91);
+    assert_eq!(client.get_program_jurisdiction(&91), Some(cfg));
+}
+
+#[test]
+fn test_register_program_juris_requires_kyc_attestation() {
     assert_eq!(program.jurisdiction, OptionalJurisdiction::Some(cfg.clone()));
     assert_eq!(client.get_program_jurisdiction(&91), OptionalJurisdiction::Some(cfg));
 }
@@ -873,11 +885,16 @@ fn test_register_prog_w_juris_requires_kyc_attestation() {
         registration_paused: false,
     };
 
+    let res = client.try_register_program_juris(
     let res = client.try_register_prog_w_juris(
         &92,
         &program_admin,
         &String::from_str(&env, "US Program"),
         &5_000,
+        &cfg.tag.clone(),
+        &cfg.requires_kyc,
+        &cfg.max_funding.clone(),
+        &cfg.registration_paused,
         &OptionalJurisdiction::Some(cfg),
         &Some(false),
     );
@@ -885,6 +902,7 @@ fn test_register_prog_w_juris_requires_kyc_attestation() {
 }
 
 #[test]
+fn test_register_program_juris_max_funding_enforced() {
 fn test_register_prog_w_juris_max_funding_enforced() {
     setup!(
         env,
@@ -904,11 +922,16 @@ fn test_register_prog_w_juris_max_funding_enforced() {
         registration_paused: false,
     };
 
+    let res = client.try_register_program_juris(
     let res = client.try_register_prog_w_juris(
         &93,
         &program_admin,
         &String::from_str(&env, "Capped Program"),
         &5_000,
+        &cfg.tag.clone(),
+        &cfg.requires_kyc,
+        &cfg.max_funding.clone(),
+        &cfg.registration_paused,
         &OptionalJurisdiction::Some(cfg),
         &None,
     );
@@ -916,6 +939,7 @@ fn test_register_prog_w_juris_max_funding_enforced() {
 }
 
 #[test]
+fn test_register_program_juris_pause_enforced() {
 fn test_register_prog_w_juris_pause_enforced() {
     setup!(
         env,
@@ -935,11 +959,16 @@ fn test_register_prog_w_juris_pause_enforced() {
         registration_paused: true,
     };
 
+    let res = client.try_register_program_juris(
     let res = client.try_register_prog_w_juris(
         &94,
         &program_admin,
         &String::from_str(&env, "Paused Program"),
         &5_000,
+        &cfg.tag.clone(),
+        &cfg.requires_kyc,
+        &cfg.max_funding.clone(),
+        &cfg.registration_paused,
         &OptionalJurisdiction::Some(cfg),
         &None,
     );
@@ -947,6 +976,7 @@ fn test_register_prog_w_juris_pause_enforced() {
 }
 
 #[test]
+fn test_batch_register_juris() {
 fn test_batch_reg_progs_w_juris() {
     setup!(
         env,
@@ -973,6 +1003,10 @@ fn test_batch_reg_progs_w_juris() {
             admin: program_admin.clone(),
             name: String::from_str(&env, "Generic Program"),
             total_funding: 5_000,
+            juris_tag: None,
+            juris_requires_kyc: false,
+            juris_max_funding: None,
+            juris_registration_paused: false,
             jurisdiction: OptionalJurisdiction::None,
             kyc_attested: None,
         },
@@ -981,11 +1015,23 @@ fn test_batch_reg_progs_w_juris() {
             admin: program_admin.clone(),
             name: String::from_str(&env, "EU Program"),
             total_funding: 7_000,
+            juris_tag: eu_cfg.tag.clone(),
+            juris_requires_kyc: eu_cfg.requires_kyc,
+            juris_max_funding: eu_cfg.max_funding.clone(),
+            juris_registration_paused: eu_cfg.registration_paused,
             jurisdiction: OptionalJurisdiction::Some(eu_cfg.clone()),
             kyc_attested: Some(true),
         },
     ];
 
+    let count = client.batch_register_juris(&items);
+    assert_eq!(count, 2);
+
+    let generic = client.get_program(&95);
+    assert_eq!(client.get_program_jurisdiction(&95), None);
+
+    let eu = client.get_program(&96);
+    assert_eq!(client.get_program_jurisdiction(&96), Some(eu_cfg));
     let count = client.batch_reg_progs_w_juris(&items);
     assert_eq!(count, 2);
 

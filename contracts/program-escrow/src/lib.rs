@@ -139,6 +139,124 @@
 //! 5. **Balance Checks**: Verify remaining balance matches expectations
 //! 6. **Token Approval**: Ensure contract has token allowance before locking funds
 
+#![no_std]
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, token, vec, Address, Env, String, Symbol,
+    Vec,
+};
+
+// Event types
+const PROGRAM_INITIALIZED: Symbol = symbol_short!("ProgInit");
+const FUNDS_LOCKED: Symbol = symbol_short!("FundLock");
+const BATCH_PAYOUT: Symbol = symbol_short!("BatchPay");
+const PAYOUT: Symbol = symbol_short!("Payout");
+const PROGRAM_RISK_FLAGS_UPDATED: Symbol = symbol_short!("pr_risk");
+const DEPENDENCY_CREATED: Symbol = symbol_short!("dep_add");
+const DEPENDENCY_CLEARED: Symbol = symbol_short!("dep_clr");
+const DEPENDENCY_STATUS_UPDATED: Symbol = symbol_short!("dep_sts");
+
+// Storage keys
+const PROGRAM_DATA: Symbol = symbol_short!("ProgData");
+const FEE_CONFIG: Symbol = symbol_short!("FeeCfg");
+
+// Fee rate is stored in basis points (1 basis point = 0.01%)
+// Example: 100 basis points = 1%, 1000 basis points = 10%
+const BASIS_POINTS: i128 = 10_000;
+const MAX_FEE_RATE: i128 = 1_000; // Maximum 10% fee
+
+pub const RISK_FLAG_HIGH_RISK: u32 = 1 << 0;
+pub const RISK_FLAG_UNDER_REVIEW: u32 = 1 << 1;
+pub const RISK_FLAG_RESTRICTED: u32 = 1 << 2;
+pub const RISK_FLAG_DEPRECATED: u32 = 1 << 3;
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeeConfig {
+    pub lock_fee_rate: i128,      // Fee rate for lock operations (basis points)
+    pub payout_fee_rate: i128,     // Fee rate for payout operations (basis points)
+    pub fee_recipient: Address,    // Address to receive fees
+    pub fee_enabled: bool,         // Global fee enable/disable flag
+}
+// ==================== MONITORING MODULE ====================
+mod monitoring {
+    use soroban_sdk::{contracttype, symbol_short, Address, Env, String, Symbol};
+
+    // Storage keys
+    const OPERATION_COUNT: &str = "op_count";
+    const USER_COUNT: &str = "usr_count";
+    const ERROR_COUNT: &str = "err_count";
+
+    // Event: Operation metric
+    #[contracttype]
+    #[derive(Clone, Debug)]
+    pub struct OperationMetric {
+        pub operation: Symbol,
+        pub caller: Address,
+        pub timestamp: u64,
+        pub success: bool,
+    }
+
+    // Event: Performance metric
+    #[contracttype]
+    #[derive(Clone, Debug)]
+    pub struct PerformanceMetric {
+        pub function: Symbol,
+        pub duration: u64,
+        pub timestamp: u64,
+    }
+
+    // Data: Health status
+    #[contracttype]
+    #[derive(Clone, Debug)]
+    pub struct HealthStatus {
+        pub is_healthy: bool,
+        pub last_operation: u64,
+        pub total_operations: u64,
+        pub contract_version: String,
+    }
+
+    // Data: Analytics
+    #[contracttype]
+    #[derive(Clone, Debug)]
+    pub struct Analytics {
+        pub operation_count: u64,
+        pub unique_users: u64,
+        pub error_count: u64,
+        pub error_rate: u32,
+    }
+
+    // Data: State snapshot
+    #[contracttype]
+    #[derive(Clone, Debug)]
+    pub struct StateSnapshot {
+        pub timestamp: u64,
+        pub total_operations: u64,
+        pub total_users: u64,
+        pub total_errors: u64,
+    }
+
+    // Data: Performance stats
+    #[contracttype]
+    #[derive(Clone, Debug)]
+    pub struct PerformanceStats {
+        pub function_name: Symbol,
+        pub call_count: u64,
+        pub total_time: u64,
+        pub avg_time: u64,
+        pub last_called: u64,
+    }
+
+    // Track operation
+    pub fn track_operation(env: &Env, operation: Symbol, caller: Address, success: bool) {
+        let key = Symbol::new(env, OPERATION_COUNT);
+        let count: u64 = env.storage().persistent().get(&key).unwrap_or(0);
+        env.storage().persistent().set(&key, &(count + 1));
+
+        if !success {
+            let err_key = Symbol::new(env, ERROR_COUNT);
+            let err_count: u64 = env.storage().persistent().get(&err_key).unwrap_or(0);
+            env.storage().persistent().set(&err_key, &(err_count + 1));
+        }
 // ── Step 1: Add module declarations near the top of lib.rs ──────────────
 // (after `mod anti_abuse;` and before the contract struct)
 
@@ -180,6 +298,7 @@ mod test_lifecycle;
 mod test_full_lifecycle;
 
 #[cfg(test)]
+mod test_risk_flags;
 mod test_maintenance_mode;
 
 // ── Step 2: Add these public contract functions to the ProgramEscrowContract
@@ -357,6 +476,17 @@ pub struct PayoutEvent {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgramRiskFlagsUpdated {
+    pub version: u32,
+    pub program_id: String,
+    pub previous_flags: u32,
+    pub new_flags: u32,
+    pub admin: Address,
+    pub timestamp: u64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProgramData {
     pub program_id: String,
     pub total_funds: i128,
@@ -365,6 +495,7 @@ pub struct ProgramData {
     pub payout_history: Vec<PayoutRecord>,
     pub token_address: Address, // Token contract address for transfers
     pub initial_liquidity: i128, // Initial liquidity provided by creator
+    pub risk_flags: u32,
     pub reference_hash: Option<soroban_sdk::Bytes>,
 }
 
@@ -687,6 +818,20 @@ impl ProgramEscrowContract {
             payout_history: Vec::new(&env),
             token_address: token_address.clone(),
             initial_liquidity: init_liquidity,
+            risk_flags: 0,
+        };
+
+        // Store program data
+        let program_key = DataKey::Program(program_id.clone());
+        env.storage().instance().set(&program_key, &program_data);
+        let empty_dependencies: Vec<String> = vec![&env];
+        env.storage()
+            .instance()
+            .set(&DataKey::ProgramDependencies(program_id.clone()), &empty_dependencies);
+        env.storage().instance().set(
+            &DataKey::DependencyStatus(program_id.clone()),
+            &DependencyStatus::Pending,
+        );
             reference_hash,
         };
 
@@ -838,6 +983,7 @@ impl ProgramEscrowContract {
                 payout_history: Vec::new(&env),
                 token_address: token_address.clone(),
                 initial_liquidity: 0,
+                risk_flags: 0,
                 reference_hash: item.reference_hash.clone(),
             };
             let program_key = DataKey::Program(program_id.clone());
@@ -992,6 +1138,102 @@ impl ProgramEscrowContract {
     /// Returns the current admin address, if set.
     pub fn get_admin(env: Env) -> Option<Address> {
         env.storage().instance().get(&DataKey::Admin)
+    }
+
+    fn require_admin(env: &Env) -> Address {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .unwrap_or_else(|| panic!("Not initialized"));
+        admin.require_auth();
+        admin
+    }
+
+    fn get_program_data_by_id(env: &Env, program_id: &String) -> ProgramData {
+        let program_key = DataKey::Program(program_id.clone());
+        if env.storage().instance().has(&program_key) {
+            return env
+                .storage()
+                .instance()
+                .get(&program_key)
+                .unwrap_or_else(|| panic!("Program not found"));
+        }
+
+        if env.storage().instance().has(&PROGRAM_DATA) {
+            let program_data: ProgramData = env
+                .storage()
+                .instance()
+                .get(&PROGRAM_DATA)
+                .unwrap_or_else(|| panic!("Program not initialized"));
+            if &program_data.program_id == program_id {
+                return program_data;
+            }
+        }
+
+        panic!("Program not found");
+    }
+
+    fn store_program_data(env: &Env, program_id: &String, program_data: &ProgramData) {
+        let program_key = DataKey::Program(program_id.clone());
+        env.storage().instance().set(&program_key, program_data);
+
+        if env.storage().instance().has(&PROGRAM_DATA) {
+            let existing: ProgramData = env
+                .storage()
+                .instance()
+                .get(&PROGRAM_DATA)
+                .unwrap_or_else(|| panic!("Program not initialized"));
+            if &existing.program_id == program_id {
+                env.storage().instance().set(&PROGRAM_DATA, program_data);
+            }
+        }
+    }
+
+    /// Set risk flags for a program (admin only).
+    pub fn set_program_risk_flags(env: Env, program_id: String, flags: u32) -> ProgramData {
+        let admin = Self::require_admin(&env);
+        let mut program_data = Self::get_program_data_by_id(&env, &program_id);
+        let previous_flags = program_data.risk_flags;
+        program_data.risk_flags = flags;
+        Self::store_program_data(&env, &program_id, &program_data);
+
+        env.events().publish(
+            (PROGRAM_RISK_FLAGS_UPDATED, program_id.clone()),
+            ProgramRiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                program_id,
+                previous_flags,
+                new_flags: program_data.risk_flags,
+                admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        program_data
+    }
+
+    /// Clear specific risk flags for a program (admin only).
+    pub fn clear_program_risk_flags(env: Env, program_id: String, flags: u32) -> ProgramData {
+        let admin = Self::require_admin(&env);
+        let mut program_data = Self::get_program_data_by_id(&env, &program_id);
+        let previous_flags = program_data.risk_flags;
+        program_data.risk_flags &= !flags;
+        Self::store_program_data(&env, &program_id, &program_data);
+
+        env.events().publish(
+            (PROGRAM_RISK_FLAGS_UPDATED, program_id.clone()),
+            ProgramRiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                program_id,
+                previous_flags,
+                new_flags: program_data.risk_flags,
+                admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        program_data
     }
 
     pub fn get_program_release_schedules(env: Env) -> Vec<ProgramReleaseSchedule> {

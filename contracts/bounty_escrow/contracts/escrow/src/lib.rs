@@ -7,7 +7,11 @@ mod test_metadata;
 
 mod test_cross_contract_interface;
 #[cfg(test)]
+mod test_multi_token_fees;
+#[cfg(test)]
 mod test_rbac;
+#[cfg(test)]
+mod test_risk_flags;
 mod traits;
 
 #[cfg(test)]
@@ -22,6 +26,9 @@ use events::{
     ParticipantFilterModeChanged, TicketClaimed, TicketIssued, EVENT_VERSION_V2,
     EVENT_VERSION_V2,
     emit_batch_funds_locked, emit_batch_funds_released, emit_bounty_initialized, emit_funds_locked,
+    emit_funds_refunded, emit_funds_released, emit_risk_flags_updated, BatchFundsLocked,
+    BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
+    FundsLocked, FundsRefunded, FundsReleased, RiskFlagsUpdated, EVENT_VERSION_V2,
     emit_funds_refunded, emit_funds_released, emit_maintenance_mode_changed, BatchFundsLocked,
     BatchFundsReleased, BountyEscrowInitialized, ClaimCancelled, ClaimCreated, ClaimExecuted,
     FundsLocked, FundsRefunded, FundsReleased, MaintenanceModeChanged, EVENT_VERSION_V2,
@@ -531,12 +538,18 @@ pub enum Error {
     ContractDeprecated = 30,
 }
 
+pub const RISK_FLAG_HIGH_RISK: u32 = 1 << 0;
+pub const RISK_FLAG_UNDER_REVIEW: u32 = 1 << 1;
+pub const RISK_FLAG_RESTRICTED: u32 = 1 << 2;
+pub const RISK_FLAG_DEPRECATED: u32 = 1 << 3;
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EscrowMetadata {
     pub repo_id: u64,
     pub issue_id: u64,
     pub bounty_type: soroban_sdk::String,
+    pub risk_flags: u32,
     pub reference_hash: Option<soroban_sdk::Bytes>,
 }
 
@@ -2350,6 +2363,61 @@ impl BountyEscrowContract {
             .persistent()
             .set(&DataKey::Escrow(bounty_id), &escrow);
 
+        // INTERACTION: external token transfer (CEI — state updated above)
+        // INTERACTION: token transfer
+        let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let client = token::Client::new(&env, &token_addr);
+        client.transfer(
+            &env.current_contract_address(),
+            &schedule.recipient,
+            &schedule.amount,
+        );
+
+        // Update schedule metadata
+        let now = env.ledger().timestamp();
+        schedule.released = true;
+        schedule.released_at = Some(now);
+        schedule.released_by = Some(admin.clone());
+        env.storage()
+            .persistent()
+            .set(&DataKey::ReleaseSchedule(bounty_id, schedule_id), &schedule);
+
+        // Add to history
+        let history_entry = EscrowReleaseHistory {
+            schedule_id,
+            bounty_id,
+            amount: schedule.amount,
+            recipient: schedule.recipient.clone(),
+            released_at: now,
+            released_by: admin.clone(),
+            release_type: ReleaseType::Manual,
+        };
+
+        let mut history: Vec<EscrowReleaseHistory> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::ReleaseHistory(bounty_id))
+            .unwrap_or(vec![&env]);
+        history.push_back(history_entry);
+        env.storage()
+            .persistent()
+            .set(&DataKey::ReleaseHistory(bounty_id), &history);
+
+        // Emit events
+        events::emit_schedule_released(
+            &env,
+            events::ScheduleReleased {
+                bounty_id,
+                schedule_id,
+                amount: schedule.amount,
+                recipient: schedule.recipient.clone(),
+                released_at: now,
+                released_by: admin.clone(),
+                release_type: ReleaseType::Manual,
+            },
+        );
+
+        let timestamp = env.ledger().timestamp();
         events::emit_funds_released(
             &env,
             FundsReleased {
@@ -2379,6 +2447,183 @@ impl BountyEscrowContract {
             .storage()
             .persistent()
             .get(&DataKey::Escrow(bounty_id))
+            .unwrap();
+
+        if escrow.status != EscrowStatus::Locked && escrow.status != EscrowStatus::PartiallyRefunded
+        {
+            return Err(Error::FundsNotLocked);
+        }
+
+        // Block refund if there is a pending claim (Issue #391 fix)
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::PendingClaim(bounty_id))
+        {
+            let claim: ClaimRecord = env
+                .storage()
+                .persistent()
+                .get(&DataKey::PendingClaim(bounty_id))
+                .unwrap();
+            if !claim.claimed {
+                return Err(Error::ClaimPending);
+            }
+        }
+
+        let now = env.ledger().timestamp();
+        let approval_key = DataKey::RefundApproval(bounty_id);
+        let approval: Option<RefundApproval> = env.storage().persistent().get(&approval_key);
+
+        // Refund is allowed if:
+        // 1. Deadline has passed (returns full amount to depositor)
+        // 2. An administrative approval exists (can be early, partial, and to custom recipient)
+        if now < escrow.deadline && approval.is_none() {
+            return Err(Error::DeadlineNotPassed);
+        }
+
+        let (refund_amount, refund_to, is_full) = if let Some(app) = approval.clone() {
+            let full = app.mode == RefundMode::Full || app.amount >= escrow.remaining_amount;
+            (app.amount, app.recipient, full)
+        } else {
+            // Standard refund after deadline
+            (escrow.remaining_amount, escrow.depositor.clone(), true)
+        };
+
+        if refund_amount <= 0 || refund_amount > escrow.remaining_amount {
+            return Err(Error::InvalidAmount);
+        }
+
+        // EFFECTS: update state before external call (CEI)
+        invariants::assert_escrow(&env, &escrow);
+        // Update escrow state: subtract the amount exactly refunded
+        escrow.remaining_amount = escrow.remaining_amount.checked_sub(refund_amount).unwrap();
+        if is_full || escrow.remaining_amount == 0 {
+            escrow.status = EscrowStatus::Refunded;
+        } else {
+            escrow.status = EscrowStatus::PartiallyRefunded;
+        }
+
+        // Add to refund history
+        escrow.refund_history.push_back(RefundRecord {
+            amount: refund_amount,
+            recipient: refund_to.clone(),
+            timestamp: now,
+            mode: if is_full {
+                RefundMode::Full
+            } else {
+                RefundMode::Partial
+            },
+        });
+
+        // Save updated escrow
+        env.storage()
+            .persistent()
+            .set(&DataKey::Escrow(bounty_id), &escrow);
+
+        // Remove approval after successful execution
+        if approval.is_some() {
+            env.storage().persistent().remove(&approval_key);
+        }
+
+        // INTERACTION: external token transfer is last
+        let token_addr: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let client = token::Client::new(&env, &token_addr);
+        client.transfer(&env.current_contract_address(), &refund_to, &refund_amount);
+
+        emit_funds_refunded(
+            &env,
+            FundsRefunded {
+                version: EVENT_VERSION_V2,
+                bounty_id,
+                amount: refund_amount,
+                refund_to: refund_to.clone(),
+                timestamp: now,
+            },
+        );
+        Self::record_receipt(
+            &env,
+            CriticalOperationOutcome::Refunded,
+            bounty_id,
+            refund_amount,
+            refund_to.clone(),
+        );
+
+        // INV-2: Verify aggregate balance matches token balance after refund
+        multitoken_invariants::assert_after_disbursement(&env);
+
+        // GUARD: release reentrancy lock
+        reentrancy_guard::release(&env);
+        Ok(())
+    }
+
+    /// Sets or clears the anonymous resolver address.
+    /// Only the admin can call this. The resolver is the trusted entity that
+    /// resolves anonymous escrow refunds via `refund_resolved`.
+    pub fn set_anonymous_resolver(env: Env, resolver: Option<Address>) -> Result<(), Error> {
+        if !env.storage().instance().has(&DataKey::Admin) {
+            return Err(Error::NotInitialized);
+        }
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        admin.require_auth();
+
+        match resolver {
+            Some(addr) => env
+                .storage()
+                .instance()
+                .set(&DataKey::AnonymousResolver, &addr),
+            None => env.storage().instance().remove(&DataKey::AnonymousResolver),
+        }
+    /// Set the anonymous resolver address (admin only).
+    /// The resolver is authorized to call `refund_resolved` for anonymous escrows.
+    /// Pass `None` to clear/unset the resolver.
+    pub fn set_anonymous_resolver(env: Env, resolver: Option<Address>) -> Result<(), Error> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        admin.require_auth();
+
+        if let Some(r) = resolver {
+            env.storage()
+                .instance()
+                .set(&DataKey::AnonymousResolver, &r);
+        } else {
+            env.storage().instance().remove(&DataKey::AnonymousResolver);
+        }
+
+        Ok(())
+    }
+
+    /// Refund an anonymous escrow to a resolved recipient.
+    /// Only the configured anonymous resolver can call this; they resolve the depositor
+    /// commitment off-chain and pass the recipient address (signed instruction pattern).
+    pub fn refund_resolved(env: Env, bounty_id: u64, recipient: Address) -> Result<(), Error> {
+        if Self::check_paused(&env, symbol_short!("refund")) {
+            return Err(Error::FundsPaused);
+        }
+
+        let resolver: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::AnonymousResolver)
+            .ok_or(Error::AnonymousResolverNotSet)?;
+        resolver.require_auth();
+
+        if !env
+            .storage()
+            .persistent()
+            .has(&DataKey::EscrowAnon(bounty_id))
+        {
+            return Err(Error::NotAnonymousEscrow);
+        }
+
+        reentrancy_guard::acquire(&env);
+
+        let mut anon: AnonymousEscrow = env
+            .storage()
+            .persistent()
+            .get(&DataKey::EscrowAnon(bounty_id))
             .unwrap();
 
         if escrow.status != EscrowStatus::Locked && escrow.status != EscrowStatus::PartiallyRefunded
@@ -3362,10 +3607,18 @@ impl BountyEscrowContract {
             .ok_or(Error::NotInitialized)?;
         stored_admin.require_auth();
 
+        let existing_flags = env
+            .storage()
+            .persistent()
+            .get::<DataKey, EscrowMetadata>(&DataKey::Metadata(bounty_id))
+            .map(|metadata| metadata.risk_flags)
+            .unwrap_or(0);
+
         let metadata = EscrowMetadata {
             repo_id,
             issue_id,
             bounty_type,
+            risk_flags: existing_flags,
             reference_hash,
         };
         env.storage()
@@ -3379,6 +3632,96 @@ impl BountyEscrowContract {
             .persistent()
             .get(&DataKey::Metadata(bounty_id))
             .ok_or(Error::BountyNotFound)
+    }
+
+    pub fn set_escrow_risk_flags(
+        env: Env,
+        bounty_id: u64,
+        flags: u32,
+    ) -> Result<EscrowMetadata, Error> {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        stored_admin.require_auth();
+
+        let mut metadata = env
+            .storage()
+            .persistent()
+            .get::<DataKey, EscrowMetadata>(&DataKey::Metadata(bounty_id))
+            .unwrap_or(EscrowMetadata {
+                repo_id: 0,
+                issue_id: 0,
+                bounty_type: soroban_sdk::String::from_str(&env, ""),
+                risk_flags: 0,
+            });
+
+        let previous_flags = metadata.risk_flags;
+        metadata.risk_flags = flags;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Metadata(bounty_id), &metadata);
+
+        emit_risk_flags_updated(
+            &env,
+            RiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                bounty_id,
+                previous_flags,
+                new_flags: metadata.risk_flags,
+                admin: stored_admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        Ok(metadata)
+    }
+
+    pub fn clear_escrow_risk_flags(
+        env: Env,
+        bounty_id: u64,
+        flags: u32,
+    ) -> Result<EscrowMetadata, Error> {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        stored_admin.require_auth();
+
+        let mut metadata = env
+            .storage()
+            .persistent()
+            .get::<DataKey, EscrowMetadata>(&DataKey::Metadata(bounty_id))
+            .unwrap_or(EscrowMetadata {
+                repo_id: 0,
+                issue_id: 0,
+                bounty_type: soroban_sdk::String::from_str(&env, ""),
+                risk_flags: 0,
+            });
+
+        let previous_flags = metadata.risk_flags;
+        metadata.risk_flags &= !flags;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Metadata(bounty_id), &metadata);
+
+        emit_risk_flags_updated(
+            &env,
+            RiskFlagsUpdated {
+                version: EVENT_VERSION_V2,
+                bounty_id,
+                previous_flags,
+                new_flags: metadata.risk_flags,
+                admin: stored_admin,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        Ok(metadata)
     }
 }
 
@@ -3885,5 +4228,8 @@ mod escrow_status_transition_tests {
 mod test_deadline_variants;
 #[cfg(test)]
 mod test_query_filters;
+#[cfg(test)]
+mod test_sandbox;
+mod test_receipts;
 #[cfg(test)]
 mod test_status_transitions;
